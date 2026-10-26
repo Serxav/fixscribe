@@ -1,15 +1,15 @@
 # HANDOFF — read this when Claude Code is not available
 
-## State (end of day 1, 2026-10-26, late night)
-- `main`: pipeline v1 (ingest → transcribe → scenes → analyze → guide → frames), web v1, audit fixes,
-  visual signals stage (not wired yet), docs: ALGORITHM v2, DESIGN v2, ENGINEERING_STANDARD. 219 tests.
-- Not merged: `feat/web-v2` (task 011, 8 review points) and `feat/sam-client` (task 014, unreviewed).
-- `tasks/AUDIT_FOUNDATIONS.md` is the plan: foundations first (media ladder, artifacts, honest screw
-  claim, signals v2, fusion, perception, eval), then web round 2 and the inspector.
-- Muse Code has spent about 11.97 $ (muse-wonder-1.0 default; cap 40 $).
+## State (end of day 1, 2026-10-26)
+- Backend v2 is complete on `main`: 11 stages (ingest, transcribe, signals, scenes, analyze, fusion,
+  refine, plan, frames, perception, publish), typed artifacts, manifest with time and cost, per-job
+  budget, evaluation runner. 328 tests pass. See `docs/ARCHITECTURE.md` and `docs/backend-diagram.html`.
+- Not merged: `feat/web-v2` (task 011, 8 review points). The web waits until real data exists.
+- No real Meta call yet. Muse Code has spent about 20.7 $ (muse-wonder-1.0; cap 40 $).
+- Next (with Claude Code): Sergi's first real video → `scripts/run_video.py` → `eval/run_eval.py`.
 
 ## Queue for Muse Code (do them in this order, one after another)
-- (empty: PAUSED by Sergi until the foundations plan is approved)
+- (empty: wait for Claude Code)
 
 ## Rules for this mode
 - Before each task, read `AGENTS.md` and `docs/HACKATHON_BRIEF.md`.
