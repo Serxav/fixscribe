@@ -157,6 +157,9 @@ def main() -> int:
     analyze.MetaClient = FakeMeta
     status = run_job(job_id, settings, jobs_dir=jobs_dir)
     print(f"job {job_id}: {status.state} {status.error or ''}".rstrip())
+    if status.state == "done":
+        # The home page shows this guide as the example.
+        (settings.data_dir / "example_job.txt").write_text(job_id)
     print(f"open http://localhost:8000/guides/{job_id}")
     return 0 if status.state == "done" else 1
 

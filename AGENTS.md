@@ -15,7 +15,7 @@ Hackathon: Meta Global AI Developer Hackathon, Indie track. Deadline: Nov 4, 202
 
 | | Muse Code | Claude Code |
 |---|---|---|
-| Folder | `~/fixscribe-muse` (git worktree) | `~/fixscribe` (main repo) |
+| Folder | `~/fixscribe-muse` and `~/fixscribe-muse2` (two git worktrees, two tasks in parallel on different files) | `~/fixscribe` (main repo) |
 | Writes code | ~65 %: everything that calls Meta (meta_client, transcribe, analyze, segment, inspector, ask), ffmpeg/OpenCV stages (ingest, scenes, frames), the web app | ~35 %: schemas.py, jobs.py, runner.py, assembly.py, eval/, tests that cover the whole pipeline |
 | Reviews | — | Every Muse Code change, before it reaches main |
 | Git | **Never** commits, pushes, merges, rebases or switches branches | **Only Claude Code** commits, merges and pushes, and only after Sergi says "ok" |
