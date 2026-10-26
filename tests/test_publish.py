@@ -56,3 +56,40 @@ def test_run_is_the_only_writer_of_guide_json(tmp_path):
     guide = artifacts.load(tmp_path, Guide)
     assert guide.checks[0] == "note from plan"
     assert guide.duration_s == 30.0
+
+
+def perception_for(index, removed, notes=(), overlay="steps/01_overlay.jpg"):
+    from app.schemas import NormBox, Perception, ScrewRecord, StepPerception
+
+    records = [
+        ScrewRecord(id=f"S{n}", number=n, box=NormBox(x=x, y=0.2, w=0.05, h=0.05))
+        for n, x in enumerate(removed, start=1)
+    ]
+    return Perception(
+        steps=[StepPerception(index=index, removed=records, overlay=overlay, notes=list(notes))]
+    )
+
+
+def test_sam_boxes_become_the_screw_map_and_verify_it():
+    counted = step(1, 0, 10, action="unscrew", removes=["cover"], screws=ScrewMap(count=2))
+    guide = build_guide(plan(counted), None, perception_for(1, [0.1, 0.6]))
+    first = guide.steps[0]
+    assert [b.number for b in first.screws.boxes] == [1, 2]
+    assert first.overlay == "steps/01_overlay.jpg"
+    assert UNVERIFIED_SCREWS not in guide.checks
+    assert guide.reassembly[0].screws.boxes == first.screws.boxes  # same screws go back
+
+
+def test_sam_disagreement_is_reported():
+    counted = step(1, 0, 10, action="unscrew", removes=["cover"], screws=ScrewMap(count=4))
+    note = "SAM found 3 screws removed, the analysis counted 4."
+    guide = build_guide(plan(counted), None, perception_for(1, [0.1, 0.3, 0.6], notes=[note]))
+    assert f"Step 1: {note}" in guide.checks
+    assert any("4 screws counted but 3 located" in check for check in guide.checks)
+
+
+def test_box_at_the_edge_is_kept_inside_the_image():
+    counted = step(1, 0, 10, action="unscrew", removes=["cover"], screws=ScrewMap(count=1))
+    guide = build_guide(plan(counted), None, perception_for(1, [0.98]))
+    box = guide.steps[0].screws.boxes[0]
+    assert box.x + box.w <= 1.0
