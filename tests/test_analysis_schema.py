@@ -52,3 +52,11 @@ def test_a_schema_shaped_answer_validates():
     }
     analysis = Analysis.model_validate(answer)
     assert analysis.steps[0].screw_count == 4
+
+
+def test_refine_schema_is_strict_and_matches_the_model():
+    from app.schemas import REFINE_JSON_SCHEMA, RefinedStep
+
+    assert REFINE_JSON_SCHEMA["additionalProperties"] is False
+    assert REFINE_JSON_SCHEMA["required"] == list(REFINE_JSON_SCHEMA["properties"])
+    assert set(REFINE_JSON_SCHEMA["properties"]) == set(RefinedStep.model_fields) - {"index"}

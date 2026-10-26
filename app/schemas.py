@@ -463,3 +463,39 @@ class Manifest(Strict):
     stages: dict[str, StageRecord] = Field(default_factory=dict)
     total_seconds: float = Field(default=0.0, ge=0)
     total_usd: float = Field(default=0.0, ge=0)
+
+
+class RefinedStep(Strict):
+    """One uncertain step looked at again by Spark on a short clip with a burned-in timecode."""
+
+    index: int = Field(ge=1)  # the step number in Spark's time order (same as fusion)
+    start_s: float = Field(ge=0)  # absolute seconds in the video (read from the timecode)
+    end_s: float = Field(ge=0)
+    instruction: str
+    action: str
+    removes: list[str] = Field(default_factory=list)
+    screw_count: int = Field(default=0, ge=0)
+    warnings: list[str] = Field(default_factory=list)
+    confidence: float = Field(ge=0, le=1)
+
+
+class Refine(Strict):
+    FILENAME: ClassVar[str] = "refine.json"
+
+    steps: list[RefinedStep] = Field(default_factory=list)
+    skipped: list[str] = Field(default_factory=list)  # why a selected step was not refined
+
+
+# Sent as text.format for the refine pass (strict: every key required, no extra keys).
+REFINE_JSON_SCHEMA: dict[str, Any] = _object(
+    {
+        "start_s": {"type": "number"},
+        "end_s": {"type": "number"},
+        "instruction": {"type": "string"},
+        "action": {"type": "string", "enum": ACTIONS},
+        "removes": _STRINGS,
+        "screw_count": {"type": "integer"},
+        "warnings": _STRINGS,
+        "confidence": {"type": "number"},
+    }
+)
