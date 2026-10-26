@@ -391,8 +391,53 @@ class Plan(Strict):
 class StepMedia(Strict):
     index: int = Field(ge=1)
     keyframe_s: float = Field(ge=0)
-    image: str
+    image: str  # display JPEG (long side <= 1600 px)
     clip: str | None = None
+    still: str | None = None  # native-resolution PNG from the original, for SAM
+
+
+class NormBox(Strict):
+    """A box in normalized image coordinates (0..1) of the still it was found on."""
+
+    x: float = Field(ge=0, le=1)
+    y: float = Field(ge=0, le=1)
+    w: float = Field(gt=0, le=1)
+    h: float = Field(gt=0, le=1)
+
+
+class ScrewRecord(Strict):
+    """One screw that was there before the step and gone after it."""
+
+    id: str  # "S1", "S2"... unique in the guide
+    number: int = Field(ge=1)  # 1.. within its step, in reading order
+    box: NormBox  # on the step's keyframe still
+    confidence: float | None = Field(default=None, ge=0, le=1)
+
+
+class PartHighlight(Strict):
+    concept: str
+    box: NormBox
+    confidence: float | None = Field(default=None, ge=0, le=1)
+
+
+class StepPerception(Strict):
+    index: int = Field(ge=1)
+    part: PartHighlight | None = None
+    screws_before: int = Field(default=0, ge=0)
+    screws_after: int = Field(default=0, ge=0)
+    removed: list[ScrewRecord] = Field(default_factory=list)
+    overlay: str | None = None  # display JPEG with the part and the numbered screws
+    sam_calls: int = Field(default=0, ge=0)
+    notes: list[str] = Field(default_factory=list)
+
+
+class Perception(Strict):
+    """What SAM 3.1 found on the stills: the part to touch and the screw ledger."""
+
+    FILENAME: ClassVar[str] = "perception.json"
+
+    steps: list[StepPerception] = Field(default_factory=list)
+    sam_calls: int = Field(default=0, ge=0)
 
 
 class Frames(Strict):
