@@ -254,3 +254,137 @@ def test_delete_file_ignores_404(tmp_path):
     client = MetaClient(make_settings(tmp_path), client=fake, sleep=lambda _: None)
     client.delete_file("file-missing")
     assert fake.files.calls == 1
+
+
+def make_wav(path: Path) -> Path:
+    import wave
+
+    with wave.open(str(path), "wb") as f:
+        f.setnchannels(1)
+        f.setsampwidth(2)
+        f.setframerate(24000)
+        f.writeframes(b"\0" * 24000 * 2)
+    return path
+
+
+ASR_PAYLOAD = {
+    "sessionId": "sess-1",
+    "transcript": "Step one remove the two screws now",
+    "audioDurationMs": 42500,
+    "turns": [{"turnId": 1, "startMs": 1200, "endMs": 3400, "transcript": "Step one"}],
+}
+
+
+class FakeHttp:
+    """Fake httpx client: post returns canned responses or raises."""
+
+    def __init__(self, results):
+        self.results = list(results)
+        self.posts: list = []
+
+    def post(self, url, **kwargs):
+        self.posts.append((url, kwargs))
+        item = self.results.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        status, payload = item
+        return httpx.Response(status, json=payload, request=httpx.Request("POST", url))
+
+
+def make_asr_client(tmp_path, results, **kwargs):
+    settings = make_settings(tmp_path, **kwargs)
+    fake_http = FakeHttp(results)
+    client = MetaClient(settings, sleep=lambda _: None, http=fake_http)
+    return client, fake_http
+
+
+def test_transcribe_success_posts_multipart_and_records_spend(tmp_path):
+    wav = make_wav(tmp_path / "audio.wav")
+    client, fake_http = make_asr_client(tmp_path, [(200, ASR_PAYLOAD)])
+
+    result = client.transcribe(wav, language_bias=["Spanish", "English"], keywords=["step", "paso"])
+
+    assert result["sessionId"] == "sess-1"
+    assert len(fake_http.posts) == 1
+    url, kwargs = fake_http.posts[0]
+    assert url.endswith("/asr/transcribe")
+    assert kwargs["headers"]["Accept"] == "application/json"
+    assert kwargs["headers"]["Authorization"] == "Bearer test-key"
+    request_part = json.loads(kwargs["files"]["request"][1])
+    assert request_part == {
+        "model": "muse-voice-transcribe-1.0",
+        "audioEncoding": "WAV",
+        "mode": "ENDPOINTING",
+        "languageBias": ["Spanish", "English"],
+        "keywords": ["step", "paso"],
+    }
+    assert kwargs["files"]["request"][2] == "application/json"
+    assert kwargs["files"]["audio"][0] == "audio.wav"
+    assert kwargs["files"]["audio"][2] == "audio/wav"
+    with open(tmp_path / "spend.json", encoding="utf-8") as f:
+        data = json.load(f)
+    assert data["calls"] == 1
+    assert data["total_usd"] == pytest.approx(asr_cost(42.5))
+    assert data["by_model"]["muse-voice-transcribe-1.0"] == pytest.approx(asr_cost(42.5))
+
+
+def test_transcribe_429_then_success(tmp_path):
+    wav = make_wav(tmp_path / "audio.wav")
+    client, fake_http = make_asr_client(
+        tmp_path, [(429, {"error": "slow down"}), (200, ASR_PAYLOAD)]
+    )
+    result = client.transcribe(wav)
+    assert result["sessionId"] == "sess-1"
+    assert len(fake_http.posts) == 2
+
+
+def test_transcribe_400_raises_meta_error(tmp_path):
+    wav = make_wav(tmp_path / "audio.wav")
+    client, fake_http = make_asr_client(tmp_path, [(400, {"error": "bad audio"})])
+    with pytest.raises(MetaError):
+        client.transcribe(wav)
+    assert len(fake_http.posts) == 1
+
+
+def test_transcribe_read_timeout_then_success(tmp_path):
+    wav = make_wav(tmp_path / "audio.wav")
+    url = "https://api.meta.ai/v1/asr/transcribe"
+    timeout = httpx.ReadTimeout("timed out", request=httpx.Request("POST", url))
+    client, fake_http = make_asr_client(tmp_path, [timeout, (200, ASR_PAYLOAD)])
+    result = client.transcribe(wav)
+    assert result["sessionId"] == "sess-1"
+    assert len(fake_http.posts) == 2
+
+
+def test_transcribe_rejects_big_file(tmp_path):
+    big = tmp_path / "audio.wav"
+    big.write_bytes(b"\0" * (33 * 1024 * 1024))
+    client, fake_http = make_asr_client(tmp_path, [(200, ASR_PAYLOAD)])
+    with pytest.raises(ValueError):
+        client.transcribe(big)
+    assert fake_http.posts == []
+
+
+def test_transcribe_budget_exceeded_no_post(tmp_path):
+    wav = make_wav(tmp_path / "audio.wav")
+    SpendCounter(tmp_path / "spend.json", 1.0).add("muse-spark-1.3", 1.0)
+    client, fake_http = make_asr_client(tmp_path, [(200, ASR_PAYLOAD)], budget_usd=1.0)
+    with pytest.raises(BudgetExceeded):
+        client.transcribe(wav)
+    assert fake_http.posts == []
+
+
+def test_transcribe_never_logs_authorization(tmp_path, caplog):
+    settings = Settings(
+        model_api_key="test-secret-key-xyz",
+        data_dir=tmp_path,
+        budget_usd=120.0,
+    )
+    wav = make_wav(tmp_path / "audio.wav")
+    fake_http = FakeHttp([(429, {"error": "slow down"}), (200, ASR_PAYLOAD)])
+    client = MetaClient(settings, sleep=lambda _: None, http=fake_http)
+    with caplog.at_level("DEBUG"):
+        result = client.transcribe(wav)
+    assert result["sessionId"] == "sess-1"
+    assert "test-secret-key-xyz" not in caplog.text
+    assert ASR_PAYLOAD["transcript"] not in caplog.text
