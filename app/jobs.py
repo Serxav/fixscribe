@@ -1,16 +1,15 @@
 """Job folders in data/jobs/<id>/ and their status.json, always written atomically."""
 
 import fcntl
-import json
-import os
 import re
-import tempfile
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
+
+from app.artifacts import write_json_atomic
 
 JOBS_DIR = Path("data/jobs")
 JOB_ID_PATTERN = re.compile(r"[0-9a-f]{12}")
@@ -29,18 +28,6 @@ class JobStatus(BaseModel):
 
 def now_iso() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
-
-
-def write_json_atomic(path: Path, data: Any) -> None:
-    """Write JSON to a temp file in the same folder, then rename it over the target."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        "w", dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False
-    ) as tmp:
-        json.dump(data, tmp, indent=2, ensure_ascii=False)
-        tmp.flush()
-        os.fsync(tmp.fileno())
-    os.replace(tmp.name, path)
 
 
 def job_dir(job_id: str, jobs_dir: Path = JOBS_DIR) -> Path:

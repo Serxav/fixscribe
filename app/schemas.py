@@ -1,6 +1,6 @@
 """Guide and Step models shared by the pipeline, the web app and the export."""
 
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -95,6 +95,8 @@ class InspectorEntry(Strict):
 
 
 class Guide(Strict):
+    FILENAME: ClassVar[str] = "guide.json"
+
     title: str
     device: str
     summary: str = ""
@@ -177,6 +179,7 @@ class DraftStep(BaseModel):
 class Analysis(BaseModel):
     """The JSON that the analyze stage asks Muse Spark for (saved as analysis.json)."""
 
+    FILENAME: ClassVar[str] = "analysis.json"
     model_config = ConfigDict(extra="ignore")
 
     title: str = "Repair guide"
@@ -264,3 +267,131 @@ ANALYSIS_JSON_SCHEMA: dict[str, Any] = _object(
         },
     }
 )
+
+
+# --- Job artifacts --------------------------------------------------------------------------
+# Every file a pipeline stage writes has a model here, with its file name. Stages read and write
+# them only through app/artifacts.py. Each stage owns exactly one artifact.
+
+
+class SourceVideo(Strict):
+    """What the uploaded file really is (before any conversion)."""
+
+    filename: str
+    width: int = Field(gt=0)  # display size, after the rotation tag
+    height: int = Field(gt=0)
+    rotation: int = 0
+    fps: float = Field(default=0.0, ge=0)
+    vfr: bool = False
+    codec: str = ""
+    pix_fmt: str = ""
+    color_transfer: str = ""
+    color_primaries: str = ""
+    hdr: bool = False
+    duration_s: float = Field(gt=0)
+
+
+class IngestInfo(Strict):
+    FILENAME: ClassVar[str] = "ingest.json"
+
+    duration_s: float = Field(gt=0)
+    width: int = Field(gt=0)  # of video.mp4, the working proxy
+    height: int = Field(gt=0)
+    has_audio: bool
+    fps: float = Field(default=30.0, gt=0)
+    source: SourceVideo | None = None
+
+
+class Turn(Strict):
+    start_s: float = Field(ge=0)
+    end_s: float = Field(ge=0)
+    text: str
+
+
+class Transcript(Strict):
+    FILENAME: ClassVar[str] = "transcript.json"
+
+    mode: Literal["narrated", "silent"]
+    duration_s: float = Field(default=0.0, ge=0)
+    transcript: str = ""
+    turns: list[Turn] = Field(default_factory=list)
+
+
+class Segment(Strict):
+    start_s: float = Field(ge=0)
+    end_s: float = Field(ge=0)
+
+
+class Scenes(Strict):
+    FILENAME: ClassVar[str] = "scenes.json"
+
+    source: Literal["voice", "none"]
+    cuts: list[float] = Field(default_factory=list)
+    segments: list[Segment] = Field(default_factory=list)
+
+
+class Candidate(Strict):
+    t: float = Field(ge=0)
+    kind: Literal["pause", "scene"]
+    score: float = Field(ge=0, le=1)
+
+
+class Signals(Strict):
+    FILENAME: ClassVar[str] = "signals.json"
+
+    fps: float = Field(gt=0)
+    duration_s: float = Field(ge=0)
+    motion: list[list[float]] = Field(default_factory=list)  # [t, energy]
+    scene: list[list[float]] = Field(default_factory=list)  # [t, score]
+    candidates: list[Candidate] = Field(default_factory=list)
+
+
+class Plan(Strict):
+    """Final steps and times, before media: written by the plan stage."""
+
+    FILENAME: ClassVar[str] = "plan.json"
+
+    title: str
+    device: str
+    summary: str = ""
+    difficulty: Literal["easy", "medium", "hard"] = "medium"
+    estimated_minutes: int = Field(default=0, ge=0)
+    mode: Literal["narrated", "silent"]
+    duration_s: float = Field(gt=0)
+    tools: list[str] = Field(default_factory=list)
+    parts: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    steps: list[Step] = Field(default_factory=list)
+    checks: list[str] = Field(default_factory=list)
+
+
+class StepMedia(Strict):
+    index: int = Field(ge=1)
+    keyframe_s: float = Field(ge=0)
+    image: str
+    clip: str | None = None
+
+
+class Frames(Strict):
+    FILENAME: ClassVar[str] = "frames.json"
+
+    steps: list[StepMedia] = Field(default_factory=list)
+
+
+class StageRecord(Strict):
+    status: Literal["done", "failed", "skipped"]
+    version: str
+    started_at: str
+    seconds: float = Field(ge=0)
+    usd: float = Field(default=0.0, ge=0)
+    error: str | None = None
+
+
+class Manifest(Strict):
+    """How this job was produced: one record per stage, in order."""
+
+    FILENAME: ClassVar[str] = "manifest.json"
+
+    stages: dict[str, StageRecord] = Field(default_factory=dict)
+    total_seconds: float = Field(default=0.0, ge=0)
+    total_usd: float = Field(default=0.0, ge=0)
