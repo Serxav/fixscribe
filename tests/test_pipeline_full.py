@@ -135,7 +135,8 @@ def test_full_pipeline_builds_a_guide(tmp_path, fake_meta):
     # Every stage left a record: version, time and cost.
     manifest = artifacts.load(folder, Manifest)
     assert list(manifest.stages) == [
-        "ingest", "transcribe", "signals", "scenes", "analyze", "plan", "frames", "publish",
+        "ingest", "transcribe", "signals", "scenes", "analyze", "fusion", "plan", "frames",
+        "publish",
     ]  # fmt: skip
     assert all(record.status == "done" for record in manifest.stages.values())
     assert guide.steps[0].image == "steps/01.jpg"
