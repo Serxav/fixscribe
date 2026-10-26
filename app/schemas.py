@@ -327,6 +327,8 @@ class Scenes(Strict):
 
     source: Literal["voice", "none"]
     cuts: list[float] = Field(default_factory=list)
+    # The whole spoken turn that contains each cut word: the word is somewhere inside it.
+    cut_intervals: list[Segment] = Field(default_factory=list)
     segments: list[Segment] = Field(default_factory=list)
 
 
@@ -344,6 +346,27 @@ class Signals(Strict):
     motion: list[list[float]] = Field(default_factory=list)  # [t, energy]
     scene: list[list[float]] = Field(default_factory=list)  # [t, score]
     candidates: list[Candidate] = Field(default_factory=list)
+
+
+class FusionStep(Strict):
+    index: int = Field(ge=1)
+    start_s: float = Field(ge=0)
+    end_s: float = Field(ge=0)
+    start_source: Literal["voice", "pause", "scene", "spark"]
+    end_source: Literal["voice", "pause", "scene", "spark"]
+    start_shift_s: float = 0.0
+    end_shift_s: float = 0.0
+    agreement: float = Field(ge=0, le=1)
+    confidence: float = Field(ge=0, le=1)
+
+
+class Fusion(Strict):
+    """Step boundaries after snapping Spark's times to voice and visual evidence."""
+
+    FILENAME: ClassVar[str] = "fusion.json"
+
+    candidates: int = Field(default=0, ge=0)
+    steps: list[FusionStep] = Field(default_factory=list)
 
 
 class Plan(Strict):
