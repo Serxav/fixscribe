@@ -56,7 +56,9 @@ def apply_refine(drafts: list[DraftStep], refine: Refine | None) -> list[DraftSt
     out = []
     for i, draft in enumerate(drafts, start=1):
         r = refined.get(i)
-        if r is None or r.end_s <= r.start_s:
+        # Pass 2 only replaces a step when it is at least as sure as what we already have; an
+        # answer that failed its sanity checks comes back with low confidence and is ignored.
+        if r is None or r.end_s <= r.start_s or r.confidence < draft.confidence:
             out.append(draft)
             continue
         out.append(
@@ -159,9 +161,9 @@ def run(job_dir: Path, settings: Any) -> Plan:
     ingest = artifacts.load(job_dir, IngestInfo)
     transcript = artifacts.load_optional(job_dir, Transcript)
     fusion = artifacts.load_optional(job_dir, Fusion)
-    plan = build_plan(
-        analysis, fusion, ingest.duration_s, transcript.mode if transcript else "silent"
-    )
+    refine = artifacts.load_optional(job_dir, Refine)
+    mode = transcript.mode if transcript else "silent"
+    plan = build_plan(analysis, fusion, ingest.duration_s, mode, refine)
     if not plan.steps:
         raise PlanError("no repair step had a usable time range in the video")
     artifacts.save(job_dir, plan)

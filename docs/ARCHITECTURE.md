@@ -1,50 +1,41 @@
-# FixScribe architecture
+# FixScribe architecture (backend v2)
 
-FixScribe turns a phone repair video into a step-by-step repair guide. It always watches the
-video; if the technician narrates, it also listens.
+A phone video of a repair goes in; a verified step-by-step guide comes out. The backend is a
+pipeline of small stages. **Each stage reads typed artifacts and writes exactly one artifact** in
+the job folder; nothing is shared in memory and nothing is overwritten by another stage.
 
-## Four pieces
+## Pieces
+| Piece | Code | Job |
+|---|---|---|
+| Web app | `app/main.py`, `app/routes/` | upload, progress API, guide page, media files |
+| Job store | `app/jobs.py` | one folder per job `data/jobs/<id>/`, `status.json` (locked, atomic), stale-job detection |
+| Runner | `app/pipeline/runner.py` | one process per job, stages in order, `manifest.json` (version, seconds, dollars per stage) |
+| Artifacts | `app/schemas.py`, `app/artifacts.py` | one Pydantic model per file, one atomic load/save |
+| Meta door | `app/meta_client.py` | the only code that talks to Meta: Spark, Voice, SAM, Files; retries, global and per-job budget, spend log |
+| Evaluation | `eval/score.py`, `eval/run_eval.py` | labelled videos → step F1, boundaries, screws, seconds, dollars |
 
-1. **Web app** (`app/main.py`, `app/routes/`, `web/`): FastAPI + Jinja2 + Tailwind CDN + plain
-   JavaScript. Mobile-first: record or upload, progress bar, guide view, edit or regenerate a step,
-   export Markdown, "Ask FixScribe".
-2. **Job store** (`app/jobs.py`): no database. One folder per job in `data/jobs/<id>/` with the
-   input video, intermediate files and `status.json`. Every file is written atomically (temp file,
-   then rename).
-3. **Pipeline** (`app/pipeline/`, driven by `runner.py`): one process per job, stages in order.
-   A failing stage marks the job as failed with a clear message; it never crashes the server.
-4. **Meta client** (`app/meta_client.py`): the only door to Meta. Every call to Muse Spark,
-   Muse Wonder, SAM 3.1 or Muse Voice goes through it. It retries with growing waits on 429 and
-   timeouts and counts spend in `data/spend.json`. It refuses new calls once `BUDGET_USD` is
-   reached.
+## Stages (in order)
+| # | Stage | Reads | Writes | Uses | If it fails |
+|---|---|---|---|---|---|
+| 1 | ingest | `original.*` | `ingest.json`, `video.mp4` (CFR 30 fps, ≤720 p, SDR BT.709), `audio.wav` | ffmpeg | job fails (clear message) |
+| 2 | transcribe | `audio.wav` | `transcript.json` (turns with times) | Muse Voice | warning, video treated as silent |
+| 3 | signals | `video.mp4` | `signals.json` (motion with shake compensation, scene changes, candidates) | OpenCV | warning |
+| 4 | scenes | transcript, ingest | `scenes.json` (voice cuts as intervals) | — | job fails |
+| 5 | analyze | `video.mp4`, transcript, scenes | `analysis.json` (+ `analysis_raw.txt`) | Muse Spark, strict JSON schema | job fails |
+| 6 | fusion | analysis, scenes, signals | `fusion.json` (snapped boundaries, source, agreement, confidence) | — | warning |
+| 7 | refine | analysis, fusion, transcript, proxy | `refine.json` (uncertain steps re-read on timecoded clips) | Muse Spark | warning |
+| 8 | plan | analysis, fusion, refine, ingest, transcript | `plan.json` (final steps and times; every change logged) | — | job fails |
+| 9 | frames | plan, signals, proxy, original | `frames.json`, `stills/NN.png` (native), `steps/NN.jpg`, `steps/NN.mp4` | OpenCV, ffmpeg | warning |
+| 10 | perception | plan, frames, original | `perception.json` (part box, screw ledger), `steps/NN_overlay.jpg` | SAM 3.1 | warning |
+| 11 | publish | plan, frames, perception | `guide.json` (+ reassembly, checks) | — | job fails |
 
-```
-phone ──► web app ──► job store ◄──► pipeline runner ──► meta_client ──► Meta API
-                         ▲                                   │
-                         └──────── data/spend.json ◄─────────┘
-```
-
-## Thirteen phases
-
-| # | Phase | Module | Uses Meta |
-|---|-------|--------|-----------|
-| 1 | Upload and validate (mp4, length <= `MAX_VIDEO_SECONDS`) | `routes/upload.py`, `jobs.py` | no |
-| 2 | Ingest: probe the video, extract WAV mono 16-bit 16 kHz | `pipeline/ingest.py` | no |
-| 3 | Transcribe if there is speech (narrated mode) | `pipeline/transcribe.py` | Muse Voice |
-| 4 | Step cuts from the keyword "step" / "paso" and scene changes | `pipeline/scenes.py` | no |
-| 5 | Analyze video (+ transcript) into draft steps with seconds | `pipeline/analyze.py` | Muse Spark |
-| 6 | Sharpest keyframe per step (±1 s) | `pipeline/frames.py` | no |
-| 7 | 6-second silent loop clip per step | `pipeline/frames.py` | no |
-| 8 | Part highlight on the keyframe | `pipeline/segment.py` | SAM 3.1 |
-| 9 | Numbered screw map | `pipeline/segment.py` | SAM 3.1 |
-| 10 | Inspector: check and fix weak steps (max 5 steps, 6 tool calls each) | `pipeline/inspector.py` | Muse Wonder |
-| 11 | Reassembly guide and screw count check | `pipeline/assembly.py` | Muse Spark |
-| 12 | Validate and save `guide.json` (`app/schemas.py`) | `pipeline/runner.py` | no |
-| 13 | Serve: guide view, edit, export Markdown, Ask FixScribe | `routes/`, `pipeline/ask.py` | Muse Spark |
+The runner deletes a stage's previous output before it runs, so a failed optional stage can never
+leave stale data behind, and it records every stage in `manifest.json`.
 
 ## Rules that shape the design
-
-- Meta models only, always through `meta_client.py`. Tests mock it.
-- Job files are written atomically. One process per job.
-- Seconds are validated by the schemas: `start_s < end_s`, keyframe inside the step, steps inside
-  the video.
+- Meta models only, always through `meta_client.py`; tests never reach the network (`tests/conftest.py`).
+- Every number shown to a technician has its evidence: times from voice/vision/Spark with their
+  source, screws from Spark's count **and** SAM's before/after ledger; what is not verified is said
+  so in `guide.checks`.
+- Video is normalized once (ingest); vision that needs pixels (keyframes, SAM) uses the **native
+  original**, not the proxy.

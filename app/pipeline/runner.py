@@ -72,8 +72,10 @@ def default_stages() -> list[Stage]:
         frames,
         fusion,
         ingest,
+        perception,
         plan,
         publish,
+        refine,
         scenes,
         signals,
         transcribe,
@@ -86,8 +88,10 @@ def default_stages() -> list[Stage]:
         stage_of("scenes", scenes, "scenes.json", weight=0.2),
         stage_of("analyze", analyze, "analysis.json", weight=6.0),
         stage_of("fusion", fusion, "fusion.json", weight=0.1, optional=True),
+        stage_of("refine", refine, "refine.json", weight=2.0, optional=True),
         stage_of("plan", plan, "plan.json", weight=0.1),
         stage_of("frames", frames, "frames.json", weight=1.0, optional=True),
+        stage_of("perception", perception, "perception.json", weight=1.5, optional=True),
         stage_of("publish", publish, "guide.json", weight=0.1),
     ]
 

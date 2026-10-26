@@ -10,7 +10,7 @@ import pytest
 from app import artifacts
 from app.config import Settings
 from app.jobs import create_job
-from app.pipeline import analyze, transcribe
+from app.pipeline import analyze, perception, refine, transcribe
 from app.pipeline.publish import UNVERIFIED_SCREWS
 from app.pipeline.runner import default_stages, run_job
 from app.schemas import Guide, Manifest
@@ -62,6 +62,18 @@ ANSWER = {
 }
 
 
+REFINED = {
+    "start_s": 0.6,
+    "end_s": 4.8,
+    "instruction": "Remove the four screws on the back cover.",
+    "action": "unscrew",
+    "removes": ["back cover"],
+    "screw_count": 4,
+    "warnings": [],
+    "confidence": 0.95,
+}
+
+
 class FakeMeta:
     """Stands in for MetaClient in every stage that talks to Meta."""
 
@@ -80,7 +92,13 @@ class FakeMeta:
 
     def respond(self, **kwargs):
         FakeMeta.calls.append(("respond", kwargs["input"][0]["content"][0]["text"]))
+        if kwargs["text"]["format"]["name"] == "refined_step":  # Spark pass 2 on one step
+            return SimpleNamespace(output_text=json.dumps(REFINED))
         return SimpleNamespace(output_text=json.dumps(ANSWER))
+
+    def segment(self, image_path, concept, max_side=1280):
+        FakeMeta.calls.append(("segment", concept))
+        return [], (100, 100)  # SAM finds nothing: the guide must say screws are unverified
 
     def delete_file(self, file_id):
         FakeMeta.calls.append(("delete", file_id))
@@ -91,6 +109,8 @@ def fake_meta(monkeypatch):
     FakeMeta.calls = []
     monkeypatch.setattr(transcribe, "MetaClient", FakeMeta)
     monkeypatch.setattr(analyze, "MetaClient", FakeMeta)
+    monkeypatch.setattr(refine, "MetaClient", FakeMeta)
+    monkeypatch.setattr(perception, "MetaClient", FakeMeta)
     return FakeMeta
 
 
@@ -135,10 +155,13 @@ def test_full_pipeline_builds_a_guide(tmp_path, fake_meta):
     # Every stage left a record: version, time and cost.
     manifest = artifacts.load(folder, Manifest)
     assert list(manifest.stages) == [
-        "ingest", "transcribe", "signals", "scenes", "analyze", "fusion", "plan", "frames",
-        "publish",
+        "ingest", "transcribe", "signals", "scenes", "analyze", "fusion", "refine", "plan",
+        "frames", "perception", "publish",
     ]  # fmt: skip
     assert all(record.status == "done" for record in manifest.stages.values())
+    # Pass 2 looked again at the screw step and its answer reached the guide.
+    assert guide.steps[0].instruction == "Remove the four screws on the back cover."
+    assert any(kind == "segment" and concept == "screw" for kind, concept in fake_meta.calls)
     assert guide.steps[0].image == "steps/01.jpg"
     assert (folder / guide.steps[0].clip).exists()
 

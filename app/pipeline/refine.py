@@ -47,7 +47,6 @@ MAX_STEPS = 4
 MAX_CLIP_S = 30.0
 CLIP_PAD_S = 2.0
 CONFIDENCE_THRESHOLD = 0.6
-OUT_OF_WINDOW_CONFIDENCE = 0.4
 MAX_OUTPUT_TOKENS = 8000
 REFINE_TIMEOUT_S = 300.0
 
@@ -321,10 +320,8 @@ def refine_step(
 ) -> RefinedStep:
     """Ask Spark about one timecoded clip and sanity-check its answer.
 
-    The uploaded file is always deleted, even when the call fails. Times
-    outside the clip window (or an inverted range) are not trusted: the
-    fused times are kept and the confidence is capped at
-    ``OUT_OF_WINDOW_CONFIDENCE``. The other refined fields still apply.
+    The uploaded file is always deleted, even when the call fails. An answer whose times fall
+    outside the clip window (or are inverted) raises RefineError: the caller skips the step.
     """
     a, b = float(window[0]), float(window[1])
     prompt = build_prompt(draft, fused_start, fused_end, list(turns or []))
@@ -343,13 +340,9 @@ def refine_step(
     refined = parse_refined(response.output_text or "", index)
     inside = a - 1e-6 <= refined.start_s and refined.end_s <= b + 1e-6
     if not inside or refined.end_s <= refined.start_s:
-        refined = refined.model_copy(
-            update={
-                "start_s": float(fused_start),
-                "end_s": float(fused_end),
-                "confidence": min(float(refined.confidence), OUT_OF_WINDOW_CONFIDENCE),
-            }
-        )
+        # Spark described a moment outside the clip it was shown: its text cannot be trusted
+        # for this step either, so the whole answer is dropped and the step stays as it was.
+        raise RefineError("answer outside the clip")
     return refined
 
 
