@@ -3,15 +3,17 @@
 import json
 import shutil
 import subprocess
-import sys
 
 import pytest
 
 from app.config import Settings
 from app.jobs import create_job, read_status
-from app.pipeline.runner import default_stages, run_job
+from app.pipeline import ingest, runner
+from app.pipeline.runner import Stage, run_job
 
 pytestmark = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="needs ffmpeg")
+
+INGEST_ONLY = [Stage("ingest", ingest.run)]
 
 
 def make_upload(folder, seconds=2, size="1080x1920"):
@@ -35,7 +37,7 @@ def test_phone_video_goes_through_ingest(tmp_path):
     jobs = tmp_path / "jobs"
     job_id = create_job(jobs).job_id
     make_upload(jobs / job_id)
-    status = run_job(job_id, settings(tmp_path), default_stages(), jobs)
+    status = run_job(job_id, settings(tmp_path), INGEST_ONLY, jobs)
     assert status.state == "done", status.error
     folder = jobs / job_id
     info = json.loads((folder / "ingest.json").read_text())
@@ -47,22 +49,18 @@ def test_too_long_video_fails_with_clear_message(tmp_path):
     jobs = tmp_path / "jobs"
     job_id = create_job(jobs).job_id
     make_upload(jobs / job_id, seconds=3)
-    status = run_job(job_id, settings(tmp_path, max_video_seconds=1), default_stages(), jobs)
+    status = run_job(job_id, settings(tmp_path, max_video_seconds=1), INGEST_ONLY, jobs)
     assert status.state == "failed"
     assert status.error.startswith("ingest failed: video too long")
 
 
-def test_runner_command_line(tmp_path):
+def test_runner_command_line(tmp_path, monkeypatch, capsys):
     jobs = tmp_path / "jobs"
     job_id = create_job(jobs).job_id
     make_upload(jobs / job_id)
-    result = subprocess.run(
-        [sys.executable, "-m", "app.pipeline.runner", job_id, str(jobs)],
-        capture_output=True,
-        text=True,
-        timeout=120,
-        cwd=tmp_path,  # no .env is loaded from here
-        env={"PATH": "/usr/bin:/bin:/opt/homebrew/bin", "DATA_DIR": str(tmp_path)},
-    )
-    assert result.returncode == 0, result.stdout + result.stderr
+    monkeypatch.setattr(runner, "default_stages", lambda: INGEST_ONLY)
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    assert runner.main([job_id, str(jobs)]) == 0
     assert read_status(job_id, jobs).state == "done"
+    assert runner.main([]) == 2
+    assert runner.main(["../etc", str(jobs)]) == 1

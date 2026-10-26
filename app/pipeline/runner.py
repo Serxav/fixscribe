@@ -35,11 +35,18 @@ class Stage:
 
 
 def default_stages() -> list[Stage]:
-    """The stages that exist so far, in pipeline order (see docs/ARCHITECTURE.md)."""
-    from app.pipeline import ingest
+    """The stages that exist so far, in pipeline order (see docs/ARCHITECTURE.md).
+
+    Weights are rough shares of the waiting time, so the progress bar moves evenly.
+    """
+    from app.pipeline import analyze, guide, ingest, scenes, transcribe
 
     return [
         Stage("ingest", ingest.run, weight=1.0),
+        Stage("transcribe", transcribe.run, weight=1.0),
+        Stage("scenes", scenes.run, weight=0.2),
+        Stage("analyze", analyze.run, weight=6.0),
+        Stage("guide", guide.run, weight=0.2),
     ]
 
 
