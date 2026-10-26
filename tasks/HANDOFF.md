@@ -1,12 +1,15 @@
 # HANDOFF — read this when Claude Code is not available
 
-## State (end of day 1, 2026-10-26)
-- `main` has the whole pipeline, the audit fixes, and the web app: home, job progress and guide page (010). 201 tests pass.
-- Day 2 plan: Sergi records a real repair video and runs `scripts/run_video.py` (first real Meta call), then SAM screw map, inspector, Ask, export.
-- Muse Code has spent about 6.12 $ (muse-wonder-1.0 is the default model since task 009).
+## State (end of day 1, 2026-10-26, late night)
+- `main`: pipeline v1 (ingest → transcribe → scenes → analyze → guide → frames), web v1, audit fixes,
+  visual signals stage (not wired yet), docs: ALGORITHM v2, DESIGN v2, ENGINEERING_STANDARD. 219 tests.
+- Not merged: `feat/web-v2` (task 011, 8 review points) and `feat/sam-client` (task 014, unreviewed).
+- `tasks/AUDIT_FOUNDATIONS.md` is the plan: foundations first (media ladder, artifacts, honest screw
+  claim, signals v2, fusion, perception, eval), then web round 2 and the inspector.
+- Muse Code has spent about 11.97 $ (muse-wonder-1.0 default; cap 40 $).
 
 ## Queue for Muse Code (do them in this order, one after another)
-- (empty: wait for Claude Code)
+- (empty: PAUSED by Sergi until the foundations plan is approved)
 
 ## Rules for this mode
 - Before each task, read `AGENTS.md` and `docs/HACKATHON_BRIEF.md`.
