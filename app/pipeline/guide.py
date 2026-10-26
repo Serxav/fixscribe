@@ -53,7 +53,7 @@ def to_step(index: int, draft: DraftStep) -> Step:
         removes=draft.removes,
         screws=ScrewMap(count=draft.screw_count) if draft.screw_count else None,
         warnings=draft.warnings,
-        evidence=draft.evidence,
+        evidence=[item for item in draft.evidence if item.t_s <= draft.end_s + 1.0],
         confidence=draft.confidence,
         review="needs_review" if draft.confidence < LOW_CONFIDENCE else "auto",
     )
