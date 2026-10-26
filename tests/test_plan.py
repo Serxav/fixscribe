@@ -135,3 +135,31 @@ def test_run_fails_clearly(tmp_path):
     job(tmp_path, draft("after the end", 40, 50))
     with pytest.raises(PlanError, match="usable time range"):
         run(tmp_path, settings=None)
+
+
+def test_refine_overrides_the_steps_it_looked_at():
+    from app.schemas import Refine, RefinedStep
+
+    drafts = [draft("open", 0, 10, screw_count=4, confidence=0.4), draft("lift", 10, 20)]
+    refine = Refine(
+        steps=[
+            RefinedStep(index=1, start_s=1.5, end_s=9.0, instruction="Remove the 3 screws.",
+                        action="unscrew", removes=["back cover"], screw_count=3, warnings=[],
+                        confidence=0.85)
+        ]
+    )  # fmt: skip
+    plan = build_plan(analysis(*drafts), None, 30, "narrated", refine)
+    first, second = plan.steps
+    assert (first.start_s, first.end_s, first.screws.count) == (1.5, 9.0, 3)
+    assert first.instruction == "Remove the 3 screws."
+    assert first.review == "auto"  # confidence went from 0.4 to 0.85
+    assert (second.start_s, second.title) == (10.0, "lift")
+
+
+def test_inverted_refine_answer_is_ignored():
+    from app.schemas import Refine, RefinedStep
+
+    refine = Refine(steps=[RefinedStep(index=1, start_s=9, end_s=2, instruction="x",
+                                       action="other", confidence=0.9)])  # fmt: skip
+    plan = build_plan(analysis(draft("a", 0, 10)), None, 30, "silent", refine)
+    assert (plan.steps[0].start_s, plan.steps[0].end_s) == (0.0, 10.0)
