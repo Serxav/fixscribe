@@ -39,7 +39,7 @@ def default_stages() -> list[Stage]:
 
     Weights are rough shares of the waiting time, so the progress bar moves evenly.
     """
-    from app.pipeline import analyze, guide, ingest, scenes, transcribe
+    from app.pipeline import analyze, frames, guide, ingest, scenes, transcribe
 
     return [
         Stage("ingest", ingest.run, weight=1.0),
@@ -47,6 +47,7 @@ def default_stages() -> list[Stage]:
         Stage("scenes", scenes.run, weight=0.2),
         Stage("analyze", analyze.run, weight=6.0),
         Stage("guide", guide.run, weight=0.2),
+        Stage("frames", frames.run, weight=1.0),
     ]
 
 
