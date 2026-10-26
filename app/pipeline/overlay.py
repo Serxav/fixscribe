@@ -103,48 +103,147 @@ def draw_part(image: Any, detection: Detection, size_sent: tuple[int, int]) -> A
     return result
 
 
-def _box_of(item: Any) -> tuple[float, float, float, float]:
+def _is_norm_box(item: Any) -> bool:
+    return all(hasattr(item, name) for name in ("x", "y", "w", "h"))
+
+
+def _pixel_box(
+    item: Any, image_shape: tuple[int, ...], size_sent: tuple[int, int] | None
+) -> tuple[int, int, int, int]:
+    """Resolve a screw box to pixel ``(left, top, right, bottom)`` on the image.
+
+    Accepts a normalized box (``x, y, w, h`` attributes, or an object whose
+    ``box`` holds one), a detection/pixel box in the ``size_sent`` image, or a
+    plain pixel box in image coordinates. Normalized tuples (all values in
+    0..1) are read as ``(left, top, right, bottom)`` fractions of the image.
+    """
+    img_h, img_w = image_shape[:2]
+    carrier = item
     box = getattr(item, "box", item)
-    return (float(box[0]), float(box[1]), float(box[2]), float(box[3]))
+    if _is_norm_box(box):
+        left = float(box.x) * img_w
+        top = float(box.y) * img_h
+        return (
+            int(round(left)),
+            int(round(top)),
+            int(round(left + float(box.w) * img_w)),
+            int(round(top + float(box.h) * img_h)),
+        )
+    if _is_norm_box(carrier):
+        left = float(carrier.x) * img_w
+        top = float(carrier.y) * img_h
+        return (
+            int(round(left)),
+            int(round(top)),
+            int(round(left + float(carrier.w) * img_w)),
+            int(round(top + float(carrier.h) * img_h)),
+        )
+    values = (float(box[0]), float(box[1]), float(box[2]), float(box[3]))
+    if size_sent is not None and max(values, key=abs) > 1.0:
+        return _scaled_box(values, size_sent, image_shape)
+    if max(values, key=abs) <= 1.0:
+        left, top, right, bottom = values
+        return (
+            int(round(left * img_w)),
+            int(round(top * img_h)),
+            int(round(right * img_w)),
+            int(round(bottom * img_h)),
+        )
+    x1 = min(img_w, max(0, int(round(values[0]))))
+    y1 = min(img_h, max(0, int(round(values[1]))))
+    x2 = min(img_w, max(0, int(round(values[2]))))
+    y2 = min(img_h, max(0, int(round(values[3]))))
+    return x1, y1, x2, y2
 
 
-def draw_screws(image: Any, boxes: Any, numbers: Any) -> Any:
-    """Return a copy with a numbered graphite marker at each box center."""
+def _label_of(number: Any) -> str:
+    for attr in ("id", "number"):
+        value = getattr(number, attr, None)
+        if value is not None and not isinstance(number, int | str):
+            return str(value)
+    return str(number)
+
+
+def draw_screws(
+    image: Any,
+    boxes: Any,
+    numbers: Any,
+    size_sent: tuple[int, int] | None = None,
+) -> Any:
+    """Return a copy with a ring around each screw and its number beside it.
+
+    Boxes follow the same contract as :func:`draw_part`: normalized boxes, or
+    pixel boxes in an image of ``size_sent`` (the image itself when omitted).
+    The screw centre is never painted over: a hollow ring marks the screw and
+    a graphite label with a lime outline sits up-right of it, joined by a thin
+    leader line that starts at the ring, not at the centre.
+    """
     result = image.copy()
+    img_h, img_w = image.shape[:2]
     for item, number in zip(boxes, numbers, strict=False):
-        left, top, right, bottom = _box_of(item)
-        center_x = int(round((left + right) / 2))
-        center_y = int(round((top + bottom) / 2))
-        box_size = max(right - left, bottom - top)
-        radius = max(14, int(round(box_size / 2)))
-        overlay = result.copy()
-        cv2.circle(overlay, (center_x, center_y), radius, GRAPHITE_BGR, -1)
-        circle_mask = np.zeros(image.shape[:2], dtype=np.uint8)
-        cv2.circle(circle_mask, (center_x, center_y), radius, 255, -1)
-        region = circle_mask > 0
-        if np.any(region):
-            blended = (
-                overlay[region].astype(np.float32) * 0.85 + result[region].astype(np.float32) * 0.15
-            )
-            result[region] = blended.astype(np.uint8)
+        x1, y1, x2, y2 = _pixel_box(item, image.shape, size_sent)
+        if x2 <= x1 or y2 <= y1:
+            continue
+        center_x = (x1 + x2) // 2
+        center_y = (y1 + y2) // 2
+        diagonal = float(np.hypot(x2 - x1, y2 - y1))
+        radius = max(6, int(round(0.6 * diagonal)))
         cv2.circle(result, (center_x, center_y), radius, LIME_BGR, 2)
-        label = str(number)
-        font_scale = max(0.5, min(1.0, radius / 22.0))
-        thickness = 2
-        (text_w, text_h), _ = cv2.getTextSize(
-            label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness
-        )
-        origin = (center_x - text_w // 2, center_y + text_h // 2)
-        cv2.putText(
-            result,
-            label,
-            origin,
-            cv2.FONT_HERSHEY_SIMPLEX,
-            font_scale,
-            WHITE_BGR,
-            thickness,
-            cv2.LINE_AA,
-        )
+        label = _label_of(number)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 0.5
+        thickness = 1
+        (text_w, text_h), _ = cv2.getTextSize(label, font, font_scale, thickness)
+        label_radius = max(10, text_w // 2 + 6, text_h // 2 + 6)
+        offset = radius + label_radius + 6
+        label_x, label_y = center_x + offset, center_y - offset
+        # Prefer up-right; fall back to another side so the label stays
+        # inside the image and never covers the screw it names.
+        for step_x, step_y in (
+            (1, -1),
+            (-1, -1),
+            (1, 1),
+            (-1, 1),
+            (1, 0),
+            (-1, 0),
+            (0, -1),
+            (0, 1),
+        ):
+            cand_x = center_x + step_x * offset
+            cand_y = center_y + step_y * offset
+            if (
+                label_radius <= cand_x <= img_w - 1 - label_radius
+                and label_radius <= cand_y <= img_h - 1 - label_radius
+            ):
+                label_x, label_y = cand_x, cand_y
+                break
+        else:
+            if img_w > 2 * label_radius:
+                label_x = min(max(label_x, label_radius), img_w - 1 - label_radius)
+            else:
+                label_x = img_w // 2
+            if img_h > 2 * label_radius:
+                label_y = min(max(label_y, label_radius), img_h - 1 - label_radius)
+            else:
+                label_y = img_h // 2
+        dx = label_x - center_x
+        dy = label_y - center_y
+        distance = float(np.hypot(dx, dy))
+        if distance > radius + label_radius + 1:
+            unit_x, unit_y = dx / distance, dy / distance
+            start = (
+                int(round(center_x + unit_x * (radius + 1))),
+                int(round(center_y + unit_y * (radius + 1))),
+            )
+            end = (
+                int(round(label_x - unit_x * (label_radius + 1))),
+                int(round(label_y - unit_y * (label_radius + 1))),
+            )
+            cv2.line(result, start, end, LIME_BGR, 1)
+        cv2.circle(result, (label_x, label_y), label_radius, GRAPHITE_BGR, -1)
+        cv2.circle(result, (label_x, label_y), label_radius, LIME_BGR, 2)
+        origin = (label_x - text_w // 2, label_y + text_h // 2)
+        cv2.putText(result, label, origin, font, font_scale, WHITE_BGR, thickness, cv2.LINE_AA)
     return result
 
 
