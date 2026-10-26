@@ -80,8 +80,10 @@ class Step(Strict):
 class ReassemblyStep(Strict):
     index: int = Field(ge=1)
     source_step: int = Field(ge=1)
+    action: str
     instruction: str
-    screw_count: int = Field(default=0, ge=0)
+    parts: list[str] = Field(default_factory=list)
+    screws: ScrewMap | None = None
     warnings: list[str] = Field(default_factory=list)
 
 
