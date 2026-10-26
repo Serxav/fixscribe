@@ -26,7 +26,7 @@ headless (`muse exec`); when Claude Code is unavailable, Sergi launches Muse Cod
 `tasks/HANDOFF.md`.
 
 ## 3. How a task works (Muse Code: follow these steps exactly)
-0. Before every task, read `docs/HACKATHON_BRIEF.md`.
+0. Before every task, read `docs/HACKATHON_BRIEF.md` and `docs/ENGINEERING_STANDARD.md`.
 1. You are told: "Read tasks/<id>.md and do it." (or "Read tasks/HANDOFF.md and do the queue").
 2. Read the task file. Read every file listed in "Files to touch". Do not open other files unless needed to understand an import.
 3. You run headless: nobody can answer. If something is unclear, make the safest choice that stays inside the task and write it under DUDAS.
