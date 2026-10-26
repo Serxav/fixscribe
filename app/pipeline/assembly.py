@@ -78,7 +78,8 @@ def build_reassembly(steps: list[Step]) -> AssemblyResult:
             seen_parts[key] = step.index
         if action == "unscrew" and screw_count(step.screws) == 0:
             notes.append("Screws were removed here but not counted. Check the video.")
-        if step.screws and step.screws.count != len(step.screws.boxes):
+        # No boxes yet means SAM has not looked for the screws: nothing to compare.
+        if step.screws and step.screws.boxes and step.screws.count != len(step.screws.boxes):
             notes.append(
                 f"{step.screws.count} screws counted but {len(step.screws.boxes)} located on "
                 "the screw map."
