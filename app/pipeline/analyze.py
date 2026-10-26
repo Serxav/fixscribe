@@ -26,6 +26,7 @@ TEXT_FORMAT = {
 }
 
 MAX_OUTPUT_TOKENS = 16000
+ANALYZE_TIMEOUT_S = 600.0
 
 
 def build_prompt(duration_s: float, mode: str, turns: list[dict], segments: list[dict]) -> str:
@@ -123,6 +124,8 @@ def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> 
             input=build_input(prompt, file_id),
             max_output_tokens=MAX_OUTPUT_TOKENS,
             text=TEXT_FORMAT,
+            timeout_s=ANALYZE_TIMEOUT_S,
+            retry_timeouts=False,
         )
     finally:
         client.delete_file(file_id)
