@@ -170,6 +170,7 @@ class MetaClient:
         settings: Settings,
         client: Any | None = None,
         sleep: Callable[[float], None] = time.sleep,
+        http: Any | None = None,
     ) -> None:
         if client is None:
             # Built exactly like https://dev.meta.ai/docs/sdks
@@ -179,8 +180,12 @@ class MetaClient:
                 max_retries=0,
                 timeout=httpx.Timeout(120.0, connect=10.0),
             )
+        if http is None:
+            http = httpx.Client(timeout=httpx.Timeout(120.0, connect=10.0))
         self._client = client
         self._sleep = sleep
+        self._http = http
+        self._settings = settings
         self.spend = SpendCounter(settings.data_dir / "spend.json", settings.budget_usd)
 
     def respond(
@@ -237,6 +242,57 @@ class MetaClient:
             self._with_retries(lambda: self._client.files.delete(file_id))
         except Exception:
             logger.warning("failed to delete file %s", file_id, exc_info=True)
+
+    def transcribe(
+        self,
+        wav: Path,
+        mode: str = "ENDPOINTING",
+        language_bias: list[str] | None = None,
+        keywords: list[str] | None = None,
+    ) -> dict:
+        """Transcribe a WAV file with Muse Voice Transcribe.
+
+        See https://dev.meta.ai/docs/speech-to-text
+        """
+        if wav.stat().st_size > 33_554_432:
+            raise ValueError(f"audio file is bigger than 32 MB: {wav}")
+        self.spend.check()
+        url = f"{self._settings.meta_api_base}/asr/transcribe"
+        headers = {
+            "Authorization": f"Bearer {self._settings.model_api_key}",
+            "Accept": "application/json",
+        }
+
+        def _do_post() -> dict:
+            request: dict[str, Any] = {
+                "model": self._settings.asr_model,
+                "audioEncoding": "WAV",
+                "mode": mode,
+            }
+            if language_bias:
+                request["languageBias"] = language_bias
+            if keywords:
+                request["keywords"] = keywords
+            with open(wav, "rb") as f:
+                files = {
+                    "request": (None, json.dumps(request), "application/json"),
+                    "audio": (wav.name, f, "audio/wav"),
+                }
+                try:
+                    resp = self._http.post(url, headers=headers, files=files)
+                except httpx.TimeoutException as exc:
+                    raise openai.APITimeoutError(request=exc.request) from exc
+            if resp.status_code == 429:
+                raise openai.RateLimitError("asr status 429", response=resp, body=None)
+            if resp.status_code >= 400:
+                raise openai.APIStatusError(
+                    f"asr status {resp.status_code}", response=resp, body=None
+                )
+            return resp.json()
+
+        data = self._with_retries(_do_post)
+        self.spend.add(self._settings.asr_model, asr_cost(data["audioDurationMs"] / 1000))
+        return data
 
     def _with_retries(self, fn: Callable[[], T]) -> T:
         last_exc: BaseException | None = None
