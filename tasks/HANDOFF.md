@@ -1,8 +1,8 @@
 # HANDOFF — read this when Claude Code is not available
 
 ## State (updated 2026-10-26, evening)
-- `main` has: skeleton, schemas, jobs, assembly, runner. Waiting for Sergi's ok: merge of task 001 (meta client).
-- Muse Code worktree: branch `feat/first-call` once 001 is merged (check: `git -C ~/fixscribe-muse branch --show-current`).
+- `main` has: skeleton, schemas, jobs, assembly, runner, meta client (001), eval, hackathon brief. 85 tests pass.
+- Muse Code worktree is on branch `feat/first-call`. Task 002 was launched by Claude Code; if `tasks/002-first-call.report.md` does not exist, finish 002 first.
 - No real Meta call has been made by the product yet. Muse Code has spent about 0.50 $.
 
 ## Queue for Muse Code (do them in this order, one after another)

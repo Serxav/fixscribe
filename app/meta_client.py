@@ -214,6 +214,30 @@ class MetaClient:
         self.spend.add(model, cost)
         return response
 
+    def upload_file(self, path: Path, expires_seconds: int = 86400) -> str:
+        """Upload a video file for video understanding. Uploading is free."""
+        if path.suffix != ".mp4":
+            raise ValueError(f"only .mp4 videos can be uploaded: {path}")
+        if path.stat().st_size > 1_073_741_824:
+            raise ValueError(f"file is bigger than 1 GiB: {path}")
+
+        def _do_upload() -> Any:
+            with open(path, "rb") as f:
+                return self._client.files.create(
+                    purpose="user_data",
+                    file=f,
+                    expires_after={"anchor": "created_at", "seconds": expires_seconds},
+                )
+
+        return self._with_retries(_do_upload).id
+
+    def delete_file(self, file_id: str) -> None:
+        """Delete an uploaded file. Cleanup never raises."""
+        try:
+            self._with_retries(lambda: self._client.files.delete(file_id))
+        except Exception:
+            logger.warning("failed to delete file %s", file_id, exc_info=True)
+
     def _with_retries(self, fn: Callable[[], T]) -> T:
         last_exc: BaseException | None = None
         for attempt in range(1, MAX_ATTEMPTS + 1):

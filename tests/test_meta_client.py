@@ -189,3 +189,68 @@ def test_respond_without_usage_not_counted(tmp_path):
     assert result.usage is None
     assert fake.responses.calls == 1
     assert not (tmp_path / "spend.json").exists()
+
+
+class FakeFiles:
+    """Fake for `client.files`, mirroring FakeResponses above."""
+
+    def __init__(self, results):
+        self.results = list(results)
+        self.calls = 0
+        self.read_sizes: list[int] = []
+
+    def create(self, **kwargs):
+        self.calls += 1
+        self.read_sizes.append(len(kwargs["file"].read()))
+        item = self.results.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+    def delete(self, file_id):
+        self.calls += 1
+        item = self.results.pop(0)
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+
+def make_file_client(results):
+    return types.SimpleNamespace(files=FakeFiles(results))
+
+
+def test_upload_file_returns_id(tmp_path):
+    video = tmp_path / "clip.mp4"
+    video.write_bytes(b"fake-video-bytes")
+    fake = make_file_client([types.SimpleNamespace(id="file-abc")])
+    client = MetaClient(make_settings(tmp_path), client=fake, sleep=lambda _: None)
+    assert client.upload_file(video) == "file-abc"
+    assert fake.files.calls == 1
+
+
+def test_upload_file_rejects_mov(tmp_path):
+    video = tmp_path / "clip.mov"
+    video.write_bytes(b"fake-video-bytes")
+    fake = make_file_client([types.SimpleNamespace(id="file-abc")])
+    client = MetaClient(make_settings(tmp_path), client=fake, sleep=lambda _: None)
+    with pytest.raises(ValueError):
+        client.upload_file(video)
+    assert fake.files.calls == 0
+
+
+def test_upload_file_retry_rereads_file(tmp_path):
+    video = tmp_path / "clip.mp4"
+    data = b"fake-video-bytes"
+    video.write_bytes(data)
+    fake = make_file_client([status_error(503), types.SimpleNamespace(id="file-abc")])
+    client = MetaClient(make_settings(tmp_path), client=fake, sleep=lambda _: None)
+    assert client.upload_file(video) == "file-abc"
+    assert fake.files.calls == 2
+    assert fake.files.read_sizes == [len(data), len(data)]
+
+
+def test_delete_file_ignores_404(tmp_path):
+    fake = make_file_client([status_error(404)])
+    client = MetaClient(make_settings(tmp_path), client=fake, sleep=lambda _: None)
+    client.delete_file("file-missing")
+    assert fake.files.calls == 1
