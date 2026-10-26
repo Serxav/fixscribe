@@ -126,6 +126,8 @@ def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> 
         )
     finally:
         client.delete_file(file_id)
+    # Keep Spark's raw answer: if parsing fails, this is what we need to debug the prompt.
+    (job_dir / "analysis_raw.txt").write_text(response.output_text or "", encoding="utf-8")
     analysis = parse_analysis(response.output_text)
     _write_json_atomic(job_dir / "analysis.json", analysis.model_dump(mode="json"))
     return analysis
