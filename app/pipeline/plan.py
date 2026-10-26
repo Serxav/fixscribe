@@ -16,6 +16,7 @@ from app.schemas import (
     Fusion,
     IngestInfo,
     Plan,
+    Refine,
     ScrewMap,
     Step,
     Transcript,
@@ -45,6 +46,34 @@ def apply_fusion(drafts: list[DraftStep], fusion: Fusion | None) -> list[DraftSt
         else draft
         for i, draft in enumerate(ordered, start=1)
     ]
+
+
+def apply_refine(drafts: list[DraftStep], refine: Refine | None) -> list[DraftStep]:
+    """Use the second Spark pass for the steps it looked at again (numbered like fusion)."""
+    if refine is None:
+        return drafts
+    refined = {item.index: item for item in refine.steps}
+    out = []
+    for i, draft in enumerate(drafts, start=1):
+        r = refined.get(i)
+        if r is None or r.end_s <= r.start_s:
+            out.append(draft)
+            continue
+        out.append(
+            draft.model_copy(
+                update={
+                    "start_s": r.start_s,
+                    "end_s": r.end_s,
+                    "instruction": r.instruction or draft.instruction,
+                    "action": r.action,
+                    "removes": r.removes or draft.removes,
+                    "screw_count": r.screw_count,
+                    "warnings": r.warnings,
+                    "confidence": r.confidence,
+                }
+            )
+        )
+    return out
 
 
 def clean_times(drafts: list[DraftStep], duration_s: float) -> tuple[list[DraftStep], list[str]]:
@@ -94,8 +123,15 @@ def to_step(index: int, draft: DraftStep) -> Step:
     )
 
 
-def build_plan(analysis: Analysis, fusion: Fusion | None, duration_s: float, mode: str) -> Plan:
-    drafts, checks = clean_times(apply_fusion(analysis.steps, fusion), duration_s)
+def build_plan(
+    analysis: Analysis,
+    fusion: Fusion | None,
+    duration_s: float,
+    mode: str,
+    refine: Refine | None = None,
+) -> Plan:
+    fused = apply_refine(apply_fusion(analysis.steps, fusion), refine)
+    drafts, checks = clean_times(fused, duration_s)
     steps = [to_step(i, draft) for i, draft in enumerate(drafts, start=1)]
     low = [step.index for step in steps if step.review == "needs_review"]
     if low:
