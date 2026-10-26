@@ -1,0 +1,76 @@
+"""Home page and video upload route."""
+
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, Request, UploadFile
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+
+from app.config import Settings, get_settings
+from app.jobs import create_job, jobs_created_today, update_status
+from app.pipeline.runner import start_job
+
+ROOT = Path(__file__).resolve().parents[2]
+templates = Jinja2Templates(directory=str(ROOT / "web" / "templates"))
+
+MAX_UPLOAD_BYTES = 1024**3
+ALLOWED_EXTENSIONS = {".mp4", ".mov", ".m4v"}
+CHUNK_BYTES = 1024 * 1024
+
+
+def settings_dep() -> Settings:
+    """Return process settings. Tests override this with a tmp data_dir."""
+    return get_settings()
+
+
+router = APIRouter()
+
+
+@router.get("/", response_class=HTMLResponse)
+def index(request: Request):
+    return templates.TemplateResponse(request, "index.html", {})
+
+
+@router.post("/upload")
+async def upload_video(
+    video: UploadFile,
+    settings: Settings = Depends(settings_dep),  # noqa: B008
+):
+    jobs_dir = settings.data_dir / "jobs"
+    filename = video.filename or ""
+    ext = Path(filename).suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        return HTMLResponse(
+            "<h1>Unsupported video type</h1><p>Please upload a .mp4, .mov or .m4v video.</p>",
+            status_code=400,
+        )
+    if jobs_created_today(jobs_dir) >= settings.daily_job_limit:
+        return HTMLResponse(
+            "<h1>Daily limit reached, try tomorrow.</h1>",
+            status_code=429,
+        )
+    status = create_job(jobs_dir)
+    job_id = status.job_id
+    dest = jobs_dir / job_id / f"original{ext}"
+    size = 0
+    too_big = False
+    with open(dest, "wb") as out:
+        while True:
+            chunk = await video.read(CHUNK_BYTES)
+            if not chunk:
+                break
+            size += len(chunk)
+            if size > MAX_UPLOAD_BYTES:
+                too_big = True
+                break
+            out.write(chunk)
+    await video.close()
+    if too_big:
+        dest.unlink(missing_ok=True)
+        update_status(job_id, jobs_dir, state="failed", error="video file is too big")
+        return HTMLResponse(
+            "<h1>Video file is too big</h1>",
+            status_code=413,
+        )
+    start_job(job_id, jobs_dir)
+    return RedirectResponse(f"/jobs/{job_id}", status_code=303)

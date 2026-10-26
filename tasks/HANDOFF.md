@@ -1,13 +1,12 @@
 # HANDOFF — read this when Claude Code is not available
 
 ## State (updated 2026-10-26, night)
-- `main` has: skeleton, schemas + analysis schema/prompt, jobs, assembly, runner, guide builder, eval, meta client (001), first-call (002), ingest (003), transcribe (004), step cuts (005). 142 tests pass.
-- Muse Code worktree is on branch `feat/analyze`. Task 006 was launched by Claude Code; if `app/pipeline/analyze.py` is not finished, finish 006 first.
-- No real Meta call has been made by the product yet. Muse Code has spent about 1.43 $.
+- `main` has the whole pipeline (ingest → transcribe → scenes → analyze → guide → frames) and the upload + progress web pages (008). 173 tests pass.
+- PAUSED for a code audit (Sergi + Claude Code). Do not start any task until Claude Code writes a new queue here.
+- No real Meta call has been made by the product yet. Muse Code has spent about 2.32 $.
 
 ## Queue for Muse Code (do them in this order, one after another)
-1. `tasks/006-analyze.md`
-2. `tasks/007-frames.md`
+- (empty: wait for the audit)
 
 ## Rules for this mode
 - Before each task, read `AGENTS.md` and `docs/HACKATHON_BRIEF.md`.
