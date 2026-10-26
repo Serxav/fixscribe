@@ -94,6 +94,47 @@ def test_run_converts_turns_to_seconds_sorted(tmp_path):
         assert json.load(f) == result
 
 
+def test_run_skips_turn_missing_start_ms(tmp_path):
+    job_dir = tmp_path / "job"
+    job_dir.mkdir()
+    make_wav(job_dir / "audio.wav")
+    fake = FakeTranscriber(
+        payload={
+            "sessionId": "sess-1",
+            "transcript": "full text",
+            "audioDurationMs": 42500,
+            "turns": [
+                {"turnId": 1, "endMs": 3400, "transcript": "missing start"},
+                {
+                    "turnId": 2,
+                    "startMs": 1200,
+                    "endMs": 3400,
+                    "transcript": "Step one remove the two screws",
+                },
+            ],
+        }
+    )
+
+    result = run(job_dir, make_settings(tmp_path), client=fake)
+
+    assert result["turns"] == [
+        {"start_s": 1.2, "end_s": 3.4, "text": "Step one remove the two screws"}
+    ]
+
+
+def test_run_missing_turns_is_empty(tmp_path):
+    job_dir = tmp_path / "job"
+    job_dir.mkdir()
+    make_wav(job_dir / "audio.wav")
+    fake = FakeTranscriber(
+        payload={"sessionId": "sess-1", "transcript": "", "audioDurationMs": 1000}
+    )
+
+    result = run(job_dir, make_settings(tmp_path), client=fake)
+
+    assert result["turns"] == []
+
+
 def test_run_single_short_turn_is_silent(tmp_path):
     job_dir = tmp_path / "job"
     job_dir.mkdir()

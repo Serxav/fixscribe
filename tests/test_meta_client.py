@@ -50,9 +50,11 @@ class FakeResponses:
     def __init__(self, results):
         self.results = list(results)
         self.calls = 0
+        self.kwargs: list[dict] = []
 
     def create(self, **kwargs):
         self.calls += 1
+        self.kwargs.append(kwargs)
         item = self.results.pop(0)
         if isinstance(item, Exception):
             raise item
@@ -256,14 +258,15 @@ def test_delete_file_ignores_404(tmp_path):
     assert fake.files.calls == 1
 
 
-def make_wav(path: Path) -> Path:
+def make_wav(path: Path, seconds: float = 1.0) -> Path:
     import wave
 
+    frames = int(24000 * seconds)
     with wave.open(str(path), "wb") as f:
         f.setnchannels(1)
         f.setsampwidth(2)
         f.setframerate(24000)
-        f.writeframes(b"\0" * 24000 * 2)
+        f.writeframes(b"\0" * frames * 2)
     return path
 
 
@@ -288,7 +291,10 @@ class FakeHttp:
         if isinstance(item, Exception):
             raise item
         status, payload = item
-        return httpx.Response(status, json=payload, request=httpx.Request("POST", url))
+        request = httpx.Request("POST", url)
+        if isinstance(payload, bytes):
+            return httpx.Response(status, content=payload, request=request)
+        return httpx.Response(status, json=payload, request=request)
 
 
 def make_asr_client(tmp_path, results, **kwargs):
@@ -372,6 +378,109 @@ def test_transcribe_budget_exceeded_no_post(tmp_path):
     with pytest.raises(BudgetExceeded):
         client.transcribe(wav)
     assert fake_http.posts == []
+
+
+def test_respond_timeout_s_passes_httpx_timeout(tmp_path):
+    settings = make_settings(tmp_path)
+    fake = FakeClient([make_response()])
+    client = MetaClient(settings, client=fake, sleep=lambda _: None)
+    client.respond(model="muse-spark-1.3", input="hello", timeout_s=600)
+    assert fake.responses.calls == 1
+    timeout = fake.responses.kwargs[0]["timeout"]
+    assert timeout.read == 600
+    assert timeout.connect == 10.0
+
+
+def test_respond_retry_timeouts_false_raises_once_no_sleep(tmp_path):
+    settings = make_settings(tmp_path)
+    fake = FakeClient([openai.APITimeoutError(request=REQ), make_response()])
+    sleeps: list[float] = []
+    client = MetaClient(settings, client=fake, sleep=sleeps.append)
+    with pytest.raises(MetaError, match="meta api timed out"):
+        client.respond(model="muse-spark-1.3", input="hello", retry_timeouts=False)
+    assert fake.responses.calls == 1
+    assert sleeps == []
+
+
+def test_retry_after_capped_at_30(tmp_path):
+    settings = make_settings(tmp_path)
+    fake = FakeClient([status_error(429, {"Retry-After": "86400"}), make_response()])
+    sleeps: list[float] = []
+    client = MetaClient(settings, client=fake, sleep=sleeps.append)
+    client.respond(model="muse-spark-1.3", input="hello")
+    assert sleeps == [30.0]
+
+
+def test_retry_after_negative_uses_fallback(tmp_path):
+    settings = make_settings(tmp_path)
+    fake = FakeClient([status_error(429, {"Retry-After": "-5"}), make_response()])
+    sleeps: list[float] = []
+    client = MetaClient(settings, client=fake, sleep=sleeps.append)
+    client.respond(model="muse-spark-1.3", input="hello")
+    assert len(sleeps) == 1
+    assert 0 <= sleeps[0] < 2.0
+
+
+def test_spend_corrupt_json_rebuilds_from_log(tmp_path):
+    (tmp_path / "spend.json").write_text("{", encoding="utf-8")
+    (tmp_path / "spend.log").write_text(
+        '{"model": "muse-spark-1.3", "usd": 1.0, "at": "2026-10-26T00:00:00+00:00"}\n'
+        "not json\n"
+        '{"model": "muse-spark-1.3", "usd": 2.0, "at": "2026-10-26T00:00:00+00:00"}\n',
+        encoding="utf-8",
+    )
+    counter = SpendCounter(tmp_path / "spend.json", 120.0)
+    assert counter.total() == pytest.approx(3.0)
+    with pytest.raises(BudgetExceeded):
+        SpendCounter(tmp_path / "spend.json", 2.0).check()
+    new_total = counter.add("muse-spark-1.3", 0.5)
+    assert new_total == pytest.approx(3.5)
+    with open(tmp_path / "spend.json", encoding="utf-8") as f:
+        data = json.load(f)
+    assert data["total_usd"] == pytest.approx(3.5)
+    assert data["calls"] == 3
+    assert data["by_model"]["muse-spark-1.3"] == pytest.approx(3.5)
+
+
+def test_transcribe_connect_error_then_success_and_timeout(tmp_path):
+    wav = make_wav(tmp_path / "audio.wav")
+    url = "https://api.meta.ai/v1/asr/transcribe"
+    connect_error = httpx.ConnectError("refused", request=httpx.Request("POST", url))
+    client, fake_http = make_asr_client(tmp_path, [connect_error, (200, ASR_PAYLOAD)])
+    result = client.transcribe(wav)
+    assert result["sessionId"] == "sess-1"
+    assert len(fake_http.posts) == 2
+    assert fake_http.posts[0][1]["timeout"].read == 300
+    assert fake_http.posts[1][1]["timeout"].read == 300
+
+
+def test_transcribe_missing_duration_uses_wav(tmp_path):
+    wav = make_wav(tmp_path / "audio.wav", seconds=2.0)
+    payload = {"sessionId": "sess-1", "transcript": "hi", "turns": []}
+    client, _fake_http = make_asr_client(tmp_path, [(200, payload)])
+    result = client.transcribe(wav)
+    assert result["audioDurationMs"] == 2000
+    with open(tmp_path / "spend.json", encoding="utf-8") as f:
+        data = json.load(f)
+    assert data["total_usd"] == pytest.approx(asr_cost(2))
+
+
+def test_transcribe_invalid_json_records_spend(tmp_path):
+    wav = make_wav(tmp_path / "audio.wav", seconds=2.0)
+    client, _fake_http = make_asr_client(tmp_path, [(200, b"not json")])
+    with pytest.raises(MetaError, match="asr returned an invalid answer"):
+        client.transcribe(wav)
+    with open(tmp_path / "spend.json", encoding="utf-8") as f:
+        data = json.load(f)
+    assert data["total_usd"] == pytest.approx(asr_cost(2))
+
+
+def test_transcribe_non_dict_records_spend(tmp_path):
+    wav = make_wav(tmp_path / "audio.wav")
+    client, _fake_http = make_asr_client(tmp_path, [(200, ["not", "a", "dict"])])
+    with pytest.raises(MetaError, match="asr returned an invalid answer"):
+        client.transcribe(wav)
+    assert (tmp_path / "spend.json").exists()
 
 
 def test_transcribe_never_logs_authorization(tmp_path, caplog):

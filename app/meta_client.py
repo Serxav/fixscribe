@@ -8,7 +8,9 @@ import os
 import random
 import tempfile
 import time
+import wave
 from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TypeVar
 
@@ -48,6 +50,8 @@ T = TypeVar("T")
 MAX_ATTEMPTS = 4
 RETRYABLE_STATUSES = (429, 500, 503)
 NON_RETRYABLE_STATUSES = (400, 401, 402, 403, 404, 413, 504)
+MAX_RETRY_AFTER_S = 30.0
+ASR_TIMEOUT_S = 300.0
 
 
 class BudgetExceeded(Exception):
@@ -90,6 +94,24 @@ def asr_cost(seconds: float) -> float:
     return billed / 3600 * PRICES["muse-voice-transcribe-1.0"]["per_hour"]
 
 
+def _wav_duration_s(wav_path: Path) -> float:
+    """Duration in seconds of a WAV file, read with the standard library."""
+    with wave.open(str(wav_path), "rb") as handle:
+        rate = handle.getframerate()
+        if not rate:
+            return 0.0
+        return handle.getnframes() / rate
+
+
+def _is_number(value: Any) -> bool:
+    """True for a real JSON number (bools are not numbers here)."""
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+class _InvalidAsrAnswer(Exception):
+    """Internal marker: ASR returned 200 with an unusable body."""
+
+
 class SpendCounter:
     """Tracks spend in `data/spend.json` across restarts and processes."""
 
@@ -97,13 +119,74 @@ class SpendCounter:
         self._path = path
         self._budget_usd = budget_usd
 
+    @property
+    def _log_path(self) -> Path:
+        return self._path.parent / "spend.log"
+
+    def _totals_from_log(self) -> tuple[float, int, dict[str, float]]:
+        """Sum `spend.log`, skipping broken lines."""
+        total = 0.0
+        calls = 0
+        by_model: dict[str, float] = {}
+        try:
+            lines = self._log_path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            return 0.0, 0, {}
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entry = json.loads(line)
+                if not isinstance(entry, dict):
+                    continue
+                usd = float(entry["usd"])
+                model = entry["model"]
+                if not isinstance(model, str):
+                    continue
+            except (ValueError, TypeError, KeyError):
+                continue
+            total += usd
+            calls += 1
+            by_model[model] = by_model.get(model, 0.0) + usd
+        return total, calls, by_model
+
+    def _read_totals(self) -> tuple[float, int, dict[str, float]]:
+        """Read totals from `spend.json`, rebuilding from the log if corrupt."""
+        try:
+            with open(self._path, encoding="utf-8") as f:
+                data = json.load(f)
+            if not isinstance(data, dict):
+                raise TypeError("spend.json is not an object")
+            total = float(data["total_usd"])
+            calls = int(data.get("calls", 0))
+            raw_by_model = data.get("by_model", {})
+            if not isinstance(raw_by_model, dict):
+                raise TypeError("spend.json by_model is not an object")
+            by_model = {str(k): float(v) for k, v in raw_by_model.items()}
+            return total, calls, by_model
+        except FileNotFoundError:
+            if self._log_path.exists():
+                return self._totals_from_log()
+            return 0.0, 0, {}
+        except (ValueError, TypeError, KeyError, OSError):
+            logger.error("spend.json is corrupt, rebuilding total from spend.log")
+            return self._totals_from_log()
+
     def total(self) -> float:
         try:
             with open(self._path, encoding="utf-8") as f:
                 data = json.load(f)
+            if not isinstance(data, dict):
+                raise TypeError("spend.json is not an object")
+            return float(data["total_usd"])
         except FileNotFoundError:
+            if self._log_path.exists():
+                return self._totals_from_log()[0]
             return 0.0
-        return float(data.get("total_usd", 0.0))
+        except (ValueError, TypeError, KeyError, OSError):
+            logger.error("spend.json is corrupt, rebuilding total from spend.log")
+            return self._totals_from_log()[0]
 
     def check(self) -> None:
         if self.total() >= self._budget_usd:
@@ -116,14 +199,20 @@ class SpendCounter:
         with open(lock_path, "a+b") as lock:
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
             try:
-                try:
-                    with open(self._path, encoding="utf-8") as f:
-                        data = json.load(f)
-                except FileNotFoundError:
-                    data = {}
-                new_total = float(data.get("total_usd", 0.0)) + usd
-                calls = int(data.get("calls", 0)) + 1
-                by_model = dict(data.get("by_model", {}))
+                old_total, old_calls, by_model = self._read_totals()
+                # Append to the log before rewriting spend.json so a corrupt
+                # spend.json can always be rebuilt.
+                entry = {
+                    "model": model,
+                    "usd": usd,
+                    "at": datetime.now(UTC).isoformat(),
+                }
+                with open(self._log_path, "a", encoding="utf-8") as log_file:
+                    log_file.write(json.dumps(entry) + "\n")
+                    log_file.flush()
+                    os.fsync(log_file.fileno())
+                new_total = old_total + usd
+                calls = old_calls + 1
                 by_model[model] = float(by_model.get(model, 0.0)) + usd
                 payload = {
                     "total_usd": new_total,
@@ -157,9 +246,12 @@ def _retry_after_seconds(exc: BaseException) -> float | None:
     if raw is None:
         return None
     try:
-        return float(raw)
+        value = float(raw)
     except (TypeError, ValueError):
         return None
+    if value < 0:
+        return None
+    return min(value, MAX_RETRY_AFTER_S)
 
 
 class MetaClient:
@@ -194,6 +286,8 @@ class MetaClient:
         model: str,
         input: Any,
         max_output_tokens: int = 4000,
+        timeout_s: float | None = None,
+        retry_timeouts: bool = True,
         **kwargs: Any,
     ) -> Any:
         if "input_per_m" not in PRICES.get(model, {}):
@@ -201,14 +295,19 @@ class MetaClient:
         if max_output_tokens < 4000:
             raise ValueError("max_output_tokens must be >= 4000")
         self.spend.check()
-        response = self._with_retries(
-            lambda: self._client.responses.create(
+
+        def _do_create() -> Any:
+            create_kwargs: dict[str, Any] = dict(kwargs)
+            if timeout_s is not None:
+                create_kwargs["timeout"] = httpx.Timeout(timeout_s, connect=10.0)
+            return self._client.responses.create(
                 model=model,
                 input=input,
                 max_output_tokens=max_output_tokens,
-                **kwargs,
+                **create_kwargs,
             )
-        )
+
+        response = self._with_retries(_do_create, retry_timeouts=retry_timeouts)
         usage = response.usage
         if usage is None:
             logger.warning("response without usage, spend not counted")
@@ -279,22 +378,45 @@ class MetaClient:
                     "audio": (wav.name, f, "audio/wav"),
                 }
                 try:
-                    resp = self._http.post(url, headers=headers, files=files)
+                    resp = self._http.post(
+                        url,
+                        headers=headers,
+                        files=files,
+                        timeout=httpx.Timeout(ASR_TIMEOUT_S, connect=10.0),
+                    )
                 except httpx.TimeoutException as exc:
                     raise openai.APITimeoutError(request=exc.request) from exc
+                except httpx.TransportError as exc:
+                    raise openai.APIConnectionError(message=str(exc), request=exc.request) from exc
             if resp.status_code == 429:
                 raise openai.RateLimitError("asr status 429", response=resp, body=None)
             if resp.status_code >= 400:
                 raise openai.APIStatusError(
                     f"asr status {resp.status_code}", response=resp, body=None
                 )
-            return resp.json()
+            try:
+                data = resp.json()
+            except Exception as exc:
+                raise _InvalidAsrAnswer from exc
+            if not isinstance(data, dict):
+                raise _InvalidAsrAnswer
+            return data
 
-        data = self._with_retries(_do_post)
-        self.spend.add(self._settings.asr_model, asr_cost(data["audioDurationMs"] / 1000))
+        try:
+            data = self._with_retries(_do_post)
+        except _InvalidAsrAnswer as exc:
+            self.spend.add(self._settings.asr_model, asr_cost(_wav_duration_s(wav)))
+            raise MetaError("asr returned an invalid answer") from exc
+        raw_duration = data.get("audioDurationMs")
+        if _is_number(raw_duration):
+            duration_s = float(raw_duration) / 1000
+        else:
+            duration_s = _wav_duration_s(wav)
+            data["audioDurationMs"] = int(round(duration_s * 1000))
+        self.spend.add(self._settings.asr_model, asr_cost(duration_s))
         return data
 
-    def _with_retries(self, fn: Callable[[], T]) -> T:
+    def _with_retries(self, fn: Callable[[], T], retry_timeouts: bool = True) -> T:
         last_exc: BaseException | None = None
         for attempt in range(1, MAX_ATTEMPTS + 1):
             try:
@@ -309,7 +431,12 @@ class MetaClient:
                         status_code=status,
                     ) from exc
                 last_exc = exc
-            except (openai.APITimeoutError, openai.APIConnectionError) as exc:
+            except openai.APITimeoutError as exc:
+                if not retry_timeouts:
+                    raise MetaError("meta api timed out", status_code=None) from exc
+                last_exc = exc
+                status = None
+            except openai.APIConnectionError as exc:
                 last_exc = exc
                 status = None
             if attempt >= MAX_ATTEMPTS:

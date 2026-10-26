@@ -11,6 +11,7 @@ import pytest
 from app.config import Settings
 from app.meta_client import MetaClient, MetaError
 from app.pipeline.analyze import (
+    ANALYZE_TIMEOUT_S,
     MAX_OUTPUT_TOKENS,
     TEXT_FORMAT,
     AnalyzeError,
@@ -245,6 +246,49 @@ def test_respond_400_raises_meta_error_but_deletes_file(tmp_path):
         run(job_dir, Settings(model_api_key="", data_dir=tmp_path), client)
 
     assert fake.files.deleted == ["file-abc"]
+
+
+class RecordingClient:
+    """Pipeline-level fake: records the exact respond kwargs."""
+
+    def __init__(self):
+        self.respond_kwargs: dict = {}
+        self.deleted: list[str] = []
+
+    def upload_file(self, path):
+        del path
+        return "file-abc"
+
+    def respond(self, **kwargs):
+        self.respond_kwargs = kwargs
+        return fake_answer()
+
+    def delete_file(self, file_id):
+        self.deleted.append(file_id)
+
+
+def test_analyze_passes_timeout_and_no_retry_timeouts(tmp_path):
+    job_dir = tmp_path / "job"
+    make_job(job_dir)
+    client = RecordingClient()
+
+    run(job_dir, Settings(model_api_key="", data_dir=tmp_path), client)
+
+    assert ANALYZE_TIMEOUT_S == 600.0
+    assert client.respond_kwargs["timeout_s"] == 600.0
+    assert client.respond_kwargs["retry_timeouts"] is False
+    assert client.deleted == ["file-abc"]
+
+
+def test_analyze_timeout_reaches_responses_create(tmp_path):
+    job_dir = tmp_path / "job"
+    make_job(job_dir)
+    client, fake = make_client(tmp_path, [fake_answer()])
+
+    run(job_dir, Settings(model_api_key="", data_dir=tmp_path), client)
+
+    timeout = fake.responses.kwargs[0]["timeout"]
+    assert timeout.read == 600
 
 
 def test_missing_video_names_it_and_skips_upload(tmp_path):
