@@ -46,8 +46,8 @@ def test_build_guide_makes_valid_guide_with_reassembly():
     assert [s.index for s in guide.steps] == [1, 2]
     assert guide.steps[0].screws.count == 4
     assert [r.source_step for r in guide.reassembly] == [2, 1]
-    # SAM has not located the screws yet, so the builder says so.
-    assert any("4 screws counted but 0 located" in c for c in guide.checks)
+    # SAM has not looked for the screws yet: no false "0 located" alarm.
+    assert not any("located" in c for c in guide.checks)
     Guide.model_validate(guide.model_dump())  # round-trips
 
 
