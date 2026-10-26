@@ -163,3 +163,24 @@ def test_inverted_refine_answer_is_ignored():
                                        action="other", confidence=0.9)])  # fmt: skip
     plan = build_plan(analysis(draft("a", 0, 10)), None, 30, "silent", refine)
     assert (plan.steps[0].start_s, plan.steps[0].end_s) == (0.0, 10.0)
+
+
+def test_low_confidence_refine_answer_does_not_replace_a_good_step():
+    from app.schemas import Refine, RefinedStep
+
+    good = draft("disconnect", 5, 20, instruction="Disconnect the battery.", confidence=0.9)
+    refine = Refine(steps=[RefinedStep(index=1, start_s=5, end_s=20, instruction="wrong step",
+                                       action="unscrew", confidence=0.4)])  # fmt: skip
+    plan = build_plan(analysis(good), None, 30, "silent", refine)
+    assert plan.steps[0].instruction == "Disconnect the battery."
+
+
+def test_run_reads_refine_json(tmp_path):
+    from app.schemas import Refine, RefinedStep
+
+    job(tmp_path, draft("a", 0, 10, confidence=0.4))
+    refined = RefinedStep(
+        index=1, start_s=2, end_s=8, instruction="Refined.", action="other", confidence=0.9
+    )
+    artifacts.save(tmp_path, Refine(steps=[refined]))
+    assert run(tmp_path, settings=None).steps[0].instruction == "Refined."

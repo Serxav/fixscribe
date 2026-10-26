@@ -12,7 +12,13 @@ from app import artifacts
 from app.config import Settings
 from app.meta_client import BudgetExceeded, MetaError
 from app.pipeline import refine
-from app.pipeline.refine import clip_window, make_timecoded_clip, refine_step, select_steps
+from app.pipeline.refine import (
+    RefineError,
+    clip_window,
+    make_timecoded_clip,
+    refine_step,
+    select_steps,
+)
 from app.schemas import (
     Analysis,
     DraftStep,
@@ -257,26 +263,24 @@ def test_refine_step_inside_window_keeps_answer_times(tmp_path):
     assert kwargs["text"]["format"]["strict"] is True
 
 
-def test_refine_step_outside_window_keeps_fused_times_and_caps_confidence(tmp_path):
+def test_refine_step_outside_window_is_rejected(tmp_path):
     client = FakeClient([_answer(20.0, 25.0, confidence=0.95)])
     clip = tmp_path / "clip.mp4"
     clip.write_bytes(b"fake")
-    result = refine_step(
-        client, _settings(tmp_path), clip, 1, _draft("cover", 4, 6), 4.0, 6.0, (2.0, 8.0), []
-    )
-    assert (result.start_s, result.end_s) == (4.0, 6.0)
-    assert result.confidence <= 0.4
+    with pytest.raises(RefineError, match="outside the clip"):
+        refine_step(
+            client, _settings(tmp_path), clip, 1, _draft("cover", 4, 6), 4.0, 6.0, (2.0, 8.0), []
+        )
 
 
-def test_refine_step_inverted_answer_keeps_fused_times(tmp_path):
+def test_refine_step_inverted_answer_is_rejected(tmp_path):
     client = FakeClient([_answer(6.0, 5.0, confidence=0.9)])
     clip = tmp_path / "clip.mp4"
     clip.write_bytes(b"fake")
-    result = refine_step(
-        client, _settings(tmp_path), clip, 1, _draft("cover", 4, 6), 4.0, 6.0, (2.0, 8.0), []
-    )
-    assert (result.start_s, result.end_s) == (4.0, 6.0)
-    assert result.confidence <= 0.4
+    with pytest.raises(RefineError, match="outside the clip"):
+        refine_step(
+            client, _settings(tmp_path), clip, 1, _draft("cover", 4, 6), 4.0, 6.0, (2.0, 8.0), []
+        )
 
 
 def _write_job(tmp_path, *, fused_confidences=(0.4,)):

@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 from app.config import get_settings
 from app.jobs import create_job
-from app.pipeline import analyze, transcribe
+from app.pipeline import analyze, perception, refine, transcribe
 from app.pipeline.runner import run_job
 
 SECONDS = 36
@@ -137,6 +137,9 @@ class FakeMeta:
     def delete_file(self, file_id):
         pass
 
+    def segment(self, image_path, concept, max_side=1280):
+        return [], (100, 100)
+
 
 def main() -> int:
     settings = get_settings()
@@ -155,6 +158,8 @@ def main() -> int:
     )  # fmt: skip
     transcribe.MetaClient = FakeMeta
     analyze.MetaClient = FakeMeta
+    refine.MetaClient = FakeMeta
+    perception.MetaClient = FakeMeta
     status = run_job(job_id, settings, jobs_dir=jobs_dir)
     print(f"job {job_id}: {status.state} {status.error or ''}".rstrip())
     if status.state == "done":
