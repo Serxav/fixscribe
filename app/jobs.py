@@ -21,6 +21,7 @@ class JobStatus(BaseModel):
     stage: str | None = None
     progress: float = Field(default=0.0, ge=0, le=1)
     error: str | None = None
+    warnings: list[str] = Field(default_factory=list)
     created_at: str
     updated_at: str
 
