@@ -26,8 +26,11 @@ class Box(Strict):
 
 
 class ScrewMap(Strict):
+    """Fasteners removed in a step: screws by default, or bolts, clips, nuts... (see `kind`)."""
+
     count: int = Field(ge=0)
     boxes: list[Box] = Field(default_factory=list)
+    kind: str = "screw"  # the fastener type, as named by the domain profile
 
     @model_validator(mode="after")
     def unique_numbers(self) -> "ScrewMap":
@@ -499,3 +502,99 @@ REFINE_JSON_SCHEMA: dict[str, Any] = _object(
         "confidence": {"type": "number"},
     }
 )
+
+
+# The same model under the name the universal pipeline uses. `screws` stays for compatibility.
+FastenerMap = ScrewMap
+
+
+# --- Universal repair: what is it, and is it safe? ---------------------------------------------
+
+CATEGORIES = [
+    "electronics",
+    "appliance",
+    "furniture",
+    "automotive",
+    "plumbing",
+    "electrical",
+    "tools",
+    "other",
+]
+
+HAZARDS = [
+    "mains_voltage",
+    "gas",
+    "pressurized_water",
+    "refrigerant",
+    "high_voltage_battery",
+    "lithium_battery",
+    "airbag",
+    "raised_vehicle",
+    "heavy_part",
+    "sharp_edges",
+    "hot_surface",
+    "spring_tension",
+    "chemicals",
+]
+
+TASKS = ["disassemble", "repair", "maintain", "assemble", "diagnose", "other"]
+
+
+class Identity(Strict):
+    """What FixScribe is looking at, decided before anything else (identify stage)."""
+
+    FILENAME: ClassVar[str] = "identity.json"
+
+    object_name: str  # "front-loading washing machine", "iPhone 12", "office chair"
+    category: Literal[
+        "electronics", "appliance", "furniture", "automotive", "plumbing", "electrical",
+        "tools", "other",
+    ]  # fmt: skip
+    brand: str = ""
+    model: str = ""
+    task: Literal["disassemble", "repair", "maintain", "assemble", "diagnose", "other"]
+    problem: str = ""  # what seems wrong, if anything ("drum does not spin")
+    hazards: list[
+        Literal[
+            "mains_voltage", "gas", "pressurized_water", "refrigerant", "high_voltage_battery",
+            "lithium_battery", "airbag", "raised_vehicle", "heavy_part", "sharp_edges",
+            "hot_surface", "spring_tension", "chemicals",
+        ]
+    ] = Field(default_factory=list)  # fmt: skip
+    skill: Literal["beginner", "intermediate", "expert"] = "intermediate"
+    language: str = "en"  # language the technician speaks, ISO 639-1
+    evidence: list[str] = Field(default_factory=list)  # what in the images or speech decided it
+    confidence: float = Field(default=0.5, ge=0, le=1)
+
+    @field_validator("confidence", mode="before")
+    @classmethod
+    def confidence_0_to_1(cls, value: Any) -> Any:
+        return DraftStep.confidence_0_to_1(value)
+
+
+IDENTITY_JSON_SCHEMA: dict[str, Any] = _object(
+    {
+        "object_name": {"type": "string"},
+        "category": {"type": "string", "enum": CATEGORIES},
+        "brand": {"type": "string"},
+        "model": {"type": "string"},
+        "task": {"type": "string", "enum": TASKS},
+        "problem": {"type": "string"},
+        "hazards": {"type": "array", "items": {"type": "string", "enum": HAZARDS}},
+        "skill": {"type": "string", "enum": ["beginner", "intermediate", "expert"]},
+        "language": {"type": "string"},
+        "evidence": _STRINGS,
+        "confidence": {"type": "number"},
+    }
+)
+
+
+class Safety(Strict):
+    """Safety decision for a job. Deterministic rules first; a model may only make it stricter."""
+
+    FILENAME: ClassVar[str] = "safety.json"
+
+    level: Literal["normal", "caution", "professional_only"] = "normal"
+    reasons: list[str] = Field(default_factory=list)
+    prechecks: list[str] = Field(default_factory=list)  # must be done before step 1
+    blocked: list[str] = Field(default_factory=list)  # operations we never give instructions for
