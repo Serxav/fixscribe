@@ -108,6 +108,7 @@ class Guide(Strict):
     warnings: list[str] = Field(default_factory=list)
     steps: list[Step] = Field(default_factory=list)
     reassembly: list[ReassemblyStep] = Field(default_factory=list)
+    checks: list[str] = Field(default_factory=list)  # automatic checks, e.g. the screw check
     inspector_log: list[InspectorEntry] = Field(default_factory=list)
 
     @model_validator(mode="after")
@@ -125,3 +126,37 @@ class Guide(Strict):
             if item.source_step > len(self.steps):
                 raise ValueError(f"reassembly step {item.index} points to a missing step")
         return self
+
+
+class DraftStep(BaseModel):
+    """One step as Muse Spark returns it. Lenient: the guide builder cleans it up."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    title: str
+    instruction: str = ""
+    start_s: float
+    end_s: float
+    target_part: str | None = None
+    action: str | None = None
+    removes: list[str] = Field(default_factory=list)
+    screw_count: int = Field(default=0, ge=0)
+    warnings: list[str] = Field(default_factory=list)
+    evidence: list[Evidence] = Field(default_factory=list)
+    confidence: float = Field(default=0.5, ge=0, le=1)
+
+
+class Analysis(BaseModel):
+    """The JSON that the analyze stage asks Muse Spark for (saved as analysis.json)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    title: str = "Repair guide"
+    device: str = "Unknown device"
+    summary: str = ""
+    difficulty: Literal["easy", "medium", "hard"] = "medium"
+    estimated_minutes: int = Field(default=0, ge=0)
+    tools: list[str] = Field(default_factory=list)
+    parts: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    steps: list[DraftStep] = Field(default_factory=list)
