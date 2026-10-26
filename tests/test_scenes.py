@@ -27,10 +27,20 @@ def test_keyword_cuts_drops_close_cuts():
 
 
 def test_cuts_to_segments_merges_short_segment():
+    # First cut at 5 s adds the intro [0, 5]; the 1 s segment merges into it.
     assert cuts_to_segments([5.0, 6.0, 20.0], 30.0) == [
-        {"start_s": 5.0, "end_s": 20.0},
+        {"start_s": 0.0, "end_s": 6.0},
+        {"start_s": 6.0, "end_s": 20.0},
         {"start_s": 20.0, "end_s": 30.0},
     ]
+
+
+def test_cuts_to_segments_intro_only_when_first_cut_at_least_3s():
+    assert cuts_to_segments([2.9, 20.0], 30.0) == [
+        {"start_s": 2.9, "end_s": 20.0},
+        {"start_s": 20.0, "end_s": 30.0},
+    ]
+    assert cuts_to_segments([3.0, 20.0], 30.0)[0] == {"start_s": 0.0, "end_s": 3.0}
 
 
 def test_cuts_to_segments_empty_and_past_duration():
@@ -49,21 +59,50 @@ def test_run_narrated_with_three_keywords(tmp_path):
         ],
     )
     result = scenes.run(settings.data_dir, settings)
-    assert result["source"] == "voice"
-    assert len(result["segments"]) == 3
-    assert result["segments"][0]["start_s"] == 1.2
+    assert result.source == "voice"
+    assert len(result.segments) == 3
+    assert result.segments[0].start_s == 1.2
     stored = json.loads((settings.data_dir / "scenes.json").read_text(encoding="utf-8"))
-    assert stored == result
+    assert stored == result.model_dump(mode="json")
+
+
+def test_run_stores_cut_intervals(tmp_path):
+    settings = _write_job(
+        tmp_path,
+        turns=[
+            {"start_s": 5.0, "end_s": 7.5, "text": "Step one, open the case"},
+            {"start_s": 20.0, "end_s": 22.0, "text": "Paso dos, lift it"},
+        ],
+    )
+    result = scenes.run(tmp_path, settings)
+    assert result.cuts == [5.0, 20.0]
+    assert [(s.start_s, s.end_s) for s in result.cut_intervals] == [(5.0, 7.5), (20.0, 22.0)]
+
+
+def test_run_intro_segment_when_first_cut_late(tmp_path):
+    settings = _write_job(
+        tmp_path,
+        turns=[
+            {"start_s": 10.0, "end_s": 12.0, "text": "Step one, open the case"},
+            {"start_s": 25.0, "end_s": 27.0, "text": "Paso dos, lift it"},
+        ],
+    )
+    result = scenes.run(tmp_path, settings)
+    assert [(s.start_s, s.end_s) for s in result.segments] == [
+        (0.0, 10.0),
+        (10.0, 25.0),
+        (25.0, 42.0),
+    ]
 
 
 def test_run_silent_has_no_segments(tmp_path):
     settings = _write_job(tmp_path, mode="silent", turns=[])
     result = scenes.run(tmp_path, settings)
-    assert result["source"] == "none"
-    assert result["segments"] == []
+    assert result.source == "none"
+    assert result.segments == []
 
 
-def test_run_narrated_with_one_keyword_gives_none(tmp_path):
+def test_run_narrated_with_one_keyword_gives_voice(tmp_path):
     settings = _write_job(
         tmp_path,
         turns=[
@@ -72,24 +111,32 @@ def test_run_narrated_with_one_keyword_gives_none(tmp_path):
         ],
     )
     result = scenes.run(tmp_path, settings)
-    assert result["source"] == "none"
-    assert result["segments"] == []
+    assert result.source == "voice"
+    assert result.cuts == [5.0]
+    assert [(s.start_s, s.end_s) for s in result.segments] == [(0.0, 5.0), (5.0, 42.0)]
 
 
 def test_run_without_transcript_is_silent(tmp_path):
-    # Transcription is optional: if it failed, scenes treats the video as silent.
     settings = Settings(model_api_key="", data_dir=tmp_path)
     (tmp_path / "ingest.json").write_text(
         json.dumps({"duration_s": 42.0, "width": 720, "height": 1280, "has_audio": True}),
         encoding="utf-8",
     )
     result = scenes.run(tmp_path, settings)
-    assert result == {"source": "none", "cuts": [], "segments": []}
+    assert result.model_dump(mode="json") == {
+        "source": "none",
+        "cuts": [],
+        "cut_intervals": [],
+        "segments": [],
+    }
 
 
 def test_run_with_broken_transcript_raises(tmp_path):
     settings = Settings(model_api_key="", data_dir=tmp_path)
-    (tmp_path / "ingest.json").write_text(json.dumps({"duration_s": 42.0}), encoding="utf-8")
+    (tmp_path / "ingest.json").write_text(
+        json.dumps({"duration_s": 42.0, "width": 720, "height": 1280, "has_audio": True}),
+        encoding="utf-8",
+    )
     (tmp_path / "transcript.json").write_text("{", encoding="utf-8")
     with pytest.raises(ScenesError, match="transcript.json"):
         scenes.run(tmp_path, settings)

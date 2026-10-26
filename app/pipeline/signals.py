@@ -1,16 +1,15 @@
 """Visual-signals stage: motion and scene-change signals from the video."""
 
-import json
 import math
-import os
-import tempfile
 from collections.abc import Iterator
 from pathlib import Path
 
 import cv2
 import numpy as np
 
+from app import artifacts
 from app.config import Settings
+from app.schemas import Candidate, Signals
 
 
 class SignalsError(Exception):
@@ -42,36 +41,71 @@ def sample_frames(video: Path) -> Iterator[tuple[float, np.ndarray]]:
                 ok, frame = capture.retrieve()
                 if not ok or frame is None:
                     break
+                t_seconds = float(capture.get(cv2.CAP_PROP_POS_MSEC)) / 1000.0
+                if not math.isfinite(t_seconds) or t_seconds < 0:
+                    t_seconds = 0.0
                 height, width = frame.shape[:2]
                 if width != PROXY_WIDTH and width > 0:
                     new_height = max(1, int(round(height * PROXY_WIDTH / width)))
                     frame = cv2.resize(
                         frame, (PROXY_WIDTH, new_height), interpolation=cv2.INTER_AREA
                     )
-                yield (frame_index / src_fps, frame)
+                yield (t_seconds, frame)
             frame_index += 1
     finally:
         capture.release()
 
 
-def compute_signals(video: Path) -> dict:
+def compensated_motion_energy(prev_gray: np.ndarray, curr_gray: np.ndarray) -> tuple[float, float]:
+    """Return ``(compensated, raw)`` mean abs difference divided by 255.
+
+    The global shift between the frames is estimated with phase correlation and the
+    previous frame is warped by it before the difference, so pure camera shake does
+    not look like hand activity. The compensated difference ignores a border of
+    ``ceil(max(|dx|, |dy|))`` pixels, where the warp has no real data.
+    """
+    if prev_gray.shape != curr_gray.shape:
+        curr_gray = cv2.resize(curr_gray, (prev_gray.shape[1], prev_gray.shape[0]))
+    raw = float(cv2.absdiff(curr_gray, prev_gray).mean()) / 255.0
+    try:
+        (dx, dy), _response = cv2.phaseCorrelate(
+            prev_gray.astype(np.float32), curr_gray.astype(np.float32)
+        )
+    except cv2.error:
+        return raw, raw
+    if not (math.isfinite(dx) and math.isfinite(dy)):
+        return raw, raw
+    height, width = prev_gray.shape[:2]
+    matrix = np.float32([[1.0, 0.0, float(dx)], [0.0, 1.0, float(dy)]])
+    aligned = cv2.warpAffine(
+        prev_gray,
+        matrix,
+        (width, height),
+        flags=cv2.INTER_LINEAR,
+        borderMode=cv2.BORDER_REPLICATE,
+    )
+    diff = cv2.absdiff(aligned, curr_gray)
+    border = int(math.ceil(max(abs(float(dx)), abs(float(dy)))))
+    if border > 0 and height > 2 * border and width > 2 * border:
+        diff = diff[border:-border, border:-border]
+    compensated = float(diff.mean()) / 255.0
+    return compensated, raw
+
+
+def compute_signals(video: Path) -> Signals:
     """Return the motion and scene signals of ``video`` in one sampling pass."""
     motion: list[list[float]] = []
     scene: list[list[float]] = []
     prev_gray: np.ndarray | None = None
     prev_hist: np.ndarray | None = None
-    last_t = 0.0
-    sample_interval = 1.0 / SAMPLE_FPS
+    timestamps: list[float] = []
 
-    for index, (t_seconds, frame) in enumerate(sample_frames(video)):
-        if index == 1:
-            sample_interval = t_seconds - last_t
+    for t_seconds, frame in sample_frames(video):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         if prev_gray is None:
             motion_energy = 0.0
         else:
-            diff = cv2.absdiff(gray, prev_gray)
-            motion_energy = float(diff.mean()) / 255.0
+            motion_energy, _raw = compensated_motion_energy(prev_gray, gray)
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         hist = cv2.calcHist([hsv], [0, 1], None, [32, 32], [0, 180, 0, 256])
         cv2.normalize(hist, hist, 1.0, 0.0, cv2.NORM_L1)
@@ -83,18 +117,33 @@ def compute_signals(video: Path) -> dict:
         scene.append([round(float(t_seconds), 4), round(float(scene_score), 4)])
         prev_gray = gray
         prev_hist = hist
-        last_t = float(t_seconds)
+        timestamps.append(float(t_seconds))
 
     if not motion:
         raise SignalsError("cannot read video.mp4")
 
-    duration_s = last_t + sample_interval if len(motion) > 1 else last_t + 1.0 / SAMPLE_FPS
-    return {
-        "fps": SAMPLE_FPS,
-        "duration_s": round(float(duration_s), 4),
-        "motion": motion,
-        "scene": scene,
-    }
+    if len(timestamps) > 1:
+        sample_interval = timestamps[1] - timestamps[0]
+        if not math.isfinite(sample_interval) or sample_interval <= 0:
+            sample_interval = 1.0 / SAMPLE_FPS
+    else:
+        sample_interval = 1.0 / SAMPLE_FPS
+    duration_s = timestamps[-1] + sample_interval
+
+    candidate_dicts = rank_candidates(
+        find_pauses(motion) + find_scene_changes(scene),
+        float(duration_s),
+    )
+    candidates = [
+        Candidate(t=float(c["t"]), kind=c["kind"], score=float(c["score"])) for c in candidate_dicts
+    ]
+    return Signals(
+        fps=float(SAMPLE_FPS),
+        duration_s=round(float(duration_s), 4),
+        motion=motion,
+        scene=scene,
+        candidates=candidates,
+    )
 
 
 def smooth(values: list[float], window: int = 3) -> list[float]:
@@ -111,14 +160,29 @@ def smooth(values: list[float], window: int = 3) -> list[float]:
     return result
 
 
+def _median(values: list[float]) -> float:
+    if not values:
+        return 0.0
+    return _percentile(values, 50.0)
+
+
 def find_pauses(motion: list[list[float]], min_len_s: float = MIN_PAUSE_S) -> list[dict]:
-    """Return pause candidates from runs below a threshold from the smoothed energy."""
+    """Return pause candidates from runs below the threshold on the smoothed curve."""
     if not motion:
         return []
     times = [float(row[0]) for row in motion]
     values = [float(row[1]) for row in motion]
     smoothed = smooth(values)
-    threshold = max(0.002, _percentile(smoothed, 35.0))
+    p35 = _percentile(smoothed, 35.0)
+    median = _median(smoothed)
+    absolute = max(0.004, p35)
+    if median > 0:
+        threshold = min(absolute, 0.5 * median)
+        # A threshold at zero would hide a genuinely still video; keep the floor.
+        if threshold <= 0:
+            threshold = absolute
+    else:
+        threshold = absolute
     if len(times) > 1:
         interval = (times[-1] - times[0]) / (len(times) - 1)
         if interval <= 0:
@@ -128,18 +192,25 @@ def find_pauses(motion: list[list[float]], min_len_s: float = MIN_PAUSE_S) -> li
 
     candidates: list[dict] = []
     run_start: int | None = None
-    for i, value in enumerate(values):
+    for i, value in enumerate(smoothed):
         if value < threshold:
             if run_start is None:
                 run_start = i
         elif run_start is not None:
             _append_pause(
-                candidates, times, values, run_start, i - 1, threshold, interval, min_len_s
+                candidates, times, smoothed, run_start, i - 1, threshold, interval, min_len_s
             )
             run_start = None
     if run_start is not None:
         _append_pause(
-            candidates, times, values, run_start, len(values) - 1, threshold, interval, min_len_s
+            candidates,
+            times,
+            smoothed,
+            run_start,
+            len(smoothed) - 1,
+            threshold,
+            interval,
+            min_len_s,
         )
     return candidates
 
@@ -180,19 +251,14 @@ def rank_candidates(candidates: list[dict], duration_s: float) -> list[dict]:
     return kept
 
 
-def run(job_dir: Path, settings: Settings) -> dict:
+def run(job_dir: Path, settings: Settings) -> Signals:
     """Compute the visual signals of ``video.mp4`` and write ``signals.json``."""
     del settings
     video = job_dir / "video.mp4"
     if not video.is_file():
         raise SignalsError("missing video.mp4")
     result = compute_signals(video)
-    candidates = rank_candidates(
-        find_pauses(result["motion"]) + find_scene_changes(result["scene"]),
-        float(result["duration_s"]),
-    )
-    result = {**result, "candidates": candidates}
-    _write_json_atomic(job_dir / "signals.json", result)
+    artifacts.save(job_dir, result)
     return result
 
 
@@ -226,16 +292,3 @@ def _append_pause(
     mean_in_run = sum(values[start : end + 1]) / run_len
     score = min(1.0, max(0.0, 1 - mean_in_run / threshold)) if threshold > 0 else 0.0
     candidates.append({"t": round(float(center), 4), "kind": "pause", "score": round(score, 3)})
-
-
-def _write_json_atomic(path: Path, payload: dict) -> None:
-    with tempfile.NamedTemporaryFile(
-        dir=str(path.parent),
-        delete=False,
-        mode="w",
-        suffix=".tmp",
-        encoding="utf-8",
-    ) as tmp:
-        json.dump(payload, tmp)
-        tmp_path = tmp.name
-    os.replace(tmp_path, path)

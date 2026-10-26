@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import time
 
+import cv2
 import pytest
 
 from app.config import Settings
@@ -93,6 +94,81 @@ def _make_testsrc_video(path, duration=60):
     )
 
 
+def _make_vfr_video(path):
+    _run_ffmpeg(
+        [
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=size=320x568:rate=60:duration=4",
+            "-vf",
+            "setpts='if(lt(N,120),N/(60*TB),(120+(N-120)*2)/(60*TB))'",
+            "-fps_mode",
+            "vfr",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            str(path),
+        ]
+    )
+
+
+def _make_shake_video(path, still_path):
+    _run_ffmpeg(
+        [
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=size=360x608:rate=1:duration=1",
+            "-frames:v",
+            "1",
+            str(still_path),
+        ]
+    )
+    _run_ffmpeg(
+        [
+            "-loop",
+            "1",
+            "-framerate",
+            "30",
+            "-i",
+            str(still_path),
+            "-vf",
+            "crop=320:568:x='20+6*sin(1.7*n)':y='20+5*cos(1.3*n)'",
+            "-t",
+            "3",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            str(path),
+        ]
+    )
+
+
+def _ffprobe_pts(path):
+    out = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "frame=pts_time",
+            "-of",
+            "csv=p=0",
+            str(path),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=60,
+    )
+    return [float(line.strip().rstrip(",")) for line in out.stdout.splitlines() if line.strip()]
+
+
 def test_smooth_centered_moving_average():
     assert smooth([0.0, 0.0, 3.0, 0.0, 0.0]) == [0.0, 1.0, 1.0, 1.0, 0.0]
     assert smooth([1.0, 2.0, 3.0], window=1) == [1.0, 2.0, 3.0]
@@ -126,9 +202,13 @@ def test_find_pauses_ignores_short_dip_and_empty():
 def test_find_pauses_all_still_is_one_pause():
     motion = [[i * 0.25, 0.0] for i in range(16)]
     pauses = find_pauses(motion)
-    # Threshold is at least 0.002, so a fully still curve stays below it.
     assert len(pauses) == 1
     assert pauses[0]["score"] == 1.0
+
+
+def test_find_pauses_constant_accelerating_motion_has_no_pause():
+    motion = [[i * 0.25, 0.2 + 0.01 * i] for i in range(32)]
+    assert find_pauses(motion) == []
 
 
 def test_find_scene_changes_hand_made_curve():
@@ -147,7 +227,6 @@ def test_find_scene_changes_requires_peak_above_threshold():
     not_peak[10] = [5.0, 0.9]
     not_peak[11] = [5.5, 0.95]
     not_peak[12] = [6.0, 0.9]
-    # The middle sample is the only strict peak; edges of a plateau are not.
     result = find_scene_changes(not_peak)
     assert all(candidate["t"] != 5.0 for candidate in result)
 
@@ -200,13 +279,47 @@ def test_rank_candidates_returns_sorted_by_time():
 
 
 @needs_ffmpeg
+def test_vfr_sample_timestamps_match_ffprobe_pts(tmp_path):
+    video = tmp_path / "video.mp4"
+    _make_vfr_video(video)
+    pts = _ffprobe_pts(video)
+    samples = list(signals.sample_frames(video))
+    assert len(samples) >= 10
+    for t_seconds, _frame in samples:
+        nearest = min(abs(t_seconds - p) for p in pts)
+        assert nearest <= 0.05, t_seconds
+
+
+@needs_ffmpeg
+def test_shake_only_compensated_energy_is_much_lower_than_raw(tmp_path):
+    video = tmp_path / "video.mp4"
+    _make_shake_video(video, tmp_path / "still.png")
+    result = signals.compute_signals(video)
+    compensated = [value for _t, value in result.motion]
+    raw = []
+    prev_gray = None
+    for _t, frame in signals.sample_frames(video):
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        if prev_gray is None:
+            raw.append(0.0)
+        else:
+            raw.append(float(cv2.absdiff(gray, prev_gray).mean()) / 255.0)
+        prev_gray = gray
+    comp_mean = sum(compensated) / len(compensated)
+    raw_mean = sum(raw) / len(raw)
+    print(f"shake compensated={comp_mean:.5f} raw={raw_mean:.5f}")
+    assert raw_mean > 0
+    assert comp_mean < 0.30 * raw_mean
+
+
+@needs_ffmpeg
 def test_pause_candidate_in_synthetic_video(tmp_path):
     video = tmp_path / "video.mp4"
     _make_pause_video(video)
     result = signals.compute_signals(video)
-    pauses = [c for c in _candidates(result) if c["kind"] == "pause"]
+    pauses = [c for c in result.candidates if c.kind == "pause"]
     assert len(pauses) == 1
-    assert 3.0 <= pauses[0]["t"] <= 5.0
+    assert 3.0 <= pauses[0].t <= 5.0
 
 
 @needs_ffmpeg
@@ -214,9 +327,9 @@ def test_scene_candidate_in_synthetic_video(tmp_path):
     video = tmp_path / "video.mp4"
     _make_scene_video(video)
     result = signals.compute_signals(video)
-    scenes = [c for c in _candidates(result) if c["kind"] == "scene"]
+    scenes = [c for c in result.candidates if c.kind == "scene"]
     assert len(scenes) == 1
-    assert 1.5 <= scenes[0]["t"] <= 2.5
+    assert 1.5 <= scenes[0].t <= 2.5
 
 
 @needs_ffmpeg
@@ -224,13 +337,12 @@ def test_run_writes_signals_json(tmp_path):
     _make_scene_video(tmp_path / "video.mp4")
     settings = Settings(model_api_key="", data_dir=tmp_path)
     result = signals.run(tmp_path, settings)
-    assert set(result.keys()) == {"fps", "duration_s", "motion", "scene", "candidates"}
-    assert result["fps"] == 4
-    assert result["duration_s"] == pytest.approx(4.0, abs=0.5)
-    assert result["motion"][0][1] == 0.0
-    assert result["scene"][0][1] == 0.0
+    assert result.fps == 4
+    assert result.duration_s == pytest.approx(4.0, abs=0.5)
+    assert result.motion[0][1] == 0.0
+    assert result.scene[0][1] == 0.0
     stored = json.loads((tmp_path / "signals.json").read_text(encoding="utf-8"))
-    assert stored == result
+    assert stored == result.model_dump(mode="json")
 
 
 def test_run_missing_video_raises(tmp_path):
@@ -255,12 +367,5 @@ def test_compute_signals_speed_on_60s_video(tmp_path):
     result = signals.compute_signals(video)
     elapsed = time.perf_counter() - start
     assert elapsed < 5.0
-    assert result["duration_s"] == pytest.approx(60.0, abs=1.0)
-    assert len(result["motion"]) >= 200
-
-
-def _candidates(result):
-    return signals.rank_candidates(
-        find_pauses(result["motion"]) + find_scene_changes(result["scene"]),
-        result["duration_s"],
-    )
+    assert result.duration_s == pytest.approx(60.0, abs=1.0)
+    assert len(result.motion) >= 200

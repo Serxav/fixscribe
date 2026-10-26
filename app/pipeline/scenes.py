@@ -1,12 +1,12 @@
 """Step-cut stage: spoken keywords to video segments."""
 
-import json
-import os
 import re
-import tempfile
 from pathlib import Path
 
+from app import artifacts
+from app.artifacts import ArtifactError
 from app.config import Settings
+from app.schemas import IngestInfo, Scenes, Segment, Transcript, Turn
 
 
 class ScenesError(Exception):
@@ -16,48 +16,73 @@ class ScenesError(Exception):
 KEYWORD = re.compile(r"\b(step|paso)\b", re.IGNORECASE)
 
 
-def keyword_cuts(turns: list[dict], min_gap_s: float = 3.0) -> list[float]:
-    """Return the `start_s` of each turn that mentions the step keyword."""
-    cuts: list[float] = []
-    for turn in turns:
-        if not isinstance(turn, dict):
-            continue
+def _turn_fields(turn: object) -> tuple[float, float, str] | None:
+    if isinstance(turn, Turn):
+        return float(turn.start_s), float(turn.end_s), turn.text
+    if isinstance(turn, dict):
         text = turn.get("text", "")
-        if not isinstance(text, str) or not KEYWORD.search(text):
-            continue
+        if not isinstance(text, str):
+            return None
         try:
-            start_s = float(turn.get("start_s"))
+            start_s = float(turn.get("start_s"))  # type: ignore[arg-type]
+            end_s = float(turn.get("end_s"))  # type: ignore[arg-type]
         except (TypeError, ValueError):
+            return None
+        return start_s, end_s, text
+    return None
+
+
+def _kept_keyword_turns(turns: list, min_gap_s: float = 3.0) -> list[tuple[float, float]]:
+    """Return ``(start_s, end_s)`` of keyword turns, dropping cuts closer than ``min_gap_s``."""
+    matched: list[tuple[float, float]] = []
+    for turn in turns:
+        fields = _turn_fields(turn)
+        if fields is None:
             continue
-        cuts.append(start_s)
-    cuts.sort()
-    kept: list[float] = []
-    for cut in cuts:
-        if kept and cut - kept[-1] < min_gap_s:
+        start_s, end_s, text = fields
+        if not KEYWORD.search(text):
             continue
-        kept.append(cut)
+        matched.append((start_s, end_s))
+    matched.sort(key=lambda pair: pair[0])
+    kept: list[tuple[float, float]] = []
+    for start_s, end_s in matched:
+        if kept and start_s - kept[-1][0] < min_gap_s:
+            continue
+        kept.append((start_s, end_s))
     return kept
 
 
+def keyword_cuts(turns: list[dict], min_gap_s: float = 3.0) -> list[float]:
+    """Return the `start_s` of each turn that mentions the step keyword."""
+    return [start for start, _end in _kept_keyword_turns(list(turns), min_gap_s)]
+
+
 def cuts_to_segments(cuts: list[float], duration_s: float, min_len_s: float = 2.0) -> list[dict]:
-    """Turn cut points into segments covering the rest of the video."""
+    """Turn cut points into segments covering the video.
+
+    One segment per cut, plus a first segment ``[0, first_cut]`` when the first
+    cut is at least 3 s after 0. Short segments are merged as before.
+    """
     ordered = sorted(cut for cut in cuts if cut < duration_s)
     if not ordered:
         return []
-    segments = [
+    starts: list[float] = list(ordered)
+    if ordered[0] >= 3.0:
+        starts = [0.0, *ordered]
+    raw: list[dict] = [
         {
-            "start_s": round(float(cut), 2),
-            "end_s": round(float(ordered[i + 1] if i + 1 < len(ordered) else duration_s), 2),
+            "start_s": round(float(start), 2),
+            "end_s": round(float(starts[i + 1] if i + 1 < len(starts) else duration_s), 2),
         }
-        for i, cut in enumerate(ordered)
+        for i, start in enumerate(starts)
     ]
     merged: list[dict] = []
-    for i, segment in enumerate(segments):
+    for i, segment in enumerate(raw):
         if segment["end_s"] - segment["start_s"] < min_len_s:
             if merged:
                 merged[-1]["end_s"] = segment["end_s"]
-            elif i + 1 < len(segments):
-                segments[i + 1]["start_s"] = segment["start_s"]
+            elif i + 1 < len(raw):
+                raw[i + 1]["start_s"] = segment["start_s"]
             else:
                 merged.append(segment)
         else:
@@ -65,63 +90,44 @@ def cuts_to_segments(cuts: list[float], duration_s: float, min_len_s: float = 2.
     return merged
 
 
-def run(job_dir: Path, settings: Settings) -> dict:
+def run(job_dir: Path, settings: Settings) -> Scenes:
     """Split the video into steps from the spoken keyword, or mark none."""
     del settings
-    ingest = _read_json(job_dir / "ingest.json", "ingest.json")
-    # No transcript (no audio, or transcription failed): treat the video as silent.
-    transcript_path = job_dir / "transcript.json"
-    transcript = (
-        _read_json(transcript_path, "transcript.json")
-        if transcript_path.exists()
-        else {"mode": "silent", "turns": []}
-    )
-    if not isinstance(ingest, dict):
-        raise ScenesError("broken ingest.json: expected a JSON object")
-    if not isinstance(transcript, dict):
-        raise ScenesError("broken transcript.json: expected a JSON object")
     try:
-        duration_s = float(ingest["duration_s"])
-    except (KeyError, TypeError, ValueError):
-        raise ScenesError("broken ingest.json: missing or invalid 'duration_s'") from None
+        ingest = artifacts.load(job_dir, IngestInfo)
+    except ArtifactError as exc:
+        raise ScenesError(str(exc)) from None
+    try:
+        transcript = artifacts.load_optional(job_dir, Transcript)
+    except ArtifactError as exc:
+        raise ScenesError(str(exc)) from None
+    if transcript is None:
+        transcript = Transcript(mode="silent", turns=[])
+    duration_s = float(ingest.duration_s)
     if duration_s <= 0:
         raise ScenesError("broken ingest.json: 'duration_s' must be positive")
-    turns = transcript.get("turns", [])
-    if not isinstance(turns, list):
-        raise ScenesError("broken transcript.json: missing or invalid 'turns'")
 
     cuts: list[float] = []
-    segments: list[dict] = []
-    if transcript.get("mode") == "narrated":
-        cuts = [round(cut, 2) for cut in keyword_cuts(turns)]
-        segments = cuts_to_segments(cuts, duration_s)
+    cut_intervals: list[Segment] = []
+    segments: list[Segment] = []
+    if transcript.mode == "narrated":
+        kept = _kept_keyword_turns(list(transcript.turns))
+        cuts = [round(float(start), 2) for start, _end in kept]
+        cut_intervals = [
+            Segment(start_s=round(float(start), 2), end_s=round(float(end), 2))
+            for start, end in kept
+        ]
+        segment_dicts = cuts_to_segments(cuts, duration_s)
+        segments = [
+            Segment(start_s=float(s["start_s"]), end_s=float(s["end_s"])) for s in segment_dicts
+        ]
 
-    source = "voice" if len(segments) >= 2 else "none"
+    source = "voice" if cuts else "none"
     if source == "none":
         segments = []
-    result = {"source": source, "cuts": cuts, "segments": segments}
-    _write_json_atomic(job_dir / "scenes.json", result)
+        cuts = cuts if transcript.mode == "narrated" else []
+        if source == "none" and not cuts:
+            cut_intervals = []
+    result = Scenes(source=source, cuts=cuts, cut_intervals=cut_intervals, segments=segments)
+    artifacts.save(job_dir, result)
     return result
-
-
-def _read_json(path: Path, name: str):
-    try:
-        with open(path, encoding="utf-8") as handle:
-            return json.load(handle)
-    except FileNotFoundError:
-        raise ScenesError(f"missing {name}") from None
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise ScenesError(f"broken {name}: {exc}") from None
-
-
-def _write_json_atomic(path: Path, payload: dict) -> None:
-    with tempfile.NamedTemporaryFile(
-        dir=str(path.parent),
-        delete=False,
-        mode="w",
-        suffix=".tmp",
-        encoding="utf-8",
-    ) as tmp:
-        json.dump(payload, tmp)
-        tmp_path = tmp.name
-    os.replace(tmp_path, path)
