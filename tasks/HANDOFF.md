@@ -1,12 +1,12 @@
 # HANDOFF — read this when Claude Code is not available
 
-## State (updated 2026-10-26, night)
-- `main` has the whole pipeline, the upload + progress pages, and all "today" and "next" audit fixes (see `tasks/AUDIT.md`). 196 tests pass.
-- Muse Code worktree is on branch `feat/guide-page`. Task 010 was launched by Claude Code; if the guide page is not finished, finish 010 first.
-- No real Meta call has been made by the product yet. Muse Code has spent about 5.11 $.
+## State (end of day 1, 2026-10-26)
+- `main` has the whole pipeline, the audit fixes, and the web app: home, job progress and guide page (010). 201 tests pass.
+- Day 2 plan: Sergi records a real repair video and runs `scripts/run_video.py` (first real Meta call), then SAM screw map, inspector, Ask, export.
+- Muse Code has spent about 6.12 $ (muse-wonder-1.0 is the default model since task 009).
 
 ## Queue for Muse Code (do them in this order, one after another)
-1. `tasks/010-guide-page.md`
+- (empty: wait for Claude Code)
 
 ## Rules for this mode
 - Before each task, read `AGENTS.md` and `docs/HACKATHON_BRIEF.md`.
