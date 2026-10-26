@@ -128,6 +128,8 @@ def test_full_pipeline_builds_a_guide(tmp_path, fake_meta):
     assert guide.steps[1].review == "needs_review"
     assert [r.action for r in guide.reassembly] == ["reconnect", "screw in"]
     assert (folder / "analysis_raw.txt").exists()
+    assert guide.steps[0].image == "steps/01.jpg"
+    assert (folder / guide.steps[0].clip).exists()
 
 
 def test_bad_spark_answer_fails_the_job_cleanly(tmp_path, fake_meta, monkeypatch):
