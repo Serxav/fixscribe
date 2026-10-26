@@ -160,3 +160,74 @@ class Analysis(BaseModel):
     parts: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     steps: list[DraftStep] = Field(default_factory=list)
+
+
+ACTIONS = [
+    "remove",
+    "disconnect",
+    "unscrew",
+    "unclip",
+    "pry",
+    "open",
+    "peel",
+    "inspect",
+    "clean",
+    "other",
+]
+
+
+def _object(properties: dict[str, Any]) -> dict[str, Any]:
+    """A strict JSON Schema object: every key required, no extra keys."""
+    return {
+        "type": "object",
+        "properties": properties,
+        "required": list(properties),
+        "additionalProperties": False,
+    }
+
+
+_STRINGS = {"type": "array", "items": {"type": "string"}}
+
+# Sent to Muse Spark as text.format = {"type": "json_schema", "name": "repair_analysis",
+# "schema": ANALYSIS_JSON_SCHEMA, "strict": True}. See https://dev.meta.ai/docs/structured-output
+# Strict mode needs every key in "required" and additionalProperties false. Its output is then
+# validated again with the Analysis model above.
+ANALYSIS_JSON_SCHEMA: dict[str, Any] = _object(
+    {
+        "title": {"type": "string"},
+        "device": {"type": "string"},
+        "summary": {"type": "string"},
+        "difficulty": {"type": "string", "enum": ["easy", "medium", "hard"]},
+        "estimated_minutes": {"type": "integer"},
+        "tools": _STRINGS,
+        "parts": _STRINGS,
+        "warnings": _STRINGS,
+        "steps": {
+            "type": "array",
+            "items": _object(
+                {
+                    "title": {"type": "string"},
+                    "instruction": {"type": "string"},
+                    "start_s": {"type": "number"},
+                    "end_s": {"type": "number"},
+                    "target_part": {"type": "string"},
+                    "action": {"type": "string", "enum": ACTIONS},
+                    "removes": _STRINGS,
+                    "screw_count": {"type": "integer"},
+                    "warnings": _STRINGS,
+                    "evidence": {
+                        "type": "array",
+                        "items": _object(
+                            {
+                                "t_s": {"type": "number"},
+                                "source": {"type": "string", "enum": ["video", "audio"]},
+                                "text": {"type": "string"},
+                            }
+                        ),
+                    },
+                    "confidence": {"type": "number"},
+                }
+            ),
+        },
+    }
+)
