@@ -1,14 +1,14 @@
 # HANDOFF — read this when Claude Code is not available
 
-## State (updated 2026-10-26, evening)
-- `main` has: skeleton, schemas, jobs, assembly, runner, meta client (001), eval, hackathon brief. 85 tests pass.
-- Muse Code worktree is on branch `feat/first-call`. Task 002 was launched by Claude Code; if `tasks/002-first-call.report.md` does not exist, finish 002 first.
-- No real Meta call has been made by the product yet. Muse Code has spent about 0.50 $.
+## State (updated 2026-10-26, night)
+- `main` has: skeleton, schemas, jobs, assembly, runner, meta client (001), first-call script (002), eval, brief. 100 tests pass.
+- Muse Code worktree is on branch `feat/ingest`. Task 003 was launched by Claude Code; if `tasks/003-ingest.report.md` does not exist and `app/pipeline/ingest.py` is not finished, finish 003 first.
+- No real Meta call has been made by the product yet. Muse Code has spent about 0.74 $.
 
 ## Queue for Muse Code (do them in this order, one after another)
-1. `tasks/002-first-call.md`
-2. `tasks/003-ingest.md`
-3. `tasks/004-transcribe.md`
+1. `tasks/003-ingest.md`
+2. `tasks/004-transcribe.md`
+3. `tasks/005-step-cuts.md`
 
 ## Rules for this mode
 - Before each task, read `AGENTS.md` and `docs/HACKATHON_BRIEF.md`.
