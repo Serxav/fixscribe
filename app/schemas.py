@@ -2,7 +2,7 @@
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class Strict(BaseModel):
@@ -145,6 +145,34 @@ class DraftStep(BaseModel):
     evidence: list[Evidence] = Field(default_factory=list)
     confidence: float = Field(default=0.5, ge=0, le=1)
 
+    # The strict JSON schema cannot set numeric limits, so Spark may send numbers out of range.
+    # We fix them here instead of failing the whole job.
+    @field_validator("screw_count", mode="before")
+    @classmethod
+    def no_negative_screws(cls, value: Any) -> Any:
+        return max(0, value) if isinstance(value, int | float) else value
+
+    @field_validator("confidence", mode="before")
+    @classmethod
+    def confidence_0_to_1(cls, value: Any) -> Any:
+        if not isinstance(value, int | float):
+            return value
+        if 1 < value <= 100:
+            value = value / 100  # a percentage, e.g. 85 -> 0.85
+        return min(1.0, max(0.0, value))
+
+    @field_validator("evidence", mode="before")
+    @classmethod
+    def no_negative_evidence_times(cls, value: Any) -> Any:
+        if not isinstance(value, list):
+            return value
+        return [
+            item | {"t_s": max(0.0, item["t_s"])}
+            if isinstance(item, dict) and isinstance(item.get("t_s"), int | float)
+            else item
+            for item in value
+        ]
+
 
 class Analysis(BaseModel):
     """The JSON that the analyze stage asks Muse Spark for (saved as analysis.json)."""
@@ -160,6 +188,11 @@ class Analysis(BaseModel):
     parts: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     steps: list[DraftStep] = Field(default_factory=list)
+
+    @field_validator("estimated_minutes", mode="before")
+    @classmethod
+    def no_negative_minutes(cls, value: Any) -> Any:
+        return max(0, value) if isinstance(value, int | float) else value
 
 
 ACTIONS = [

@@ -95,3 +95,45 @@ def test_run_fails_clearly(tmp_path):
     write(tmp_path, "ingest.json", {"duration_s": 12.0})
     with pytest.raises(GuideError, match="no repair steps"):
         run(tmp_path, settings=None)
+
+
+def test_out_of_range_numbers_from_spark_are_fixed_not_fatal():
+    analysis = Analysis.model_validate(
+        {
+            "estimated_minutes": -5,
+            "steps": [
+                {
+                    "title": "a",
+                    "start_s": 0,
+                    "end_s": 5,
+                    "screw_count": -2,
+                    "confidence": 85,
+                    "evidence": [{"t_s": -1.0, "source": "video", "text": "x"}],
+                },
+                {"title": "b", "start_s": 5, "end_s": 9, "confidence": 1.7e9},
+            ],
+        }
+    )
+    assert analysis.estimated_minutes == 0
+    first, second = analysis.steps
+    assert (first.screw_count, first.confidence, first.evidence[0].t_s) == (0, 0.85, 0.0)
+    assert second.confidence == 1.0
+
+
+def test_evidence_after_the_step_is_dropped():
+    guide = build_guide(
+        analysis(
+            draft(
+                "a",
+                0,
+                5,
+                evidence=[
+                    {"t_s": 2.0, "source": "video", "text": "ok"},
+                    {"t_s": 40.0, "source": "video", "text": "far away"},
+                ],
+            )
+        ),
+        10,
+        "silent",
+    )
+    assert [e.text for e in guide.steps[0].evidence] == ["ok"]
