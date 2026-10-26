@@ -21,26 +21,32 @@ Hackathon: Meta Global AI Developer Hackathon, Indie track. Deadline: Nov 4, 202
 | Git | **Never** commits, pushes, merges, rebases or switches branches | **Only Claude Code** commits, merges and pushes, and only after Sergi says "ok" |
 | Task files | Reads `tasks/<id>.md` and `tasks/<id>.review.md` | Writes them |
 
-Sergi is the human. He passes messages between the two agents and approves every push.
+Sergi is the human. He approves every commit, merge and push. Claude Code launches Muse Code
+headless (`muse exec`); when Claude Code is unavailable, Sergi launches Muse Code with
+`tasks/HANDOFF.md`.
 
 ## 3. How a task works (Muse Code: follow these steps exactly)
-1. Sergi says: "Read tasks/<id>.md and do it."
+0. Before every task, read `docs/HACKATHON_BRIEF.md`.
+1. You are told: "Read tasks/<id>.md and do it." (or "Read tasks/HANDOFF.md and do the queue").
 2. Read the task file. Read every file listed in "Files to touch". Do not open other files unless needed to understand an import.
-3. If something is unclear, ask ONE short question and wait.
+3. You run headless: nobody can answer. If something is unclear, make the safest choice that stays inside the task and write it under DUDAS.
 4. Change ONLY the files listed in "Files to touch". Never touch files under "Do not touch".
 5. Write or update tests for what you changed.
-6. Run: `.venv/bin/pytest -q` and `.venv/bin/ruff check .` Fix until both pass.
-7. STOP. Do not commit. Reply with the report in section 4.
-8. If Sergi says "Read tasks/<id>.review.md", fix every point in it, run step 6 again and report again.
+6. Run: `.venv/bin/pytest -q`, `.venv/bin/ruff check .` and `.venv/bin/ruff format --check .` Fix until all pass.
+7. Answer the five questions at the end of `docs/HACKATHON_BRIEF.md`.
+8. STOP. Do not commit. Reply with the report in section 4. In HANDOFF mode, also write it to `tasks/<id>.report.md`.
+9. If you are told "Read tasks/<id>.review.md", fix every point in it, run step 6 again and report again.
 
 ## 4. Report format (Muse Code, always, in Spanish)
 ```
 HECHO: <1–3 frases>
 ARCHIVOS: <lista de archivos cambiados>
 TESTS: <pytest: N passed / ruff: ok>
+JURADO: <qué criterio de la rúbrica mejora esta tarea y por qué>
 DUDAS: <o "ninguna">
 NO HECHO: <lo que falta, o "nada">
 ```
+If you cannot fill JURADO, you have not understood the task: re-read the task and the brief.
 
 ## 5. Hard rules (both agents)
 - Everything inside the repo is in English: code, comments, commit messages, README, UI text.

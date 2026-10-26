@@ -5,6 +5,9 @@ Owner: Muse Code | Claude Code
 ## Goal
 <one sentence>
 
+## Why this matters for judging
+<1–2 sentences: which criterion of docs/HACKATHON_BRIEF.md this task raises, and how>
+
 ## Files to touch
 - <path>
 
