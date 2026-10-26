@@ -3,7 +3,8 @@
 !.env.example
 .venv/
 data/
-samples/
+samples/*
+!samples/*.expected.json
 __pycache__/
 *.pyc
 .DS_Store
