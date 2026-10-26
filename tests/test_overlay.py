@@ -16,13 +16,18 @@ def test_normalize_clamps():
     assert normalize((-10, -10, 300, 300), (200, 200)) == (0.0, 0.0, 1.0, 1.0)
 
 
-def test_draw_screws_changes_center_and_leaves_corner():
+def test_draw_screws_ring_leaves_center_and_leaves_corner():
     image = _gray()
     original = image.copy()
     result = draw_screws(image, [(40, 40, 60, 60), (140, 140, 160, 160)], [1, 2])
 
-    assert not np.array_equal(result[50, 50], original[50, 50])
-    assert not np.array_equal(result[150, 150], original[150, 150])
+    # The screw itself stays visible: its centre pixel is untouched.
+    assert np.array_equal(result[50, 50], original[50, 50])
+    assert np.array_equal(result[150, 150], original[150, 150])
+    # The ring around the first screw (radius 17 px) is drawn.
+    assert not np.array_equal(result[50, 67], original[50, 67])
+    # The label sits up-right of the screw and is painted.
+    assert not np.array_equal(result[50 - 33, 50 + 33], original[50 - 33, 50 + 33])
     assert np.array_equal(result[0, 0], original[0, 0])
     assert np.array_equal(image, original)
 
@@ -40,8 +45,29 @@ def test_draw_screws_accepts_detections_and_labels():
         )
     ]
     result = draw_screws(image, detections, ["S1"])
-    assert not np.array_equal(result[50, 50], image[50, 50])
+    assert np.array_equal(result[50, 50], image[50, 50])
+    assert not np.array_equal(result[50, 67], image[50, 67])
     assert np.array_equal(result[0, 0], image[0, 0])
+
+
+def test_draw_screws_label_stays_inside_near_edge():
+    image = _gray()
+    result = draw_screws(image, [(184, 4, 196, 16)], [3])
+    # Screw centre untouched; the label was clamped inside, so the corner
+    # area of the image changed but nothing was drawn outside the frame.
+    assert np.array_equal(result[10, 190], image[10, 190])
+    assert not np.array_equal(result, image)
+    changed = np.any(result != image, axis=2)
+    assert changed[0:30, 160:200].any()
+
+
+def test_draw_screws_normalized_box_contract():
+    from app.schemas import NormBox
+
+    image = _gray()
+    result = draw_screws(image, [NormBox(x=0.2, y=0.2, w=0.1, h=0.1)], [1], (200, 200))
+    assert np.array_equal(result[50, 50], image[50, 50])
+    assert not np.array_equal(result[50, 67], image[50, 67])
 
 
 def test_draw_part_without_mask_draws_outline():
