@@ -5,7 +5,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import TypeAdapter
 
 from app.config import Settings
-from app.jobs import JobStatus, read_status
+from app.jobs import JobStatus
+from app.pipeline.runner import check_stale
 from app.routes.upload import settings_dep, templates
 
 router = APIRouter()
@@ -18,7 +19,7 @@ def api_job_status(
     settings: Settings = Depends(settings_dep),  # noqa: B008
 ):
     try:
-        status = read_status(job_id, settings.data_dir / "jobs")
+        status = check_stale(job_id, settings.data_dir / "jobs")
     except (ValueError, FileNotFoundError):
         return JSONResponse({"detail": "job not found"}, status_code=404)
     return _status_adapter.dump_python(status)
@@ -31,7 +32,7 @@ def job_page(
     settings: Settings = Depends(settings_dep),  # noqa: B008
 ):
     try:
-        status = read_status(job_id, settings.data_dir / "jobs")
+        status = check_stale(job_id, settings.data_dir / "jobs")
     except (ValueError, FileNotFoundError):
         return HTMLResponse("<h1>job not found</h1>", status_code=404)
     return templates.TemplateResponse(request, "job.html", {"job_id": job_id, "status": status})

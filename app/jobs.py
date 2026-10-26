@@ -1,5 +1,6 @@
 """Job folders in data/jobs/<id>/ and their status.json, always written atomically."""
 
+import fcntl
 import json
 import os
 import re
@@ -67,11 +68,19 @@ def read_status(job_id: str, jobs_dir: Path = JOBS_DIR) -> JobStatus:
 
 
 def update_status(job_id: str, jobs_dir: Path = JOBS_DIR, **changes: Any) -> JobStatus:
-    current = read_status(job_id, jobs_dir)
-    data = current.model_dump() | changes | {"updated_at": now_iso()}
-    status = JobStatus.model_validate(data)
-    write_json_atomic(job_dir(job_id, jobs_dir) / "status.json", status.model_dump())
-    return status
+    # The web process and the runner can both update a job: lock the read-modify-write.
+    folder = job_dir(job_id, jobs_dir)
+    with open(folder / "status.lock", "a") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        current = read_status(job_id, jobs_dir)
+        data = current.model_dump() | changes | {"updated_at": now_iso()}
+        status = JobStatus.model_validate(data)
+        write_json_atomic(folder / "status.json", status.model_dump())
+        return status
+
+
+def seconds_since_update(status: JobStatus) -> float:
+    return (datetime.now(UTC) - datetime.fromisoformat(status.updated_at)).total_seconds()
 
 
 def jobs_created_today(jobs_dir: Path = JOBS_DIR) -> int:
@@ -82,7 +91,12 @@ def jobs_created_today(jobs_dir: Path = JOBS_DIR) -> int:
     count = 0
     for folder in jobs_dir.iterdir():
         path = folder / "status.json"
-        if JOB_ID_PATTERN.fullmatch(folder.name) and path.exists():
-            if JobStatus.model_validate_json(path.read_text()).created_at[:10] == today:
-                count += 1
+        if not (JOB_ID_PATTERN.fullmatch(folder.name) and path.exists()):
+            continue
+        try:
+            created = JobStatus.model_validate_json(path.read_text()).created_at
+        except (OSError, ValueError):
+            continue  # one broken job folder must not block every upload
+        if created[:10] == today:
+            count += 1
     return count

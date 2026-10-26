@@ -69,7 +69,13 @@ def run(job_dir: Path, settings: Settings) -> dict:
     """Split the video into steps from the spoken keyword, or mark none."""
     del settings
     ingest = _read_json(job_dir / "ingest.json", "ingest.json")
-    transcript = _read_json(job_dir / "transcript.json", "transcript.json")
+    # No transcript (no audio, or transcription failed): treat the video as silent.
+    transcript_path = job_dir / "transcript.json"
+    transcript = (
+        _read_json(transcript_path, "transcript.json")
+        if transcript_path.exists()
+        else {"mode": "silent", "turns": []}
+    )
     if not isinstance(ingest, dict):
         raise ScenesError("broken ingest.json: expected a JSON object")
     if not isinstance(transcript, dict):

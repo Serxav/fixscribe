@@ -75,3 +75,10 @@ def test_jobs_created_today(tmp_path):
     old = create_job(tmp_path).job_id
     update_status(old, tmp_path, created_at="2026-01-01T00:00:00+00:00")
     assert jobs_created_today(tmp_path) == 1
+
+
+def test_broken_status_does_not_block_daily_count(tmp_path):
+    create_job(tmp_path)
+    broken = create_job(tmp_path).job_id
+    (tmp_path / broken / "status.json").write_text("{")
+    assert jobs_created_today(tmp_path) == 1

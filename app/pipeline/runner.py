@@ -9,6 +9,7 @@ import fcntl
 import logging
 import subprocess
 import sys
+import time
 import traceback
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
@@ -16,7 +17,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from app.jobs import JOBS_DIR, JobStatus, job_dir, update_status
+from app.jobs import (
+    JOBS_DIR,
+    JobStatus,
+    job_dir,
+    read_status,
+    seconds_since_update,
+    update_status,
+)
 
 if TYPE_CHECKING:
     from app.config import Settings
@@ -24,6 +32,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 MAX_ERROR_CHARS = 300
+LOCK_TRIES = 10
+STALE_AFTER_S = 120  # a queued job that never started, or a dead runner
 
 
 @dataclass(frozen=True)
@@ -43,11 +53,11 @@ def default_stages() -> list[Stage]:
 
     return [
         Stage("ingest", ingest.run, weight=1.0),
-        Stage("transcribe", transcribe.run, weight=1.0),
+        Stage("transcribe", transcribe.run, weight=1.0, optional=True),
         Stage("scenes", scenes.run, weight=0.2),
         Stage("analyze", analyze.run, weight=6.0),
         Stage("guide", guide.run, weight=0.2),
-        Stage("frames", frames.run, weight=1.0),
+        Stage("frames", frames.run, weight=1.0, optional=True),
     ]
 
 
@@ -56,13 +66,18 @@ class JobAlreadyRunning(Exception):
 
 
 @contextmanager
-def job_lock(folder: Path) -> Iterator[None]:
+def job_lock(folder: Path, tries: int = LOCK_TRIES) -> Iterator[None]:
     """Hold run.lock while the job runs. The OS releases it if the process dies."""
     with open(folder / "run.lock", "a") as lock:
-        try:
-            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError as exc:
-            raise JobAlreadyRunning(f"job {folder.name} is already running") from exc
+        # is_running() may hold the lock for a moment: try a few times before giving up.
+        for attempt in range(tries):
+            try:
+                fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError as exc:
+                if attempt == tries - 1:
+                    raise JobAlreadyRunning(f"job {folder.name} is already running") from exc
+                time.sleep(0.1)
         try:
             yield
         finally:
@@ -73,10 +88,22 @@ def is_running(job_id: str, jobs_dir: Path = JOBS_DIR) -> bool:
     """True if a runner process holds the lock (a crashed runner does not)."""
     folder = job_dir(job_id, jobs_dir)
     try:
-        with job_lock(folder):
+        with job_lock(folder, tries=1):  # a status check never waits
             return False
     except JobAlreadyRunning:
         return True
+
+
+def check_stale(job_id: str, jobs_dir: Path = JOBS_DIR) -> JobStatus:
+    """Mark a job failed if it says queued/running but no runner holds its lock any more."""
+    status = read_status(job_id, jobs_dir)
+    if status.state not in ("queued", "running") or is_running(job_id, jobs_dir):
+        return status
+    if status.state == "queued" and seconds_since_update(status) < STALE_AFTER_S:
+        return status  # the runner may still be starting
+    return update_status(
+        job_id, jobs_dir, state="failed", error="The job stopped unexpectedly. Please try again."
+    )
 
 
 def short_error(stage: Stage, exc: BaseException) -> str:

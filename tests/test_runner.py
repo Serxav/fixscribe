@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from app.jobs import create_job, read_status
@@ -97,3 +99,59 @@ def test_same_job_cannot_run_twice(tmp_path):
 def test_bad_job_id_is_rejected(tmp_path):
     with pytest.raises(ValueError):
         run_job("../etc", SETTINGS, [], tmp_path)
+
+
+def test_dead_runner_is_reported_as_failed(tmp_path):
+    from app.jobs import update_status
+    from app.pipeline.runner import check_stale
+
+    job_id = create_job(tmp_path).job_id
+    update_status(job_id, tmp_path, state="running", stage="analyze")
+    # No runner holds the lock: the process died without updating status.json.
+    status = check_stale(job_id, tmp_path)
+    assert status.state == "failed"
+    assert "stopped unexpectedly" in status.error
+
+
+def test_live_runner_and_new_jobs_are_not_stale(tmp_path):
+    from app.pipeline.runner import check_stale
+
+    job_id = create_job(tmp_path).job_id
+    assert check_stale(job_id, tmp_path).state == "queued"  # just created
+    with job_lock(tmp_path / job_id):
+        from app.jobs import update_status
+
+        update_status(job_id, tmp_path, state="running")
+        assert check_stale(job_id, tmp_path).state == "running"
+
+
+def test_old_queued_job_is_stale(tmp_path):
+    from app.jobs import update_status
+    from app.pipeline.runner import check_stale
+
+    job_id = create_job(tmp_path).job_id
+    update_status(job_id, tmp_path)  # refresh, then fake an old timestamp
+    path = tmp_path / job_id / "status.json"
+    data = json.loads(path.read_text())
+    data["updated_at"] = "2026-01-01T00:00:00+00:00"
+    path.write_text(json.dumps(data))
+    assert check_stale(job_id, tmp_path).state == "failed"
+
+
+def test_lock_waits_briefly_for_a_status_check(tmp_path):
+    import threading
+    import time
+
+    job_id = create_job(tmp_path).job_id
+    folder = tmp_path / job_id
+
+    def hold_lock():
+        with job_lock(folder):
+            time.sleep(0.3)
+
+    holder = threading.Thread(target=hold_lock)
+    holder.start()
+    time.sleep(0.05)
+    status = run_job(job_id, SETTINGS, [], tmp_path)  # waits instead of failing
+    holder.join()
+    assert status.state == "done"

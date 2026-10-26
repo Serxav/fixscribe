@@ -144,3 +144,25 @@ def test_job_js_has_stage_labels():
     page = Path("web/templates/job.html").read_text()
     assert "Open the guide" in page
     assert "Try another video" in page
+
+
+def test_job_that_cannot_start_is_marked_failed(tmp_path, monkeypatch):
+    from app.jobs import read_status
+    from app.main import app
+    from app.routes.upload import settings_dep
+
+    app.dependency_overrides[settings_dep] = lambda: Settings(model_api_key="", data_dir=tmp_path)
+
+    def broken_start(job_id, jobs_dir):
+        raise OSError("no python")
+
+    monkeypatch.setattr("app.routes.upload.start_job", broken_start)
+    try:
+        response = TestClient(app).post(
+            "/upload", files={"video": ("clip.mp4", b"0" * 10, "video/mp4")}
+        )
+    finally:
+        app.dependency_overrides.clear()
+    assert response.status_code == 500
+    (job,) = (tmp_path / "jobs").iterdir()
+    assert read_status(job.name, tmp_path / "jobs").state == "failed"
