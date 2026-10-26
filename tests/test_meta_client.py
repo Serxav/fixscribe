@@ -497,3 +497,25 @@ def test_transcribe_never_logs_authorization(tmp_path, caplog):
     assert result["sessionId"] == "sess-1"
     assert "test-secret-key-xyz" not in caplog.text
     assert ASR_PAYLOAD["transcript"] not in caplog.text
+
+
+def test_job_budget_stops_one_video_without_touching_the_global_one(tmp_path):
+    job_dir = tmp_path / "job"
+    job_dir.mkdir()
+    settings = make_settings(tmp_path)
+    SpendCounter(job_dir / "spend.json", 1.0).add("muse-spark-1.3", 1.0)
+    fake = FakeClient([make_response()])
+    client = MetaClient(settings, client=fake, sleep=lambda _: None, job_dir=job_dir)
+    with pytest.raises(BudgetExceeded, match=r"spend limit of \$1.00"):
+        client.respond(model="muse-spark-1.3", input="hello")
+    assert fake.responses.calls == 0
+
+
+def test_job_spend_is_added_to_both_counters(tmp_path):
+    job_dir = tmp_path / "job"
+    job_dir.mkdir()
+    fake = FakeClient([make_response()])
+    client = MetaClient(make_settings(tmp_path), client=fake, sleep=lambda _: None, job_dir=job_dir)
+    client.respond(model="muse-spark-1.3", input="hello")
+    assert client.spend.total() == pytest.approx(1.455)
+    assert client.job_spend.total() == pytest.approx(1.455)

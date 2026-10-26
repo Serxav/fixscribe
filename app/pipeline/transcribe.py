@@ -1,13 +1,12 @@
 """Transcription stage: WAV audio to timestamped turns."""
 
-import json
 import logging
-import os
-import tempfile
 from pathlib import Path
 
+from app import artifacts
 from app.config import Settings
 from app.meta_client import MetaClient
+from app.schemas import Transcript, Turn
 
 logger = logging.getLogger(__name__)
 
@@ -17,21 +16,15 @@ def _is_number(value: object) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
-def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> dict:
+def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> Transcript:
     """Transcribe the job audio, or mark the job silent when there is none."""
-    transcript_path = job_dir / "transcript.json"
     wav = job_dir / "audio.wav"
     if not wav.exists():
-        result: dict = {
-            "mode": "silent",
-            "duration_s": 0.0,
-            "transcript": "",
-            "turns": [],
-        }
-        _write_json_atomic(transcript_path, result)
+        result = Transcript(mode="silent")
+        artifacts.save(job_dir, result)
         return result
     if client is None:
-        client = MetaClient(settings)
+        client = MetaClient(settings, job_dir=job_dir)
     data = client.transcribe(
         wav,
         mode="ENDPOINTING",
@@ -54,38 +47,22 @@ def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> 
             continue
         if not text.strip():
             continue
-        turns.append(
-            {
-                "start_s": start_ms / 1000,
-                "end_s": end_ms / 1000,
-                "text": text,
-            }
-        )
-    turns.sort(key=lambda turn: turn["start_s"])
-    total_words = sum(len(turn["text"].split()) for turn in turns)
+        if start_ms < 0 or end_ms < start_ms:
+            logger.warning("skipping turn %d: invalid times", index)
+            continue
+        turns.append(Turn(start_s=start_ms / 1000, end_s=end_ms / 1000, text=text))
+    turns.sort(key=lambda turn: turn.start_s)
+    total_words = sum(len(turn.text.split()) for turn in turns)
     raw_duration = data.get("audioDurationMs")
     duration_s = float(raw_duration) / 1000 if _is_number(raw_duration) else 0.0
     transcript_text = data.get("transcript", "")
     if not isinstance(transcript_text, str):
         transcript_text = ""
-    result = {
-        "mode": "narrated" if total_words >= 5 else "silent",
-        "duration_s": duration_s,
-        "transcript": transcript_text,
-        "turns": turns,
-    }
-    _write_json_atomic(transcript_path, result)
+    result = Transcript(
+        mode="narrated" if total_words >= 5 else "silent",
+        duration_s=max(0.0, duration_s),
+        transcript=transcript_text,
+        turns=turns,
+    )
+    artifacts.save(job_dir, result)
     return result
-
-
-def _write_json_atomic(path: Path, payload: dict) -> None:
-    with tempfile.NamedTemporaryFile(
-        dir=str(path.parent),
-        delete=False,
-        mode="w",
-        suffix=".tmp",
-        encoding="utf-8",
-    ) as tmp:
-        json.dump(payload, tmp)
-        tmp_path = tmp.name
-    os.replace(tmp_path, path)

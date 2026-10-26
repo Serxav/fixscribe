@@ -155,3 +155,44 @@ def test_lock_waits_briefly_for_a_status_check(tmp_path):
     status = run_job(job_id, SETTINGS, [], tmp_path)  # waits instead of failing
     holder.join()
     assert status.state == "done"
+
+
+def test_manifest_records_every_stage_with_time_and_errors(tmp_path):
+    from app import artifacts
+    from app.schemas import Manifest
+
+    job_id = create_job(tmp_path).job_id
+    stages = [
+        Stage("one", write_file("one.txt"), version="3"),
+        Stage("flaky", fail("no signal"), optional=True),
+    ]
+    run_job(job_id, SETTINGS, stages, tmp_path)
+    manifest = artifacts.load(tmp_path / job_id, Manifest)
+    assert list(manifest.stages) == ["one", "flaky"]
+    assert manifest.stages["one"].status == "done"
+    assert manifest.stages["one"].version == "3"
+    assert manifest.stages["flaky"].status == "failed"
+    assert manifest.stages["flaky"].error == "flaky failed: no signal"
+    assert manifest.total_seconds >= 0
+
+
+def test_stale_output_is_removed_before_a_stage_runs(tmp_path):
+    job_id = create_job(tmp_path).job_id
+    (tmp_path / job_id / "old.json").write_text("from a previous run")
+    stages = [Stage("redo", fail("broken now"), optional=True, output="old.json")]
+    run_job(job_id, SETTINGS, stages, tmp_path)
+    assert not (tmp_path / job_id / "old.json").exists()
+
+
+def test_stage_cost_comes_from_the_job_spend(tmp_path):
+    from app import artifacts
+    from app.meta_client import SpendCounter
+    from app.schemas import Manifest
+
+    job_id = create_job(tmp_path).job_id
+
+    def paid(folder, settings):
+        SpendCounter(folder / "spend.json", 1.0).add("muse-spark-1.3", 0.25)
+
+    run_job(job_id, SETTINGS, [Stage("analyze", paid)], tmp_path)
+    assert artifacts.load(tmp_path / job_id, Manifest).stages["analyze"].usd == 0.25
