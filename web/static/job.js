@@ -49,6 +49,18 @@ async function refresh() {
   if (stateLabel) {
     stateLabel.textContent = status.state || "";
   }
+  const stageKeys = Object.keys(STAGE_LABELS);
+  const currentIndex = stageKeys.indexOf(status.stage);
+  document.querySelectorAll("#stage-list [data-stage]").forEach((item) => {
+    const index = stageKeys.indexOf(item.dataset.stage);
+    const done = status.state === "done" || (currentIndex >= 0 && index < currentIndex);
+    item.classList.toggle("is-done", done);
+    item.classList.toggle("is-current", status.state !== "done" && index === currentIndex);
+    const dot = item.querySelector(".stage-dot");
+    if (dot) {
+      dot.textContent = done ? "✓" : String(index + 1);
+    }
+  });
   if (status.state === "done") {
     window.clearInterval(window.__fixscribeTimer);
     if (guideLink) {
@@ -58,6 +70,7 @@ async function refresh() {
     window.clearInterval(window.__fixscribeTimer);
     if (errorBox) {
       errorBox.textContent = status.error || "The job failed.";
+      errorBox.style.display = "flex";
     }
     if (retryLink) {
       retryLink.classList.remove("hidden");

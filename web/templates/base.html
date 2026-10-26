@@ -5,13 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}FixScribe{% endblock %}</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="/static/app.css">
 </head>
-<body class="bg-white text-slate-900">
-<header class="bg-slate-900 text-white px-4 py-3">
-<p class="text-lg font-semibold">FixScribe</p>
+<body>
+<header class="site-header">
+<div class="page" style="padding-top:0;padding-bottom:0;">
+<a class="wordmark" href="/">FixScribe</a>
+</div>
 </header>
-<main class="max-w-xl mx-auto px-4 py-6">
+<main class="page">
 {% block content %}{% endblock %}
 </main>
+{% block footer %}<footer class="footer-note caption">Made with FixScribe — Muse Spark, Muse Voice and SAM 3.1 by Meta.</footer>{% endblock %}
+{% block scripts %}{% endblock %}
 </body>
 </html>

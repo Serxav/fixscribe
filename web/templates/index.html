@@ -1,15 +1,17 @@
 {% extends "base.html" %}
 {% block title %}FixScribe{% endblock %}
 {% block content %}
-<h2 class="text-2xl font-semibold mb-2">FixScribe</h2>
-<p class="mb-6">Film a repair. Get a step-by-step guide.</p>
-<form action="/upload" method="post" enctype="multipart/form-data" class="flex flex-col gap-4">
-<label class="block font-medium" for="video">Repair video</label>
-<input id="video" type="file" name="video" accept="video/*" capture="environment" required
-class="block w-full border border-slate-300 p-3 min-h-[48px]">
-<button type="submit" class="w-full bg-slate-900 text-white font-semibold py-4 min-h-[48px]">
-Upload the repair video
-</button>
+<h1 class="hero-title">Film a repair.<br>Get a step-by-step guide.</h1>
+<p class="secondary" style="margin:0 0 24px;">Record on your phone. FixScribe watches, listens and writes the guide for you.</p>
+<form action="/upload" method="post" enctype="multipart/form-data" class="card">
+<label class="section-title" for="video" style="display:block;">Repair video</label>
+<p class="secondary" style="margin:0 0 16px;">Choose a video or record one now.</p>
+<input id="video" type="file" name="video" accept="video/*" capture="environment" required class="file-input">
+<button type="submit" class="btn-primary" style="margin-top:16px;">Upload the repair video</button>
 </form>
-<p class="mt-4 text-sm">Narrate with 'step one', 'step two'… for the best cuts. Silent videos work too.</p>
+<div class="card">
+<p class="body-text" style="margin:0 0 10px;">Narrated: say “step one”, “step two” as you work and FixScribe cuts the steps there.</p>
+<p class="body-text" style="margin:0 0 10px;">Silent: say nothing — FixScribe finds the steps by watching the repair.</p>
+<p class="secondary" style="margin:0;">Works with .mp4, .mov and .m4v videos up to 10 minutes.</p>
+</div>
 {% endblock %}

@@ -1,12 +1,12 @@
 # HANDOFF — read this when Claude Code is not available
 
 ## State (updated 2026-10-26, night)
-- `main` has the whole pipeline (ingest → transcribe → scenes → analyze → guide → frames) and the upload + progress web pages (008). 173 tests pass.
-- PAUSED for a code audit (Sergi + Claude Code). Do not start any task until Claude Code writes a new queue here.
-- No real Meta call has been made by the product yet. Muse Code has spent about 2.32 $.
+- `main` has the whole pipeline, the upload + progress pages, and all "today" and "next" audit fixes (see `tasks/AUDIT.md`). 196 tests pass.
+- Muse Code worktree is on branch `feat/guide-page`. Task 010 was launched by Claude Code; if the guide page is not finished, finish 010 first.
+- No real Meta call has been made by the product yet. Muse Code has spent about 5.11 $.
 
 ## Queue for Muse Code (do them in this order, one after another)
-- (empty: wait for the audit)
+1. `tasks/010-guide-page.md`
 
 ## Rules for this mode
 - Before each task, read `AGENTS.md` and `docs/HACKATHON_BRIEF.md`.
