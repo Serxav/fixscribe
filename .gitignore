@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+.venv/
+data/
+samples/
+__pycache__/
+*.pyc
+.DS_Store
+.pytest_cache/
+.ruff_cache/
+*.egg-info/

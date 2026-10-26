@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": ["Read(./.env.example)"],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.local)",
+      "Read(./.env.production)",
+      "Read(./.env.development)",
+      "Read(../fixscribe-muse/.env)",
+      "Read(../fixscribe-muse/.env.local)",
+      "Read(../fixscribe-muse/.env.production)",
+      "Read(../fixscribe-muse/.env.development)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)"
+    ]
+  }
+}
