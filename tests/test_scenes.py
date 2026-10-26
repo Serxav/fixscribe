@@ -76,12 +76,21 @@ def test_run_narrated_with_one_keyword_gives_none(tmp_path):
     assert result["segments"] == []
 
 
-def test_run_without_transcript_raises(tmp_path):
+def test_run_without_transcript_is_silent(tmp_path):
+    # Transcription is optional: if it failed, scenes treats the video as silent.
     settings = Settings(model_api_key="", data_dir=tmp_path)
     (tmp_path / "ingest.json").write_text(
         json.dumps({"duration_s": 42.0, "width": 720, "height": 1280, "has_audio": True}),
         encoding="utf-8",
     )
+    result = scenes.run(tmp_path, settings)
+    assert result == {"source": "none", "cuts": [], "segments": []}
+
+
+def test_run_with_broken_transcript_raises(tmp_path):
+    settings = Settings(model_api_key="", data_dir=tmp_path)
+    (tmp_path / "ingest.json").write_text(json.dumps({"duration_s": 42.0}), encoding="utf-8")
+    (tmp_path / "transcript.json").write_text("{", encoding="utf-8")
     with pytest.raises(ScenesError, match="transcript.json"):
         scenes.run(tmp_path, settings)
 

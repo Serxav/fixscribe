@@ -54,17 +54,24 @@ async def upload_video(
     dest = jobs_dir / job_id / f"original{ext}"
     size = 0
     too_big = False
-    with open(dest, "wb") as out:
-        while True:
-            chunk = await video.read(CHUNK_BYTES)
-            if not chunk:
-                break
-            size += len(chunk)
-            if size > MAX_UPLOAD_BYTES:
-                too_big = True
-                break
-            out.write(chunk)
-    await video.close()
+    try:
+        with open(dest, "wb") as out:
+            while True:
+                chunk = await video.read(CHUNK_BYTES)
+                if not chunk:
+                    break
+                size += len(chunk)
+                if size > MAX_UPLOAD_BYTES:
+                    too_big = True
+                    break
+                out.write(chunk)
+    except Exception:
+        # Upload cut (phone lost signal) or disk error: never leave a job "queued" forever.
+        dest.unlink(missing_ok=True)
+        update_status(job_id, jobs_dir, state="failed", error="the upload was interrupted")
+        raise
+    finally:
+        await video.close()
     if too_big:
         dest.unlink(missing_ok=True)
         update_status(job_id, jobs_dir, state="failed", error="video file is too big")
@@ -72,5 +79,9 @@ async def upload_video(
             "<h1>Video file is too big</h1>",
             status_code=413,
         )
-    start_job(job_id, jobs_dir)
+    try:
+        start_job(job_id, jobs_dir)
+    except OSError:
+        update_status(job_id, jobs_dir, state="failed", error="could not start the job")
+        return HTMLResponse("<h1>Could not start the job, please try again.</h1>", status_code=500)
     return RedirectResponse(f"/jobs/{job_id}", status_code=303)

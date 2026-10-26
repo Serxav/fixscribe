@@ -139,3 +139,18 @@ def test_bad_spark_answer_fails_the_job_cleanly(tmp_path, fake_meta, monkeypatch
     assert status.state == "failed"
     assert status.error == "analyze failed: Spark returned an invalid analysis"
     assert (jobs / job_id / "analysis_raw.txt").read_text() == "{"
+
+
+def test_failed_transcription_still_gives_a_silent_guide(tmp_path, fake_meta, monkeypatch):
+    from app.meta_client import MetaError
+
+    def broken(self, wav, **kwargs):
+        raise MetaError("asr status 500", status_code=500)
+
+    monkeypatch.setattr(FakeMeta, "transcribe", broken)
+    jobs, job_id = new_job(tmp_path)
+    status = run_job(job_id, Settings(model_api_key="", data_dir=tmp_path), default_stages(), jobs)
+    assert status.state == "done", status.error
+    assert status.warnings == ["transcribe failed: asr status 500"]
+    guide = Guide.model_validate_json((jobs / job_id / "guide.json").read_text())
+    assert guide.mode == "silent"
