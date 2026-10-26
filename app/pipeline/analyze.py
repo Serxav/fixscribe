@@ -1,13 +1,12 @@
 """Analyze stage: video plus spoken turns to repair steps via Muse Spark."""
 
 import json
-import os
-import tempfile
 from pathlib import Path
 
+from app import artifacts
 from app.config import Settings
 from app.meta_client import MetaClient
-from app.schemas import ANALYSIS_JSON_SCHEMA, Analysis
+from app.schemas import ANALYSIS_JSON_SCHEMA, Analysis, IngestInfo, Scenes, Transcript
 
 
 class AnalyzeError(Exception):
@@ -79,44 +78,23 @@ def parse_analysis(text: str) -> Analysis:
 def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> Analysis:
     """Send the job video to Spark and save its answer as analysis.json."""
     video_path = job_dir / "video.mp4"
-    ingest_path = job_dir / "ingest.json"
     if not video_path.is_file():
         raise AnalyzeError("missing video.mp4")
-    if not ingest_path.is_file():
-        raise AnalyzeError("missing ingest.json")
-    ingest = _read_json(ingest_path, "ingest.json")
-    try:
-        duration_s = float(ingest["duration_s"])
-    except (KeyError, TypeError, ValueError):
-        raise AnalyzeError("broken ingest.json: missing or invalid 'duration_s'") from None
-
-    transcript_path = job_dir / "transcript.json"
-    if transcript_path.exists():
-        transcript = _read_json(transcript_path, "transcript.json")
-        if not isinstance(transcript, dict):
-            raise AnalyzeError("broken transcript.json: expected a JSON object")
-        mode = transcript.get("mode", "silent")
-        turns = transcript.get("turns", [])
-        if not isinstance(turns, list):
-            raise AnalyzeError("broken transcript.json: missing or invalid 'turns'")
-    else:
-        mode = "silent"
-        turns = []
-
-    scenes_path = job_dir / "scenes.json"
-    segments: list[dict] = []
-    if scenes_path.exists():
-        scenes = _read_json(scenes_path, "scenes.json")
-        if not isinstance(scenes, dict):
-            raise AnalyzeError("broken scenes.json: expected a JSON object")
-        if scenes.get("source") == "voice":
-            segments = scenes.get("segments", [])
-            if not isinstance(segments, list):
-                raise AnalyzeError("broken scenes.json: missing or invalid 'segments'")
+    ingest = artifacts.load(job_dir, IngestInfo)
+    transcript = artifacts.load_optional(job_dir, Transcript)
+    scenes = artifacts.load_optional(job_dir, Scenes)
+    mode = transcript.mode if transcript else "silent"
+    turns = [turn.model_dump() for turn in transcript.turns] if transcript else []
+    segments = (
+        [segment.model_dump() for segment in scenes.segments]
+        if scenes and scenes.source == "voice"
+        else []
+    )
+    duration_s = ingest.duration_s
 
     prompt = build_prompt(duration_s, mode, turns, segments)
     if client is None:
-        client = MetaClient(settings)
+        client = MetaClient(settings, job_dir=job_dir)
     file_id = client.upload_file(video_path)
     try:
         response = client.respond(
@@ -132,28 +110,5 @@ def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> 
     # Keep Spark's raw answer: if parsing fails, this is what we need to debug the prompt.
     (job_dir / "analysis_raw.txt").write_text(response.output_text or "", encoding="utf-8")
     analysis = parse_analysis(response.output_text)
-    _write_json_atomic(job_dir / "analysis.json", analysis.model_dump(mode="json"))
+    artifacts.save(job_dir, analysis)
     return analysis
-
-
-def _read_json(path: Path, name: str):
-    try:
-        with open(path, encoding="utf-8") as handle:
-            return json.load(handle)
-    except FileNotFoundError:
-        raise AnalyzeError(f"missing {name}") from None
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise AnalyzeError(f"broken {name}: {exc}") from None
-
-
-def _write_json_atomic(path: Path, payload: dict) -> None:
-    with tempfile.NamedTemporaryFile(
-        dir=str(path.parent),
-        delete=False,
-        mode="w",
-        suffix=".tmp",
-        encoding="utf-8",
-    ) as tmp:
-        json.dump(payload, tmp)
-        tmp_path = tmp.name
-    os.replace(tmp_path, path)

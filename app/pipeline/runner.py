@@ -17,14 +17,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from app import artifacts
 from app.jobs import (
     JOBS_DIR,
     JobStatus,
     job_dir,
+    now_iso,
     read_status,
     seconds_since_update,
     update_status,
 )
+from app.schemas import Manifest, StageRecord
 
 if TYPE_CHECKING:
     from app.config import Settings
@@ -42,6 +45,21 @@ class Stage:
     run: Callable[[Path, Any], Any]
     weight: float = 1.0  # share of the progress bar
     optional: bool = False  # if it fails, keep going and add a warning
+    output: str | None = None  # the one artifact this stage owns (deleted before it runs)
+    version: str = "1"
+
+
+def stage_of(
+    name: str, module: Any, output: str, *, weight: float, optional: bool = False
+) -> Stage:
+    return Stage(
+        name,
+        module.run,
+        weight=weight,
+        optional=optional,
+        output=output,
+        version=getattr(module, "VERSION", "1"),
+    )
 
 
 def default_stages() -> list[Stage]:
@@ -49,15 +67,17 @@ def default_stages() -> list[Stage]:
 
     Weights are rough shares of the waiting time, so the progress bar moves evenly.
     """
-    from app.pipeline import analyze, frames, guide, ingest, scenes, transcribe
+    from app.pipeline import analyze, frames, ingest, plan, publish, scenes, signals, transcribe
 
     return [
-        Stage("ingest", ingest.run, weight=1.0),
-        Stage("transcribe", transcribe.run, weight=1.0, optional=True),
-        Stage("scenes", scenes.run, weight=0.2),
-        Stage("analyze", analyze.run, weight=6.0),
-        Stage("guide", guide.run, weight=0.2),
-        Stage("frames", frames.run, weight=1.0, optional=True),
+        stage_of("ingest", ingest, "ingest.json", weight=1.0),
+        stage_of("transcribe", transcribe, "transcript.json", weight=1.0, optional=True),
+        stage_of("signals", signals, "signals.json", weight=0.5, optional=True),
+        stage_of("scenes", scenes, "scenes.json", weight=0.2),
+        stage_of("analyze", analyze, "analysis.json", weight=6.0),
+        stage_of("plan", plan, "plan.json", weight=0.1),
+        stage_of("frames", frames, "frames.json", weight=1.0, optional=True),
+        stage_of("publish", publish, "guide.json", weight=0.1),
     ]
 
 
@@ -122,24 +142,58 @@ def run_job(
     total = sum(stage.weight for stage in stages) or 1.0
     with job_lock(folder):
         update_status(job_id, jobs_dir, state="running", error=None, warnings=[], progress=0.0)
+        manifest = Manifest()
         done = 0.0
         warnings: list[str] = []
         for stage in stages:
             update_status(job_id, jobs_dir, stage=stage.name, progress=done / total)
-            try:
-                stage.run(folder, settings)
-            except Exception as exc:
-                logger.error(
-                    "job %s: stage %s failed\n%s", job_id, stage.name, traceback.format_exc()
-                )
+            if stage.output:
+                (folder / stage.output).unlink(missing_ok=True)  # never reuse a stale result
+            record, error = run_stage(stage, folder, settings)
+            manifest.stages[stage.name] = record
+            manifest.total_seconds = round(manifest.total_seconds + record.seconds, 3)
+            manifest.total_usd = round(manifest.total_usd + record.usd, 6)
+            artifacts.save(folder, manifest)
+            if error is not None:
+                logger.error("job %s: stage %s failed\n%s", job_id, stage.name, error[1])
                 if not stage.optional:
                     return update_status(
-                        job_id, jobs_dir, state="failed", error=short_error(stage, exc)
+                        job_id, jobs_dir, state="failed", error=short_error(stage, error[0])
                     )
-                warnings.append(short_error(stage, exc))
+                warnings.append(short_error(stage, error[0]))
                 update_status(job_id, jobs_dir, warnings=warnings)
             done += stage.weight
         return update_status(job_id, jobs_dir, state="done", stage=None, progress=1.0)
+
+
+def run_stage(
+    stage: Stage, folder: Path, settings: Any
+) -> tuple[StageRecord, tuple[Exception, str] | None]:
+    """Run one stage and measure it: wall time and the money this job spent during it."""
+    started_at = now_iso()
+    usd_before = job_usd(folder)
+    t0 = time.perf_counter()
+    error = None
+    try:
+        stage.run(folder, settings)
+    except Exception as exc:
+        error = (exc, traceback.format_exc())
+    record = StageRecord(
+        status="failed" if error else "done",
+        version=stage.version,
+        started_at=started_at,
+        seconds=round(time.perf_counter() - t0, 3),
+        usd=round(max(0.0, job_usd(folder) - usd_before), 6),
+        error=short_error(stage, error[0]) if error else None,
+    )
+    return record, error
+
+
+def job_usd(folder: Path) -> float:
+    """Money spent by this job so far (the per-job spend counter of the Meta client)."""
+    from app.meta_client import SpendCounter
+
+    return SpendCounter(folder / "spend.json", budget_usd=float("inf")).total()
 
 
 def start_job(job_id: str, jobs_dir: Path = JOBS_DIR) -> subprocess.Popen:

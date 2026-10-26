@@ -108,7 +108,7 @@ ANALYSIS = {
 
 
 class FakeMeta:
-    def __init__(self, settings):
+    def __init__(self, settings, **kwargs):
         pass
 
     def transcribe(self, wav, **kwargs):

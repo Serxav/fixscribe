@@ -38,7 +38,7 @@ def test_run_without_audio_is_silent(tmp_path):
     job_dir.mkdir()
     fake = FakeTranscriber(payload={})
 
-    result = run(job_dir, make_settings(tmp_path), client=fake)
+    result = run(job_dir, make_settings(tmp_path), client=fake).model_dump()
 
     assert fake.calls == []
     assert result == {"mode": "silent", "duration_s": 0.0, "transcript": "", "turns": []}
@@ -73,7 +73,7 @@ def test_run_converts_turns_to_seconds_sorted(tmp_path):
         }
     )
 
-    result = run(job_dir, make_settings(tmp_path), client=fake)
+    result = run(job_dir, make_settings(tmp_path), client=fake).model_dump()
 
     assert len(fake.calls) == 1
     wav, kwargs = fake.calls[0]
@@ -115,7 +115,7 @@ def test_run_skips_turn_missing_start_ms(tmp_path):
         }
     )
 
-    result = run(job_dir, make_settings(tmp_path), client=fake)
+    result = run(job_dir, make_settings(tmp_path), client=fake).model_dump()
 
     assert result["turns"] == [
         {"start_s": 1.2, "end_s": 3.4, "text": "Step one remove the two screws"}
@@ -130,7 +130,7 @@ def test_run_missing_turns_is_empty(tmp_path):
         payload={"sessionId": "sess-1", "transcript": "", "audioDurationMs": 1000}
     )
 
-    result = run(job_dir, make_settings(tmp_path), client=fake)
+    result = run(job_dir, make_settings(tmp_path), client=fake).model_dump()
 
     assert result["turns"] == []
 
@@ -148,7 +148,7 @@ def test_run_single_short_turn_is_silent(tmp_path):
         }
     )
 
-    result = run(job_dir, make_settings(tmp_path), client=fake)
+    result = run(job_dir, make_settings(tmp_path), client=fake).model_dump()
 
     assert result["mode"] == "silent"
     assert result["duration_s"] == 3.0

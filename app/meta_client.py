@@ -120,6 +120,10 @@ class SpendCounter:
         self._budget_usd = budget_usd
 
     @property
+    def budget_usd(self) -> float:
+        return self._budget_usd
+
+    @property
     def _log_path(self) -> Path:
         return self._path.parent / "spend.log"
 
@@ -263,6 +267,7 @@ class MetaClient:
         client: Any | None = None,
         sleep: Callable[[float], None] = time.sleep,
         http: Any | None = None,
+        job_dir: Path | None = None,
     ) -> None:
         if client is None:
             # Built exactly like https://dev.meta.ai/docs/sdks
@@ -279,6 +284,22 @@ class MetaClient:
         self._http = http
         self._settings = settings
         self.spend = SpendCounter(settings.data_dir / "spend.json", settings.budget_usd)
+        # Each job also has its own cap, so one long or broken video cannot eat the budget.
+        self.job_spend = (
+            SpendCounter(job_dir / "spend.json", settings.job_budget_usd) if job_dir else None
+        )
+
+    def _check_budget(self) -> None:
+        self.spend.check()
+        if self.job_spend is not None and self.job_spend.total() >= self.job_spend.budget_usd:
+            raise BudgetExceeded(
+                f"this video reached its spend limit of ${self.job_spend.budget_usd:.2f}"
+            )
+
+    def _add_spend(self, model: str, usd: float) -> None:
+        self.spend.add(model, usd)
+        if self.job_spend is not None:
+            self.job_spend.add(model, usd)
 
     def respond(
         self,
@@ -294,7 +315,7 @@ class MetaClient:
             raise ValueError(f"unknown model: {model}")
         if max_output_tokens < 4000:
             raise ValueError("max_output_tokens must be >= 4000")
-        self.spend.check()
+        self._check_budget()
 
         def _do_create() -> Any:
             create_kwargs: dict[str, Any] = dict(kwargs)
@@ -315,7 +336,7 @@ class MetaClient:
         details = getattr(usage, "input_tokens_details", None)
         cached = getattr(details, "cached_tokens", 0) or 0
         cost = token_cost(model, usage.input_tokens, cached, usage.output_tokens)
-        self.spend.add(model, cost)
+        self._add_spend(model, cost)
         return response
 
     def upload_file(self, path: Path, expires_seconds: int = 86400) -> str:
@@ -355,7 +376,7 @@ class MetaClient:
         """
         if wav.stat().st_size > 33_554_432:
             raise ValueError(f"audio file is bigger than 32 MB: {wav}")
-        self.spend.check()
+        self._check_budget()
         url = f"{self._settings.meta_api_base}/asr/transcribe"
         headers = {
             "Authorization": f"Bearer {self._settings.model_api_key}",
@@ -405,7 +426,7 @@ class MetaClient:
         try:
             data = self._with_retries(_do_post)
         except _InvalidAsrAnswer as exc:
-            self.spend.add(self._settings.asr_model, asr_cost(_wav_duration_s(wav)))
+            self._add_spend(self._settings.asr_model, asr_cost(_wav_duration_s(wav)))
             raise MetaError("asr returned an invalid answer") from exc
         raw_duration = data.get("audioDurationMs")
         if _is_number(raw_duration):
@@ -413,7 +434,7 @@ class MetaClient:
         else:
             duration_s = _wav_duration_s(wav)
             data["audioDurationMs"] = int(round(duration_s * 1000))
-        self.spend.add(self._settings.asr_model, asr_cost(duration_s))
+        self._add_spend(self._settings.asr_model, asr_cost(duration_s))
         return data
 
     def _with_retries(self, fn: Callable[[], T], retry_timeouts: bool = True) -> T:

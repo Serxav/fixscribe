@@ -1,17 +1,16 @@
 """Keyframe and clip stage: sharpest frame and short loop clip per step."""
 
-import json
 import logging
 import os
 import subprocess
-import tempfile
 from pathlib import Path
 from typing import Any
 
 import cv2
 
+from app import artifacts
 from app.config import Settings
-from app.schemas import Guide, Step
+from app.schemas import Frames, Plan, Step, StepMedia
 
 logger = logging.getLogger(__name__)
 
@@ -103,36 +102,29 @@ def cut_clip(video: Path, start: float, length: float, dst: Path) -> None:
         raise FramesError(f"ffmpeg failed cutting {dst.name}:\n{tail}")
 
 
-def run(job_dir: Path, settings: Settings) -> Guide:
-    """Save the sharpest frame and a short clip per step, then update guide.json."""
+def run(job_dir: Path, settings: Settings) -> Frames:
+    """Pick the sharpest frame and cut a short clip for every planned step (frames.json)."""
     del settings
     video_path = job_dir / "video.mp4"
-    guide_path = job_dir / "guide.json"
     if not video_path.is_file():
         raise FramesError("missing video.mp4")
-    if not guide_path.is_file():
-        raise FramesError("missing guide.json")
-    try:
-        guide = Guide.model_validate_json(guide_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        raise FramesError(f"broken guide.json: {exc}") from None
+    plan = artifacts.load(job_dir, Plan)
     capture = cv2.VideoCapture(str(video_path))
     try:
         if not capture.isOpened():
             raise FramesError("cannot open video.mp4")
-        duration_s = _duration_s(capture, guide)
         steps_dir = job_dir / "steps"
         steps_dir.mkdir(parents=True, exist_ok=True)
-        updated = []
-        for step in guide.steps:
+        media = []
+        for step in plan.steps:
             try:
-                updated.append(_process_step(capture, video_path, steps_dir, step, duration_s))
+                media.append(_process_step(capture, video_path, steps_dir, step, plan.duration_s))
             except Exception as exc:
+                # One bad step must not cost the whole guide its photos.
                 logger.warning("frames: skipping step %d: %s", step.index, exc)
-                updated.append(step)
-        guide = guide.model_copy(update={"steps": updated})
-        _write_guide_atomic(guide_path, guide)
-        return guide
+        frames = Frames(steps=media)
+        artifacts.save(job_dir, frames)
+        return frames
     finally:
         capture.release()
 
@@ -143,8 +135,8 @@ def _process_step(
     steps_dir: Path,
     step: Step,
     duration_s: float,
-) -> Step:
-    """Save the best frame and clip of one step, and return the updated step."""
+) -> StepMedia:
+    """Save the best frame and clip of one step."""
     key = key_moment(step)
     found = best_frame(capture, max(key - WINDOW_S, step.start_s), min(key + WINDOW_S, step.end_s))
     if found is None:
@@ -152,41 +144,26 @@ def _process_step(
     keyframe_s, frame = found
     name = f"{step.index:02d}"
     image_path = steps_dir / f"{name}.jpg"
-    if not cv2.imwrite(str(image_path), frame, [cv2.IMWRITE_JPEG_QUALITY, 85]):
-        raise FramesError(f"cannot write {image_path.name}")
+    _write_jpeg_atomic(image_path, frame)
     clip_path = steps_dir / f"{name}.mp4"
     clip_start, clip_length = clip_range(step, keyframe_s, duration_s)
-    cut_clip(video_path, clip_start, clip_length, clip_path)
-    return step.model_copy(
-        update={
-            "keyframe_s": round(float(keyframe_s), 2),
-            "image": f"steps/{name}.jpg",
-            "clip": f"steps/{name}.mp4",
-        }
+    tmp_clip = steps_dir / f".{name}.tmp.mp4"
+    try:
+        cut_clip(video_path, clip_start, clip_length, tmp_clip)
+        os.replace(tmp_clip, clip_path)
+    finally:
+        tmp_clip.unlink(missing_ok=True)
+    return StepMedia(
+        index=step.index,
+        keyframe_s=min(max(round(float(keyframe_s), 2), step.start_s), step.end_s),
+        image=f"steps/{name}.jpg",
+        clip=f"steps/{name}.mp4",
     )
 
 
-def _duration_s(capture: cv2.VideoCapture, guide: Guide) -> float:
-    """Return the video duration in seconds."""
-    if guide.duration_s is not None and guide.duration_s > 0:
-        return float(guide.duration_s)
-    fps = capture.get(cv2.CAP_PROP_FPS)
-    count = capture.get(cv2.CAP_PROP_FRAME_COUNT)
-    if fps > 0 and count > 0:
-        return count / fps
-    if guide.steps:
-        return max(step.end_s for step in guide.steps)
-    raise FramesError("cannot determine the video duration")
-
-
-def _write_guide_atomic(path: Path, guide: Guide) -> None:
-    with tempfile.NamedTemporaryFile(
-        dir=str(path.parent),
-        delete=False,
-        mode="w",
-        suffix=".tmp",
-        encoding="utf-8",
-    ) as tmp:
-        json.dump(guide.model_dump(mode="json"), tmp)
-        tmp_path = tmp.name
-    os.replace(tmp_path, path)
+def _write_jpeg_atomic(path: Path, frame: Any) -> None:
+    tmp = path.with_name(f".{path.stem}.tmp.jpg")
+    if not cv2.imwrite(str(tmp), frame, [cv2.IMWRITE_JPEG_QUALITY, 85]):
+        tmp.unlink(missing_ok=True)
+        raise FramesError(f"cannot write {path.name}")
+    os.replace(tmp, path)

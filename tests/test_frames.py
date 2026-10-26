@@ -6,10 +6,12 @@ import subprocess
 import cv2
 import pytest
 
+from app import artifacts
+from app.artifacts import ArtifactError
 from app.config import Settings
 from app.pipeline import frames
 from app.pipeline.frames import FramesError
-from app.schemas import Evidence, Guide, Step
+from app.schemas import Evidence, Frames, Plan, Step
 
 needs_ffmpeg = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg is not installed")
 needs_ffprobe = pytest.mark.skipif(
@@ -49,38 +51,38 @@ def _step(index, start, end, evidence=None):
     )
 
 
-def _guide(steps, duration_s=6.0):
-    return Guide(title="Guide", device="Phone", mode="silent", duration_s=duration_s, steps=steps)
+def _plan(steps, duration_s=6.0):
+    return Plan(title="Guide", device="Phone", mode="silent", duration_s=duration_s, steps=steps)
 
 
-def _write_job(job_dir, guide, duration=6.0):
+def _write_job(job_dir, plan, duration=6.0):
     _make_video(job_dir / "video.mp4", duration)
-    (job_dir / "guide.json").write_text(guide.model_dump_json(), encoding="utf-8")
+    artifacts.save(job_dir, plan)
     return Settings(model_api_key="", data_dir=job_dir)
 
 
 @needs_ffmpeg
 def test_run_writes_frames_and_clips(tmp_path):
-    settings = _write_job(tmp_path, _guide([_step(1, 0.0, 3.0), _step(2, 3.0, 6.0)]))
+    steps = [_step(1, 0.0, 3.0), _step(2, 3.0, 6.0)]
+    settings = _write_job(tmp_path, _plan(steps))
     result = frames.run(tmp_path, settings)
-    for step in result.steps:
-        assert step.image == f"steps/{step.index:02d}.jpg"
-        assert step.clip == f"steps/{step.index:02d}.mp4"
-        assert (tmp_path / step.image).is_file()
-        assert (tmp_path / step.clip).is_file()
-        assert step.keyframe_s is not None
-        assert step.start_s <= step.keyframe_s <= step.end_s
-        middle = (step.start_s + step.end_s) / 2
-        assert abs(step.keyframe_s - middle) <= 1.0
-    stored = Guide.model_validate_json((tmp_path / "guide.json").read_text(encoding="utf-8"))
-    assert [step.image for step in stored.steps] == ["steps/01.jpg", "steps/02.jpg"]
-    assert [step.clip for step in stored.steps] == ["steps/01.mp4", "steps/02.mp4"]
+    for step, media in zip(steps, result.steps, strict=True):
+        assert media.index == step.index
+        assert media.image == f"steps/{step.index:02d}.jpg"
+        assert media.clip == f"steps/{step.index:02d}.mp4"
+        assert (tmp_path / media.image).is_file()
+        assert (tmp_path / media.clip).is_file()
+        assert step.start_s <= media.keyframe_s <= step.end_s
+        assert abs(media.keyframe_s - (step.start_s + step.end_s) / 2) <= 1.0
+    assert artifacts.load(tmp_path, Frames) == result
+    assert not (tmp_path / "guide.json").exists()  # frames never touches the guide
+    assert not list((tmp_path / "steps").glob(".*"))  # no temp files left
 
 
 @needs_ffmpeg
 @needs_ffprobe
 def test_clip_is_short_and_silent(tmp_path):
-    settings = _write_job(tmp_path, _guide([_step(1, 0.0, 3.0), _step(2, 3.0, 6.0)]))
+    settings = _write_job(tmp_path, _plan([_step(1, 0.0, 3.0), _step(2, 3.0, 6.0)]))
     frames.run(tmp_path, settings)
     clip = str(tmp_path / "steps" / "01.mp4")
     duration = subprocess.run(
@@ -112,7 +114,7 @@ def test_clip_is_short_and_silent(tmp_path):
 
 @needs_ffmpeg
 def test_sharpness_prefers_original(tmp_path):
-    settings = _write_job(tmp_path, _guide([_step(1, 0.0, 3.0), _step(2, 3.0, 6.0)]))
+    settings = _write_job(tmp_path, _plan([_step(1, 0.0, 3.0), _step(2, 3.0, 6.0)]))
     frames.run(tmp_path, settings)
     image = cv2.imread(str(tmp_path / "steps" / "01.jpg"))
     assert image is not None
@@ -148,29 +150,22 @@ def test_clip_range_starts_at_step_start():
 
 @needs_ffmpeg
 def test_step_past_video_end_is_skipped(tmp_path):
-    settings = _write_job(
-        tmp_path, _guide([_step(1, 0.0, 3.0), _step(2, 100.0, 103.0)], duration_s=None)
-    )
+    settings = _write_job(tmp_path, _plan([_step(1, 0.0, 3.0), _step(2, 100.0, 103.0)]))
     result = frames.run(tmp_path, settings)
-    assert result.steps[0].image == "steps/01.jpg"
+    assert [media.index for media in result.steps] == [1]  # step 2 has no frame: no media
     assert (tmp_path / "steps" / "01.jpg").is_file()
-    assert result.steps[1].image is None
-    assert result.steps[1].clip is None
-    assert result.steps[1].keyframe_s is None
 
 
 @needs_ffmpeg
-def test_missing_guide_raises(tmp_path):
+def test_missing_plan_raises(tmp_path):
     _make_video(tmp_path / "video.mp4")
     settings = Settings(model_api_key="", data_dir=tmp_path)
-    with pytest.raises(FramesError, match="guide.json"):
+    with pytest.raises(ArtifactError, match="missing plan.json"):
         frames.run(tmp_path, settings)
 
 
 def test_missing_video_raises(tmp_path):
-    (tmp_path / "guide.json").write_text(
-        _guide([_step(1, 0.0, 3.0)]).model_dump_json(), encoding="utf-8"
-    )
+    artifacts.save(tmp_path, _plan([_step(1, 0.0, 3.0)]))
     settings = Settings(model_api_key="", data_dir=tmp_path)
     with pytest.raises(FramesError, match="video.mp4"):
         frames.run(tmp_path, settings)

@@ -21,6 +21,7 @@ class Settings:
     enable_inspector: bool = True  # [ENABLE_INSPECTOR]
     daily_job_limit: int = 20  # [DAILY_JOB_LIMIT]
     budget_usd: float = 120.0  # [BUDGET_USD]
+    job_budget_usd: float = 1.0  # [JOB_BUDGET_USD]
     data_dir: Path = Path("data")  # [DATA_DIR]
 
 
@@ -52,5 +53,6 @@ def get_settings() -> Settings:
         enable_inspector=enable_inspector,
         daily_job_limit=int(env.get("DAILY_JOB_LIMIT", "20")),
         budget_usd=float(env.get("BUDGET_USD", "120.0")),
+        job_budget_usd=float(env.get("JOB_BUDGET_USD", "1.0")),
         data_dir=data_dir,
     )

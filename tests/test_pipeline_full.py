@@ -7,11 +7,13 @@ from types import SimpleNamespace
 
 import pytest
 
+from app import artifacts
 from app.config import Settings
 from app.jobs import create_job
 from app.pipeline import analyze, transcribe
+from app.pipeline.publish import UNVERIFIED_SCREWS
 from app.pipeline.runner import default_stages, run_job
-from app.schemas import Guide
+from app.schemas import Guide, Manifest
 
 pytestmark = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="needs ffmpeg")
 
@@ -65,7 +67,7 @@ class FakeMeta:
 
     calls: list = []
 
-    def __init__(self, settings):
+    def __init__(self, settings, **kwargs):
         pass
 
     def transcribe(self, wav, **kwargs):
@@ -128,6 +130,14 @@ def test_full_pipeline_builds_a_guide(tmp_path, fake_meta):
     assert guide.steps[1].review == "needs_review"
     assert [r.action for r in guide.reassembly] == ["reconnect", "screw in"]
     assert (folder / "analysis_raw.txt").exists()
+    # Honest output: Spark counted 4 screws but nothing verified them on the images yet.
+    assert UNVERIFIED_SCREWS in guide.checks
+    # Every stage left a record: version, time and cost.
+    manifest = artifacts.load(folder, Manifest)
+    assert list(manifest.stages) == [
+        "ingest", "transcribe", "signals", "scenes", "analyze", "plan", "frames", "publish",
+    ]  # fmt: skip
+    assert all(record.status == "done" for record in manifest.stages.values())
     assert guide.steps[0].image == "steps/01.jpg"
     assert (folder / guide.steps[0].clip).exists()
 

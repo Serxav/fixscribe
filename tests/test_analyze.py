@@ -8,6 +8,7 @@ import httpx
 import openai
 import pytest
 
+from app.artifacts import ArtifactError
 from app.config import Settings
 from app.meta_client import MetaClient, MetaError
 from app.pipeline.analyze import (
@@ -110,6 +111,9 @@ def make_client(tmp_path: Path, results):
     return client, fake
 
 
+INGEST = json.dumps({"duration_s": 42.0, "width": 720, "height": 1280, "has_audio": True})
+
+
 def make_job(
     job_dir: Path,
     *,
@@ -119,7 +123,10 @@ def make_job(
 ) -> None:
     job_dir.mkdir(parents=True, exist_ok=True)
     (job_dir / "video.mp4").write_bytes(b"fake-video-bytes")
-    (job_dir / "ingest.json").write_text(json.dumps({"duration_s": 42.0}), encoding="utf-8")
+    (job_dir / "ingest.json").write_text(
+        json.dumps({"duration_s": 42.0, "width": 720, "height": 1280, "has_audio": True}),
+        encoding="utf-8",
+    )
     if with_transcript:
         (job_dir / "transcript.json").write_text(
             json.dumps(
@@ -294,7 +301,10 @@ def test_analyze_timeout_reaches_responses_create(tmp_path):
 def test_missing_video_names_it_and_skips_upload(tmp_path):
     job_dir = tmp_path / "job"
     job_dir.mkdir(parents=True, exist_ok=True)
-    (job_dir / "ingest.json").write_text(json.dumps({"duration_s": 42.0}), encoding="utf-8")
+    (job_dir / "ingest.json").write_text(
+        json.dumps({"duration_s": 42.0, "width": 720, "height": 1280, "has_audio": True}),
+        encoding="utf-8",
+    )
     client, fake = make_client(tmp_path, [fake_answer()])
 
     with pytest.raises(AnalyzeError, match="video.mp4"):
@@ -310,7 +320,7 @@ def test_missing_ingest_names_it(tmp_path):
     (job_dir / "video.mp4").write_bytes(b"fake-video-bytes")
     client, fake = make_client(tmp_path, [fake_answer()])
 
-    with pytest.raises(AnalyzeError, match="ingest.json"):
+    with pytest.raises(ArtifactError, match="missing ingest.json"):
         run(job_dir, Settings(model_api_key="", data_dir=tmp_path), client)
 
     assert fake.files.created == 0
