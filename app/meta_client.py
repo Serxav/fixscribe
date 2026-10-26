@@ -1,5 +1,6 @@
 """Client for the Meta Responses API with retries and a spend counter."""
 
+import base64
 import fcntl
 import json
 import logging
@@ -10,12 +11,15 @@ import tempfile
 import time
 import wave
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TypeVar
 
+import cv2
 import httpx
 import openai
+from meta_sam_parser import CompletedOutcome, decode_mask_to_raster, image_segmentation_format
 
 from app.config import Settings
 
@@ -106,6 +110,18 @@ def _wav_duration_s(wav_path: Path) -> float:
 def _is_number(value: Any) -> bool:
     """True for a real JSON number (bools are not numbers here)."""
     return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+@dataclass(frozen=True)
+class Detection:
+    """One SAM detection in the pixels of the image actually sent."""
+
+    object_id: str
+    box: tuple[float, float, float, float]
+    confidence: float | None
+    mask: bytes | None
+    mask_size: tuple[int, int] | None
+    mask_bounds: tuple[float, float, float, float] | None
 
 
 class _InvalidAsrAnswer(Exception):
@@ -415,6 +431,108 @@ class MetaClient:
             data["audioDurationMs"] = int(round(duration_s * 1000))
         self.spend.add(self._settings.asr_model, asr_cost(duration_s))
         return data
+
+    def segment(
+        self, image_path: Path, concept: str, max_side: int = 1280
+    ) -> tuple[list[Detection], tuple[int, int]]:
+        """Segment one concept in an image with SAM 3.1.
+
+        Returns the detections and the ``(width, height)`` of the image
+        actually sent, so callers can normalize boxes.
+        """
+        if not concept or not concept.strip():
+            raise ValueError("concept must not be empty")
+        if any(char in concept for char in (",", ";", "+")):
+            raise ValueError("concept must be one short noun phrase")
+        if max_side <= 0:
+            raise ValueError("max_side must be positive")
+        image = cv2.imread(str(image_path))
+        if image is None:
+            raise ValueError(f"cannot read image: {image_path}")
+        height, width = image.shape[:2]
+        longest = max(width, height)
+        if longest > max_side:
+            scale = max_side / longest
+            new_width = max(1, round(width * scale))
+            new_height = max(1, round(height * scale))
+            image = cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_AREA)
+            height, width = image.shape[:2]
+        ok, buffer = cv2.imencode(".jpg", image, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
+        if not ok:
+            raise ValueError(f"cannot encode image: {image_path}")
+        data_url = "data:image/jpeg;base64," + base64.b64encode(buffer.tobytes()).decode("ascii")
+        self.spend.check()
+
+        def _do_create() -> Any:
+            return self._client.responses.create(
+                model=self._settings.sam_model,
+                input=[
+                    {
+                        "type": "message",
+                        "role": "user",
+                        "content": [
+                            {"type": "input_text", "text": concept},
+                            {"type": "input_image", "image_url": data_url},
+                        ],
+                    }
+                ],
+                metadata={"mask_encoding": "one_bit", "include_confidence": "true"},
+            )
+
+        response = self._with_retries(_do_create)
+        usage = getattr(response, "usage", None)
+        raw_images = getattr(usage, "images_processed", None) if usage is not None else None
+        images = raw_images if _is_number(raw_images) else 1
+        self.spend.add(self._settings.sam_model, sam_cost(images=images))
+        text = getattr(response, "output_text", "") or ""
+        parser = image_segmentation_format().create_parser()
+        parser.push(text)
+        result = parser.finish(CompletedOutcome()).result
+        if result.diagnostics:
+            logger.warning("sam parser diagnostics: %d", len(result.diagnostics))
+        mask_by_id: dict[str, Any] = {}
+        for record in result.records:
+            if getattr(record, "kind", None) == "mask":
+                mask_by_id.setdefault(str(record.object_id), record)
+        detections: list[Detection] = []
+        for record in result.records:
+            if getattr(record, "kind", None) != "box":
+                continue
+            mask_record = mask_by_id.get(str(record.object_id))
+            mask: bytes | None = None
+            mask_size: tuple[int, int] | None = None
+            mask_bounds: tuple[float, float, float, float] | None = None
+            if mask_record is not None:
+                try:
+                    mask = decode_mask_to_raster(mask_record.mask)
+                except Exception:
+                    mask = None
+                if mask is not None:
+                    mask_size = (int(mask_record.mask.width), int(mask_record.mask.height))
+                    bounds = mask_record.bounds
+                    mask_bounds = (
+                        float(bounds.left),
+                        float(bounds.top),
+                        float(bounds.right),
+                        float(bounds.bottom),
+                    )
+            confidence = getattr(record, "confidence", None)
+            detections.append(
+                Detection(
+                    object_id=str(record.object_id),
+                    box=(
+                        float(record.left),
+                        float(record.top),
+                        float(record.right),
+                        float(record.bottom),
+                    ),
+                    confidence=float(confidence) if _is_number(confidence) else None,
+                    mask=mask,
+                    mask_size=mask_size,
+                    mask_bounds=mask_bounds,
+                )
+            )
+        return detections, (int(width), int(height))
 
     def _with_retries(self, fn: Callable[[], T], retry_timeouts: bool = True) -> T:
         last_exc: BaseException | None = None

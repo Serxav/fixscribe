@@ -11,6 +11,7 @@ import pytest
 from app.config import Settings
 from app.meta_client import (
     BudgetExceeded,
+    Detection,
     MetaClient,
     MetaError,
     SpendCounter,
@@ -497,3 +498,164 @@ def test_transcribe_never_logs_authorization(tmp_path, caplog):
     assert result["sessionId"] == "sess-1"
     assert "test-secret-key-xyz" not in caplog.text
     assert ASR_PAYLOAD["transcript"] not in caplog.text
+
+
+def _sam_fake_record(obj_id, x1, y1, x2, y2, img_w, img_h):
+    from meta_sam_parser._mask_codec import _encode_raster
+
+    mw, mh = x2 - x1 + 1, y2 - y1 + 1
+    payload = _encode_raster([1] * (mw * mh), mw, mh)
+    return (
+        f"{obj_id}<|box;x1={x1};y1={y1};x2={x2};y2={y2};w={img_w};h={img_h}|>"
+        f"<|mask;x=0;y=0;data={mh},{mw},{payload}|>"
+    )
+
+
+def _sam_output_text():
+    return "<0f>" + ",".join(
+        [
+            _sam_fake_record(0, 10, 20, 13, 22, 100, 100),
+            _sam_fake_record(1, 50, 50, 59, 59, 100, 100),
+        ]
+    )
+
+
+def _write_test_image(path: Path, width: int = 100, height: int = 100) -> Path:
+    import cv2
+    import numpy as np
+
+    image = np.full((height, width, 3), 120, dtype=np.uint8)
+    assert cv2.imwrite(str(path), image)
+    return path
+
+
+def _sam_response(output_text, images_processed=None):
+    usage = None
+    if images_processed is not None:
+        usage = types.SimpleNamespace(images_processed=images_processed)
+    return types.SimpleNamespace(output_text=output_text, usage=usage)
+
+
+def test_segment_sends_sam_request(tmp_path):
+    image_path = _write_test_image(tmp_path / "frame.jpg")
+    fake = FakeClient([_sam_response(_sam_output_text())])
+    client = MetaClient(make_settings(tmp_path), client=fake, sleep=lambda _: None)
+
+    detections, size = client.segment(image_path, "screw")
+
+    assert size == (100, 100)
+    assert len(detections) == 2
+    assert fake.responses.calls == 1
+    kwargs = fake.responses.kwargs[0]
+    assert kwargs["model"] == "sam-3.1"
+    assert kwargs["metadata"] == {"mask_encoding": "one_bit", "include_confidence": "true"}
+    message = kwargs["input"][0]
+    assert message["type"] == "message"
+    assert message["role"] == "user"
+    content = message["content"]
+    assert content[0] == {"type": "input_text", "text": "screw"}
+    assert content[1]["type"] == "input_image"
+    assert content[1]["image_url"].startswith("data:image/jpeg;base64,")
+
+
+def test_segment_parses_two_detections_and_records_spend(tmp_path):
+    image_path = _write_test_image(tmp_path / "frame.jpg")
+    fake = FakeClient([_sam_response(_sam_output_text())])
+    client = MetaClient(make_settings(tmp_path), client=fake, sleep=lambda _: None)
+
+    detections, size = client.segment(image_path, "screw")
+
+    assert size == (100, 100)
+    assert [d.box for d in detections] == [(10.0, 20.0, 14.0, 23.0), (50.0, 50.0, 60.0, 60.0)]
+    assert [d.object_id for d in detections] == ["0", "1"]
+    assert all(isinstance(d, Detection) for d in detections)
+    assert detections[0].mask is not None
+    assert detections[0].mask_size == (4, 3)
+    assert detections[0].mask_bounds == (10.0, 20.0, 14.0, 23.0)
+    assert detections[1].mask is not None
+    assert detections[1].mask_size == (10, 10)
+    with open(tmp_path / "spend.json", encoding="utf-8") as f:
+        data = json.load(f)
+    assert data["calls"] == 1
+    assert data["total_usd"] == pytest.approx(sam_cost(images=1))
+    assert data["by_model"]["sam-3.1"] == pytest.approx(sam_cost(images=1))
+
+
+def test_segment_empty_output_returns_no_detections(tmp_path):
+    image_path = _write_test_image(tmp_path / "frame.jpg")
+    fake = FakeClient([_sam_response("")])
+    client = MetaClient(make_settings(tmp_path), client=fake, sleep=lambda _: None)
+
+    detections, size = client.segment(image_path, "screw")
+
+    assert detections == []
+    assert size == (100, 100)
+    with open(tmp_path / "spend.json", encoding="utf-8") as f:
+        data = json.load(f)
+    assert data["total_usd"] == pytest.approx(sam_cost(images=1))
+
+
+def test_segment_uses_images_processed_when_present(tmp_path):
+    image_path = _write_test_image(tmp_path / "frame.jpg")
+    fake = FakeClient([_sam_response("", images_processed=3)])
+    client = MetaClient(make_settings(tmp_path), client=fake, sleep=lambda _: None)
+
+    detections, _size = client.segment(image_path, "screw")
+
+    assert detections == []
+    with open(tmp_path / "spend.json", encoding="utf-8") as f:
+        data = json.load(f)
+    assert data["total_usd"] == pytest.approx(sam_cost(images=3))
+
+
+def test_segment_resizes_large_image(tmp_path):
+    image_path = _write_test_image(tmp_path / "big.jpg", width=4000, height=3000)
+    fake = FakeClient([_sam_response("")])
+    client = MetaClient(make_settings(tmp_path), client=fake, sleep=lambda _: None)
+
+    _detections, size = client.segment(image_path, "screw")
+
+    assert size == (1280, 960)
+    assert max(size) == 1280
+
+
+def test_segment_rejects_multi_concept_without_call(tmp_path):
+    image_path = _write_test_image(tmp_path / "frame.jpg")
+    fake = FakeClient([_sam_response(_sam_output_text())])
+    client = MetaClient(make_settings(tmp_path), client=fake, sleep=lambda _: None)
+
+    with pytest.raises(ValueError):
+        client.segment(image_path, "screw, bolt")
+    assert fake.responses.calls == 0
+
+
+@pytest.mark.parametrize("concept", ["", "   ", "screw; bolt", "screw+bolt"])
+def test_segment_rejects_bad_concepts(tmp_path, concept):
+    image_path = _write_test_image(tmp_path / "frame.jpg")
+    fake = FakeClient([_sam_response("")])
+    client = MetaClient(make_settings(tmp_path), client=fake, sleep=lambda _: None)
+
+    with pytest.raises(ValueError):
+        client.segment(image_path, concept)
+    assert fake.responses.calls == 0
+
+
+def test_segment_budget_exceeded_no_call(tmp_path):
+    image_path = _write_test_image(tmp_path / "frame.jpg")
+    SpendCounter(tmp_path / "spend.json", 1.0).add("muse-spark-1.3", 1.0)
+    fake = FakeClient([_sam_response(_sam_output_text())])
+    client = MetaClient(make_settings(tmp_path, budget_usd=1.0), client=fake, sleep=lambda _: None)
+
+    with pytest.raises(BudgetExceeded):
+        client.segment(image_path, "screw")
+    assert fake.responses.calls == 0
+
+
+def test_segment_unreadable_image_no_call(tmp_path):
+    missing = tmp_path / "missing.jpg"
+    fake = FakeClient([_sam_response("")])
+    client = MetaClient(make_settings(tmp_path), client=fake, sleep=lambda _: None)
+
+    with pytest.raises(ValueError):
+        client.segment(missing, "screw")
+    assert fake.responses.calls == 0
