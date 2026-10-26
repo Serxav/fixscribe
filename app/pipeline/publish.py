@@ -9,7 +9,7 @@ from typing import Any
 
 from app import artifacts
 from app.pipeline.assembly import build_reassembly
-from app.schemas import Frames, Guide, Plan, Step
+from app.schemas import Box, Frames, Guide, Perception, Plan, ScrewMap, Step, StepPerception
 
 VERSION = "2"
 UNVERIFIED_SCREWS = (
@@ -27,16 +27,48 @@ def with_media(steps: list[Step], frames: Frames | None) -> list[Step]:
     ]
 
 
+def to_box(number: int, x: float, y: float, w: float, h: float) -> Box:
+    """A screw-map box, clamped so it stays inside the image."""
+    w, h = min(w, 1.0), min(h, 1.0)
+    return Box(number=number, x=min(max(x, 0.0), 1.0 - w), y=min(max(y, 0.0), 1.0 - h), w=w, h=h)
+
+
+def with_perception(
+    steps: list[Step], perception: Perception | None
+) -> tuple[list[Step], list[str]]:
+    """Add SAM's screw positions and overlay to each step, and its notes to the checks."""
+    if perception is None:
+        return steps, []
+    found: dict[int, StepPerception] = {item.index: item for item in perception.steps}
+    merged, notes = [], []
+    for step in steps:
+        seen = found.get(step.index)
+        if seen is None:
+            merged.append(step)
+            continue
+        notes += [f"Step {step.index}: {note}" for note in seen.notes]
+        update: dict = {}
+        if seen.overlay:
+            update["overlay"] = seen.overlay
+        if seen.removed:
+            boxes = [to_box(r.number, r.box.x, r.box.y, r.box.w, r.box.h) for r in seen.removed]
+            # The analysis count stays the claim; SAM's boxes are the evidence that checks it.
+            count = step.screws.count if step.screws and step.screws.count else len(boxes)
+            update["screws"] = ScrewMap(count=count, boxes=boxes)
+        merged.append(step.model_copy(update=update) if update else step)
+    return merged, notes
+
+
 def screws_verified(steps: list[Step]) -> bool:
     """True only when every step with screws has screw positions found on its images."""
     with_screws = [step for step in steps if step.screws and step.screws.count]
     return bool(with_screws) and all(step.screws.boxes for step in with_screws)
 
 
-def build_guide(plan: Plan, frames: Frames | None) -> Guide:
-    steps = with_media(plan.steps, frames)
+def build_guide(plan: Plan, frames: Frames | None, perception: Perception | None = None) -> Guide:
+    steps, perception_notes = with_perception(with_media(plan.steps, frames), perception)
     reassembly = build_reassembly(steps)
-    checks = list(plan.checks) + reassembly.warnings
+    checks = list(plan.checks) + perception_notes + reassembly.warnings
     if any(step.screws and step.screws.count for step in steps) and not screws_verified(steps):
         checks.append(UNVERIFIED_SCREWS)
     return Guide(
@@ -57,6 +89,10 @@ def build_guide(plan: Plan, frames: Frames | None) -> Guide:
 
 
 def run(job_dir: Path, settings: Any) -> Guide:
-    guide = build_guide(artifacts.load(job_dir, Plan), artifacts.load_optional(job_dir, Frames))
+    guide = build_guide(
+        artifacts.load(job_dir, Plan),
+        artifacts.load_optional(job_dir, Frames),
+        artifacts.load_optional(job_dir, Perception),
+    )
     artifacts.save(job_dir, guide)
     return guide
