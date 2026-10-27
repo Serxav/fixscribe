@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% if guide %}{{ guide.title }} — fastener tray — FixScribe{% else %}Fastener tray not ready — FixScribe{% endif %}</title>
+<style>
+@page { size: A4; margin: 12mm; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #fff; color: #000; font-family: Georgia, "Times New Roman", serif; }
+.page { max-width: 190mm; margin: 0 auto; padding: 6mm 2mm; }
+.header { border-bottom: 1.5mm solid #000; padding-bottom: 4mm; margin-bottom: 5mm; }
+.header h1 { margin: 0; font-size: 22pt; line-height: 1.15; }
+.header p { margin: 1.5mm 0 0; font-size: 12pt; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+.cell { border: 0.8mm solid #000; padding: 4mm; break-inside: avoid; }
+.cell-top { display: flex; gap: 4mm; align-items: baseline; }
+.cell-number { font-size: 34pt; font-weight: bold; line-height: 1; min-width: 16mm; }
+.cell-title { font-size: 12pt; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cell-kind { margin: 2mm 0 0; font-size: 11pt; }
+.circles { display: flex; flex-wrap: wrap; gap: 3mm; margin-top: 3mm; }
+.circle { width: 16mm; height: 16mm; border: 0.8mm solid #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14pt; font-weight: bold; }
+.cell img { display: block; max-height: 35mm; max-width: 100%; margin-top: 3mm; border: 0.4mm solid #000; }
+.reassembly { border: 0.8mm solid #000; padding: 4mm; margin-top: 5mm; break-inside: avoid; }
+.reassembly h2 { margin: 0 0 2mm; font-size: 14pt; }
+.reassembly ol { margin: 0; padding-left: 7mm; font-size: 11pt; }
+.reassembly li { margin: 1.5mm 0; }
+.notice { border: 0.8mm solid #000; padding: 6mm; font-size: 14pt; font-weight: bold; break-inside: avoid; }
+.footer { border-top: 0.8mm solid #000; margin-top: 5mm; padding-top: 3mm; font-size: 10pt; }
+.print-row { margin: 4mm 0; }
+.print-btn { display: inline-block; padding: 3mm 8mm; border: 0.6mm solid #000; background: #fff; color: #000; font-size: 12pt; font-weight: bold; cursor: pointer; }
+@media print {
+  .print-row { display: none; }
+  .page { max-width: none; padding: 0; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+{% if not guide %}
+<div class="header">
+<h1>This guide is not ready yet.</h1>
+<p>The video is still being turned into a guide, or the guide does not exist yet.</p>
+</div>
+{% if valid_id %}
+<p><a href="/jobs/{{ job_id }}">Check the job progress</a></p>
+{% endif %}
+<p><a href="/">Back to FixScribe home</a></p>
+{% elif guide.safety and guide.safety.level == "professional_only" %}
+<div class="header">
+<h1>{{ guide.title }} — fastener tray</h1>
+</div>
+<div class="notice">This job is for a qualified professional. No tray.</div>
+<div class="footer">FixScribe — keep each fastener in its cell.</div>
+{% else %}
+<div class="print-row"><button class="print-btn" onclick="window.print()" type="button">Print</button></div>
+<div class="header">
+<h1>{{ guide.title }} — fastener tray</h1>
+{% if guide.identity and guide.identity.object_name %}<p>{{ guide.identity.object_name }}</p>{% endif %}
+</div>
+{% if cells %}
+<div class="grid">
+{% for cell in cells %}
+<div class="cell">
+<div class="cell-top">
+<span class="cell-number">{{ cell.step }}</span>
+<span class="cell-title">{{ cell.title }}</span>
+</div>
+<p class="cell-kind">{{ cell.count }} {{ cell.kind }}{% if cell.count != 1 %}s{% endif %}</p>
+<div class="circles">
+{% for number in cell.numbers %}
+<span class="circle">{{ number }}</span>
+{% endfor %}
+</div>
+{% if cell.image %}<img src="/media/{{ job_id }}/{{ cell.image }}" alt="Step {{ cell.step }}: {{ cell.title }}">{% endif %}
+</div>
+{% endfor %}
+</div>
+{% else %}
+<div class="notice">This guide removes no fasteners — there is nothing to keep in the tray.</div>
+{% endif %}
+{% if reassembly_lines %}
+<div class="reassembly">
+<h2>Reassembly order</h2>
+<ol>
+{% for line in reassembly_lines %}
+<li>{{ line }}</li>
+{% endfor %}
+</ol>
+</div>
+{% endif %}
+<div class="footer">FixScribe — keep each fastener in its cell.</div>
+{% endif %}
+</div>
+</body>
+</html>
