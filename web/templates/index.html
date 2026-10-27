@@ -2,14 +2,14 @@
 {% block content %}
 <section class="hero">
   <div class="stack">
-    <span class="kicker">Any repair · any object</span>
-    <h1 class="display">Film a repair.<br><span class="gradient-text">Get a guide you can trust.</span></h1>
-    <p class="lede">FixScribe watches and listens to your video, finds every step, marks each part and screw with SAM, and shows the proof behind every sentence.</p>
+    <span class="kicker">Any repair · any object · built on Meta AI</span>
+    <h1 class="display">Film a repair.<br><span class="gradient-text">Get the film, the guide and the proof.</span></h1>
+    <p class="lede">FixScribe watches and listens to one phone video, works out what you are repairing, tracks every part and screw with SAM 3.1, and turns it into a narrated repair film — taking apart and putting back — plus a step-by-step guide where every sentence shows its proof.</p>
 
     <form class="glass card stack" action="/upload" method="post" enctype="multipart/form-data" id="upload-form">
       <div>
-        <h2 class="h3">Your repair video</h2>
-        <p class="muted small" style="margin:4px 0 0">Say each step out loud, or stay silent. .mp4, .mov or .m4v, up to 10 minutes.</p>
+        <h2 class="h3">Start with your repair video</h2>
+        <p class="muted small" style="margin:4px 0 0">Film it once. Say each step out loud, or stay silent. .mp4, .mov or .m4v, up to 10 minutes.</p>
       </div>
       <label class="btn btn-primary btn-lg btn-block">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="3"/><path d="m16 10 5-3v10l-5-3"/></svg>
@@ -22,25 +22,66 @@
         <input class="visually-hidden" type="file" name="video" accept="video/mp4,video/quicktime,.mov,.m4v,.mp4" data-autosubmit>
       </label>
       <p id="upload-status" class="muted small hidden" role="status">Uploading…</p>
-      {% if example_job %}<a class="small" href="/guides/{{ example_job }}">See an example guide →</a>{% endif %}
     </form>
   </div>
 
-  <div class="device" aria-hidden="true">
-    <div class="device-body">
-      <div class="device-screen">
-        <div class="ghost"><i style="left:-6px;top:-6px"></i><i style="right:-6px;top:-6px"></i><i style="left:-6px;bottom:-6px"></i><i style="right:-6px;bottom:-6px"></i></div>
-        <div class="scan"></div>
-        <div class="label">4 screws found · back cover</div>
+  {% if showcase and showcase.clips %}
+  <div class="showcase glass">
+    <video class="showcase-video" src="{{ showcase.clips[0] }}" {% if showcase.poster %}poster="{{ showcase.poster }}"{% endif %} muted loop playsinline autoplay></video>
+    <div class="showcase-bar">
+      <span class="chip accent">SAM 3.1 tracking</span>
+      <b>{{ showcase.title }}</b>
+      <span class="muted small">{{ showcase.object }} · {{ showcase.steps }} steps{% if showcase.proof is not none %} · {{ showcase.proof }}% verified{% endif %}</span>
+      <div class="btn-row" style="margin-top:10px">
+        <a class="btn btn-primary" href="/guides/{{ example_job }}/film">▶ Watch the film</a>
+        <a class="btn btn-glass" href="/guides/{{ example_job }}">Open the guide</a>
       </div>
     </div>
   </div>
+  {% else %}
+  <div class="device" aria-hidden="true"><div class="device-body"><div class="device-screen">
+    <div class="ghost"><i style="left:-6px;top:-6px"></i><i style="right:-6px;top:-6px"></i><i style="left:-6px;bottom:-6px"></i><i style="right:-6px;bottom:-6px"></i></div>
+    <div class="scan"></div><div class="label">4 screws found · back cover</div>
+  </div></div></div>
+  {% endif %}
 </section>
 
-<section class="tiles" aria-label="What FixScribe does">
-  <div class="glass card"><div class="tile-ico">◎</div><h3 class="h3">Any object</h3><p class="muted small">Phones, washing machines, chairs, cars. It first finds out what it is looking at, then adapts.</p></div>
-  <div class="glass card"><div class="tile-ico">✓</div><h3 class="h3">Every claim has proof</h3><p class="muted small">Each step shows the video seconds, the spoken words and the SAM measurement behind it.</p></div>
-  <div class="glass card"><div class="tile-ico">⚠︎</div><h3 class="h3">Safety first</h3><p class="muted small">Fixed safety rules run before any AI. Gas, mains panels and airbags get no DIY steps.</p></div>
+<section class="landing-section">
+  <span class="kicker">How it works</span>
+  <h2 class="title">One video in. Five things out.</h2>
+  <ol class="flow">
+    <li class="glass card"><span class="flow-n">1</span><h3 class="h3">It finds out what it is</h3><p class="muted">Muse Spark looks at a few frames and the first spoken words: a phone, a washing machine, a chair, a car. The object, the task and its hazards decide everything that follows.</p></li>
+    <li class="glass card"><span class="flow-n">2</span><h3 class="h3">It watches and listens</h3><p class="muted">Spark watches the whole video and Muse Voice transcribes the narration. Step cuts come from your words ("step", "paso"), the pauses of your hands and scene changes — then the unclear steps are checked again on a timecoded clip.</p></li>
+    <li class="glass card"><span class="flow-n">3</span><h3 class="h3">SAM 3.1 follows every part</h3><p class="muted">SAM tracks the part you remove and every fastener through each step clip. Screws that come out are numbered; the part is cut out along its real shape for the 3D views.</p></li>
+    <li class="glass card"><span class="flow-n">4</span><h3 class="h3">It proves and protects</h3><p class="muted">Every sentence of the guide shows its source: the second of video, your words, the SAM measurement. Fixed safety rules run first — gas, mains panels and airbags get no DIY steps.</p></li>
+    <li class="glass card"><span class="flow-n">5</span><h3 class="h3">It makes the film</h3><p class="muted">Spark writes the voice-over in your language. The film plays the SAM clips with captions and voice to take it apart — and backwards, step by step, to put it back together.</p></li>
+  </ol>
+</section>
+
+<section class="landing-section">
+  <span class="kicker">What you get</span>
+  <h2 class="title">Everything a repair needs.</h2>
+  <div class="features">
+    <div class="glass card-tight feature"><div class="tile-ico">▶</div><h3 class="h3">Narrated repair film</h3><p class="muted small">Take apart and put back, with captions and voice in your language.</p></div>
+    <div class="glass card-tight feature"><div class="tile-ico">◎</div><h3 class="h3">SAM-tracked steps</h3><p class="muted small">The part lit and outlined, every screw ringed and numbered as it comes out.</p></div>
+    <div class="glass card-tight feature"><div class="tile-ico">⬡</div><h3 class="h3">3D exploded views</h3><p class="muted small">The real part, cut out by SAM, lifts off its place. Drag to turn it.</p></div>
+    <div class="glass card-tight feature"><div class="tile-ico">✓</div><h3 class="h3">Proof on every line</h3><p class="muted small">Verified, supported or not yet verified — with the evidence behind it.</p></div>
+    <div class="glass card-tight feature"><div class="tile-ico">📷</div><h3 class="h3">Check my step</h3><p class="muted small">Take a photo of your own object: SAM says "done" or "2 bolts are still in place".</p></div>
+    <div class="glass card-tight feature"><div class="tile-ico">⚠︎</div><h3 class="h3">Safety first</h3><p class="muted small">Hazards detected, pre-checks before step one, professional-only jobs blocked.</p></div>
+    <div class="glass card-tight feature"><div class="tile-ico">▦</div><h3 class="h3">Printable screw tray</h3><p class="muted small">An A4 sheet with one numbered cell per step. No lost screws.</p></div>
+    <div class="glass card-tight feature"><div class="tile-ico">⤓</div><h3 class="h3">Repair mode & export</h3><p class="muted small">One step at a time, full screen. Or download the guide as Markdown.</p></div>
+  </div>
+</section>
+
+<section class="landing-section">
+  <span class="kicker">Built on Meta AI</span>
+  <h2 class="title">Every model has one job.</h2>
+  <div class="models glass card">
+    <div><b>Muse Spark</b><span class="muted small">identifies the object, watches the video, re-checks unclear steps, writes the film script</span></div>
+    <div><b>SAM 3.1</b><span class="muted small">tracks parts and fasteners in video, counts screws before and after, checks your photo</span></div>
+    <div><b>Muse Voice</b><span class="muted small">transcribes the narration into timed turns and step cuts</span></div>
+    <div><b>Muse Image</b><span class="muted small">draws a clean exploded-view illustration of each step</span></div>
+  </div>
 </section>
 {% endblock %}
 {% block scripts %}
