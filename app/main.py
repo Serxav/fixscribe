@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.routes import checks as checks_routes
+from app.routes import export as export_routes
 from app.routes import guides as guides_routes
 from app.routes import jobs as jobs_routes
 from app.routes import tray as tray_routes
@@ -18,6 +19,7 @@ app.mount("/static", StaticFiles(directory=str(ROOT / "web" / "static")), name="
 app.include_router(upload_routes.router)
 app.include_router(jobs_routes.router)
 app.include_router(guides_routes.router)
+app.include_router(export_routes.router)
 app.include_router(checks_routes.router)
 app.include_router(tray_routes.router)
 
