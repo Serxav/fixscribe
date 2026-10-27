@@ -115,6 +115,8 @@ class Guide(Strict):
     reassembly: list[ReassemblyStep] = Field(default_factory=list)
     checks: list[str] = Field(default_factory=list)  # automatic checks, e.g. the screw check
     inspector_log: list[InspectorEntry] = Field(default_factory=list)
+    identity: "Identity | None" = None  # what the video shows (identify stage)
+    safety: "Safety | None" = None  # rules-first safety decision (safety stage)
 
     @model_validator(mode="after")
     def check_steps(self) -> "Guide":
@@ -598,3 +600,6 @@ class Safety(Strict):
     reasons: list[str] = Field(default_factory=list)
     prechecks: list[str] = Field(default_factory=list)  # must be done before step 1
     blocked: list[str] = Field(default_factory=list)  # operations we never give instructions for
+
+
+Guide.model_rebuild()  # Identity and Safety are defined after Guide
