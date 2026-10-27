@@ -1,5 +1,6 @@
 """Meta client tests. Everything uses a fake client, never the network."""
 
+import base64
 import json
 import types
 from pathlib import Path
@@ -12,6 +13,7 @@ from app.config import Settings
 from app.meta_client import (
     BudgetExceeded,
     Detection,
+    ImagePolicyError,
     MetaClient,
     MetaError,
     SpendCounter,
@@ -681,3 +683,91 @@ def test_segment_unreadable_image_no_call(tmp_path):
     with pytest.raises(ValueError):
         client.segment(missing, "screw")
     assert fake.responses.calls == 0
+
+
+def image_payload(data: bytes = b"fake-webp-bytes") -> dict:
+    return {"data": [{"b64_json": base64.b64encode(data).decode("ascii")}]}
+
+
+def test_edit_image_posts_json_body_and_records_spend(tmp_path):
+    frame = tmp_path / "frame.jpg"
+    frame.write_bytes(b"fake-jpeg-bytes")
+    client, fake_http = make_asr_client(tmp_path, [(200, image_payload())])
+
+    result = client.edit_image(frame, "draw an exploded view")
+
+    assert result == b"fake-webp-bytes"
+    assert len(fake_http.posts) == 1
+    url, kwargs = fake_http.posts[0]
+    assert url.endswith("/images/edits")
+    assert kwargs["headers"]["Authorization"] == "Bearer test-key"
+    body = kwargs["json"]
+    assert body["model"] == "muse-image-1.0"
+    assert body["prompt"] == "draw an exploded view"
+    assert body["n"] == 1
+    assert body["output_format"] == "webp"
+    assert set(body) == {"model", "prompt", "images", "n", "output_format"}
+    assert len(body["images"]) == 1
+    data_url = body["images"][0]["image_url"]
+    assert data_url.startswith("data:image/jpeg;base64,")
+    assert base64.b64decode(data_url.split(",", 1)[1]) == b"fake-jpeg-bytes"
+    with open(tmp_path / "spend.json", encoding="utf-8") as f:
+        data = json.load(f)
+    assert data["calls"] == 1
+    assert data["total_usd"] == pytest.approx(0.01)
+    assert data["by_model"]["muse-image-1.0"] == pytest.approx(0.01)
+
+
+def test_edit_image_budget_exceeded_no_post(tmp_path):
+    frame = tmp_path / "frame.jpg"
+    frame.write_bytes(b"fake-jpeg-bytes")
+    SpendCounter(tmp_path / "spend.json", 1.0).add("muse-spark-1.3", 1.0)
+    client, fake_http = make_asr_client(tmp_path, [(200, image_payload())], budget_usd=1.0)
+    with pytest.raises(BudgetExceeded):
+        client.edit_image(frame, "draw an exploded view")
+    assert fake_http.posts == []
+
+
+def test_edit_image_400_policy_error_no_retry(tmp_path):
+    frame = tmp_path / "frame.jpg"
+    frame.write_bytes(b"fake-jpeg-bytes")
+    payload = {"error": {"code": "content_policy_violation", "message": "refused"}}
+    client, fake_http = make_asr_client(tmp_path, [(400, payload)])
+    with pytest.raises(ImagePolicyError):
+        client.edit_image(frame, "draw an exploded view")
+    assert len(fake_http.posts) == 1
+
+
+def test_edit_image_503_then_success(tmp_path):
+    frame = tmp_path / "frame.jpg"
+    frame.write_bytes(b"fake-jpeg-bytes")
+    client, fake_http = make_asr_client(
+        tmp_path, [(503, {"error": "busy"}), (200, image_payload())]
+    )
+    assert client.edit_image(frame, "draw an exploded view") == b"fake-webp-bytes"
+    assert len(fake_http.posts) == 2
+
+
+def test_edit_image_500_no_retry(tmp_path):
+    frame = tmp_path / "frame.jpg"
+    frame.write_bytes(b"fake-jpeg-bytes")
+    client, fake_http = make_asr_client(tmp_path, [(500, {"error": "broken"})])
+    with pytest.raises(MetaError):
+        client.edit_image(frame, "draw an exploded view")
+    assert len(fake_http.posts) == 1
+
+
+def test_edit_image_invalid_answer(tmp_path):
+    frame = tmp_path / "frame.jpg"
+    frame.write_bytes(b"fake-jpeg-bytes")
+    client, fake_http = make_asr_client(tmp_path, [(200, {"data": []})])
+    with pytest.raises(MetaError, match="invalid answer"):
+        client.edit_image(frame, "draw an exploded view")
+    assert len(fake_http.posts) == 1
+
+
+def test_edit_image_missing_file_no_post(tmp_path):
+    client, fake_http = make_asr_client(tmp_path, [(200, image_payload())])
+    with pytest.raises(ValueError):
+        client.edit_image(tmp_path / "missing.jpg", "draw an exploded view")
+    assert fake_http.posts == []
