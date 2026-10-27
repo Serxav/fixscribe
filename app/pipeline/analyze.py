@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from app import artifacts
+from app import artifacts, spark
 from app.config import Settings
 from app.domains import DomainProfile, profile_for
 from app.meta_client import MetaClient, make_client
@@ -23,14 +23,7 @@ class AnalyzeError(Exception):
 
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "analyze_v1.md"
 
-TEXT_FORMAT = {
-    "format": {
-        "type": "json_schema",
-        "name": "repair_analysis",
-        "schema": ANALYSIS_JSON_SCHEMA,
-        "strict": True,
-    }
-}
+TEXT_FORMAT = spark.json_format("repair_analysis", ANALYSIS_JSON_SCHEMA)
 
 MAX_OUTPUT_TOKENS = 16000
 ANALYZE_TIMEOUT_S = 600.0
@@ -132,20 +125,23 @@ def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> 
     prompt = build_prompt(duration_s, mode, turns, segments, domain)
     if client is None:
         client = make_client(settings, job_dir=job_dir)
-    file_id = client.upload_file(video_path)
     try:
-        response = client.respond(
-            model=settings.spark_model,
-            input=build_input(prompt, file_id),
+        data = spark.ask_json(
+            client,
+            settings,
+            name="repair_analysis",
+            schema=ANALYSIS_JSON_SCHEMA,
+            prompt=prompt,
+            video=video_path,
+            raw_path=job_dir / "analysis_raw.txt",
             max_output_tokens=MAX_OUTPUT_TOKENS,
-            text=TEXT_FORMAT,
             timeout_s=ANALYZE_TIMEOUT_S,
             retry_timeouts=False,
         )
-    finally:
-        client.delete_file(file_id)
-    # Keep Spark's raw answer: if parsing fails, this is what we need to debug the prompt.
-    (job_dir / "analysis_raw.txt").write_text(response.output_text or "", encoding="utf-8")
-    analysis = parse_analysis(response.output_text)
+    except spark.SparkAnswerError as exc:
+        raise AnalyzeError("Spark returned an invalid analysis") from exc
+    # Keep Spark's raw answer: ask_json saved it to analysis_raw.txt, so a
+    # parsing failure can still be debugged from the prompt.
+    analysis = parse_analysis(json.dumps(data))
     artifacts.save(job_dir, analysis)
     return analysis

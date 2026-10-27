@@ -5,11 +5,11 @@ from the untouched original (never from the 720p working proxy), with the
 rotation tag applied and HDR colour converted exactly as in ingest.
 """
 
-import os
 from pathlib import Path
 
 from PIL import Image
 
+from app import artifacts
 from app.pipeline.ingest import color_filter, run_ffmpeg
 from app.schemas import SourceVideo
 
@@ -35,27 +35,21 @@ def extract_still(
         for part in (color_filter(source), _scale_max_side(max_side) if max_side else "")
         if part
     )
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    tmp = dst.with_suffix(".tmp.png")
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-v",
-        "error",
-        "-ss",
-        str(t),
-        "-i",
-        str(original),
-    ]
-    if chain:
-        cmd += ["-vf", chain]
-    cmd += ["-frames:v", "1", str(tmp)]
-    try:
+    with artifacts.atomic_path(dst) as tmp:
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-v",
+            "error",
+            "-ss",
+            str(t),
+            "-i",
+            str(original),
+        ]
+        if chain:
+            cmd += ["-vf", chain]
+        cmd += ["-frames:v", "1", str(tmp)]
         run_ffmpeg(cmd)
-    except Exception:
-        tmp.unlink(missing_ok=True)
-        raise
-    os.replace(tmp, dst)
     with Image.open(dst) as image:
         return image.size
 

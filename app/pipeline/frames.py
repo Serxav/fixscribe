@@ -21,7 +21,6 @@ used and ``still`` stays ``None``.
 
 import logging
 import math
-import os
 import subprocess
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -372,12 +371,8 @@ def _process_step(
     _write_display_jpeg_atomic(steps_dir / f"{name}.jpg", display)
     clip_path = steps_dir / f"{name}.mp4"
     clip_start, clip_length = clip_range(step, keyframe_s, duration_s)
-    tmp_clip = steps_dir / f".{name}.tmp.mp4"
-    try:
+    with artifacts.atomic_path(clip_path) as tmp_clip:
         cut_clip(video_path, clip_start, clip_length, tmp_clip)
-        os.replace(tmp_clip, clip_path)
-    finally:
-        tmp_clip.unlink(missing_ok=True)
     return StepMedia(
         index=step.index,
         keyframe_s=keyframe_s,
@@ -424,8 +419,6 @@ def _write_display_jpeg_atomic(path: Path, frame: Any) -> None:
             (max(1, round(width * scale)), max(1, round(height * scale))),
             interpolation=cv2.INTER_AREA,
         )
-    tmp = path.with_name(f".{path.stem}.tmp.jpg")
-    if not cv2.imwrite(str(tmp), image, [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY]):
-        tmp.unlink(missing_ok=True)
-        raise FramesError(f"cannot write {path.name}")
-    os.replace(tmp, path)
+    with artifacts.atomic_path(path) as tmp:
+        if not cv2.imwrite(str(tmp), image, [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY]):
+            raise FramesError(f"cannot write {path.name}")
