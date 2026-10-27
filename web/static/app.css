@@ -1,8 +1,6 @@
-/* FixScribe design system v5 — civic editorial, warmer.
+/* FixScribe design system v6.
    One grotesk family plus a serif voice for the second half of big statements, a 12-column grid,
-   hairlines, soft cards, colored illustrations and calm motion on scroll.
-   References: the US National Design Studio sites (grid, restraint) and anthropic.com
-   (page organization, two-tone statements, cards, dark footer). See docs/DESIGN.md. */
+   hairlines, soft cards, colored technical drawings and calm motion on scroll. See docs/DESIGN.md. */
 
 @import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=Instrument+Serif&family=JetBrains+Mono:wght@400;500&display=swap");
 
@@ -14,7 +12,8 @@
   --ink-3: #6b6b6b;
   --rule: rgba(0, 0, 0, 0.14);
   --rule-soft: rgba(0, 0, 0, 0.07);
-  --accent: #3760f2;
+  --accent: #0866ff;
+  --cycle: 3.4s;
   --accent-ink: #ffffff;
   --accent-soft: rgba(55, 96, 242, 0.1);
   --ok: #1d7a3a;
@@ -330,12 +329,47 @@ details.proof[open] summary::after { content: "–"; }
 .start { margin-top: 40px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .start .note { flex-basis: 100%; margin: 10px 0 0; font-size: 14px; color: var(--ink-3); }
 
+/* The Meta line above the headline */
+.built { margin: 0 0 28px; display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink-2);
+  padding: 8px 14px 8px 10px; border-radius: 999px; background: var(--paper); }
+.built-mark { width: 22px; height: 12px; border-radius: 999px; background: linear-gradient(90deg, #0866ff, #7a5cff); flex: none; }
+
+/* What FixScribe does: a phone that shows the screen of the feature you are reading about */
+.story-grid { display: grid; gap: 24px; }
+@media (min-width: 900px) { .story-grid { grid-template-columns: 5fr 7fr; gap: 72px; } }
+.story-device { position: sticky; top: 84px; height: calc(100vh - 100px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; z-index: 2; }
+.device { height: min(700px, calc(100vh - 170px)); aspect-ratio: 380 / 780; border-radius: 48px; background: #121212; padding: 10px;
+  box-shadow: 0 40px 90px rgba(0, 0, 0, .18), inset 0 0 0 2px #2a2a2a; }
+.device-screen { position: relative; width: 100%; height: 100%; border-radius: 38px; overflow: hidden; background: #000; }
+.device-screen .screen { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transform: translateY(22px) scale(.98);
+  transition: opacity .55s var(--ease), transform .7s var(--ease); }
+.device-screen .screen.on, html:not(.js) .device-screen .screen[data-i="0"] { opacity: 1; transform: none; }
+.story-dots { display: flex; gap: 6px; }
+.story-dots span { width: 6px; height: 6px; border-radius: 999px; background: var(--rule); transition: width .4s var(--ease), background .4s; }
+.story-dots span.on { width: 22px; background: var(--ink); }
+.story-steps { list-style: none; margin: 0; padding: 0; }
+.story-step { min-height: 82vh; display: flex; flex-direction: column; justify-content: center; padding: 24px 0; transition: opacity .5s var(--ease); }
+.js .story-step { opacity: .25; } .js .story-step.on { opacity: 1; }
+.story-step h3 { font-size: clamp(28px, 3.1vw, 46px); line-height: 1.06; font-weight: 500; letter-spacing: -0.032em; margin: 16px 0 0; }
+.story-step p { font-size: 19px; line-height: 1.45; color: var(--ink-2); max-width: 30em; margin: 16px 0 0; }
+.story-step .used { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0; color: var(--ink-3); margin-top: 18px; }
+.state { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 26px; padding: 0 12px; border-radius: 999px; font-family: var(--mono); font-size: 12px; letter-spacing: 0; }
+.state::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.state.ok { background: #e3f1e7; color: var(--ok); } .state.next { background: #fff4c2; color: #7a5a00; }
+.story-extra { margin: 56px 0 0; font-size: 16px; color: var(--ink-3); max-width: 46em; }
+@media (max-width: 899px) {
+  .story-device { top: 64px; height: auto; padding: 10px 0 16px; background: linear-gradient(var(--surface) 88%, rgba(246, 245, 241, 0)); }
+  .device { height: 44vh; border-radius: 34px; padding: 7px; } .device-screen { border-radius: 28px; }
+  .story-step { min-height: 62vh; justify-content: flex-start; padding-top: 4vh; }
+}
+@media (prefers-reduced-motion: reduce) { .device-screen .screen, .story-step { transition: none; } }
+
 /* The mosaic: one object big, then fourteen more around it as you scroll (landing.js) */
 .mosaic { height: 320vh; margin-inline: calc(var(--margin) * -1); }
 .mosaic-stick { position: sticky; top: 72px; height: calc(100vh - 72px); display: grid; place-items: center; align-content: center; gap: 28px; overflow: hidden; }
-.mz-grid { --gap: 12px; --tile: min(calc((100vw - 2 * var(--margin) - 4 * var(--gap)) / 5), calc((100vh - 250px) / 3));
-  display: grid; grid-template-columns: repeat(5, var(--tile)); gap: var(--gap); }
-@media (max-width: 699px) { .mz-grid { --gap: 8px; --tile: min(calc((100vw - 2 * var(--margin) - 2 * var(--gap)) / 3), calc((100vh - 230px) / 5));
+.mz-grid { --gap: 12px; --tile: min(calc((100vw - 2 * var(--margin) - 6 * var(--gap)) / 7), calc((100vh - 250px) / 3));
+  display: grid; grid-template-columns: repeat(7, var(--tile)); gap: var(--gap); }
+@media (max-width: 699px) { .mz-grid { --gap: 8px; --tile: min(calc((100vw - 2 * var(--margin) - 2 * var(--gap)) / 3), calc((100vh - 190px) / 7));
   grid-template-columns: repeat(3, var(--tile)); } }
 .mz-tile { margin: 0; width: var(--tile); aspect-ratio: 1; border-radius: 12px; overflow: hidden; will-change: transform, opacity; transform-origin: 50% 50%; }
 .mz-tile[data-center] { position: relative; z-index: 2; box-shadow: 0 30px 60px rgba(0, 0, 0, .18); }
@@ -344,7 +378,6 @@ details.proof[open] summary::after { content: "–"; }
 .js .mosaic-caption { opacity: 0; }
 
 /* What each tile does on its own, like a short loop of video */
-.mz-tile * { --cycle: 3.4s; }
 .mz-scan { animation: mzScan var(--cycle) linear infinite; animation-delay: var(--mz-delay, 0s); }
 @keyframes mzScan { from { transform: translateY(0); } to { transform: translateY(500px); } }
 .mz-box { stroke-dasharray: 100; animation: mzBox var(--cycle) var(--ease) infinite; animation-delay: var(--mz-delay, 0s); }
@@ -371,9 +404,12 @@ details.proof[open] summary::after { content: "–"; }
 @keyframes mzChain { to { stroke-dashoffset: -12; } }
 .mz-pro { animation: mzPro 1.8s steps(2, jump-none) infinite; }
 @keyframes mzPro { 50% { opacity: .55; } }
+.mz-grow { transform-box: fill-box; transform-origin: 0 50%; animation: mzGrow 4s var(--ease) infinite; }
+@keyframes mzGrow { 0% { transform: scaleX(.2); } 70%, 100% { transform: scaleX(1); } }
+.mz-detail { opacity: var(--detail, 0); }
 @media (prefers-reduced-motion: reduce) {
   .mosaic { height: auto; padding-block: 40px; } .mosaic-stick { position: static; height: auto; }
-  .mz-tile * { animation: none !important; } .js .mosaic-caption { opacity: 1; }
+  .mz-tile *, .screen * { animation: none !important; } .js .mosaic-caption { opacity: 1; }
 }
 
 .statement { padding: 120px 0 40px; }
