@@ -122,6 +122,7 @@ class Guide(Strict):
     identity: "Identity | None" = None  # what the video shows (identify stage)
     safety: "Safety | None" = None  # rules-first safety decision (safety stage)
     proof: "Proof | None" = None  # where every claim of the guide comes from (proof stage)
+    narration: "Narration | None" = None  # spoken script of the repair film (narrate stage)
 
     @model_validator(mode="after")
     def check_steps(self) -> "Guide":
@@ -745,5 +746,45 @@ class Motion(Strict):
     notes: list[str] = Field(default_factory=list)
 
 
-Guide.model_rebuild()  # Identity, Safety, Proof and StepMotion are defined after Guide
+# --- Narration: the spoken script of the repair film --------------------------------------------
+
+
+class NarrationLine(Strict):
+    index: int = Field(ge=1)  # the guide step
+    disassemble: str  # what the voice says while this step's clip plays (taking apart)
+    assemble: str  # what it says when the same step is played backwards (putting back)
+
+
+class Narration(Strict):
+    """Written by Spark in the technician's language; spoken by the viewer's device."""
+
+    FILENAME: ClassVar[str] = "narration.json"
+
+    language: str = "en"  # BCP 47 / ISO 639-1, used to pick the device voice
+    intro: str
+    outro_disassemble: str
+    outro_assemble: str
+    steps: list[NarrationLine] = Field(default_factory=list)
+
+
+NARRATION_JSON_SCHEMA: dict[str, Any] = _object(
+    {
+        "intro": {"type": "string"},
+        "outro_disassemble": {"type": "string"},
+        "outro_assemble": {"type": "string"},
+        "steps": {
+            "type": "array",
+            "items": _object(
+                {
+                    "index": {"type": "integer"},
+                    "disassemble": {"type": "string"},
+                    "assemble": {"type": "string"},
+                }
+            ),
+        },
+    }
+)
+
+
+Guide.model_rebuild()  # Identity, Safety, Proof, StepMotion and Narration are defined after Guide
 Step.model_rebuild()
