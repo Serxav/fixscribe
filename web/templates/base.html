@@ -3,43 +3,54 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f2f2f2">
+<meta name="theme-color" content="#f6f5f1">
 <title>{% block title %}FixScribe{% endblock %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/static/app.css">
+<script>document.documentElement.classList.add("js");</script>
 </head>
 <body>
 <header class="topbar">
-  <div class="wrap">
-    <a class="brand" href="/"><span class="glyph" aria-hidden="true"></span>FixScribe</a>
+  <div class="wrap bar">
     {% block nav %}
-    <nav aria-label="Sections">
-      <a href="/#how">How it works</a>
-      <a href="/#agent">The agent</a>
-      <a href="/#models">Models</a>
+    <nav class="pills pills-left" aria-label="Sections">
+      <a class="pill" href="/#how">How it works</a>
+      <a class="pill" href="/#agent">The agent</a>
+      <a class="pill" href="/#models">Models</a>
     </nav>
     {% endblock %}
-    <span class="spacer"></span>
-    <span class="crumb" id="crumb">{% block crumb %}{% endblock %}</span>
-    {% block end %}<a class="end" href="/#start">Start a guide</a>{% endblock %}
+    <a class="brand" href="/" aria-label="FixScribe home"><span class="glyph" aria-hidden="true"></span>FixScribe</a>
+    <div class="pills pills-right">
+      <span class="crumb" id="crumb">{% block crumb %}{% endblock %}</span>
+      {% block end %}<a class="pill pill-dark" href="/#start">Start a guide</a>{% endblock %}
+    </div>
   </div>
 </header>
 <main class="wrap">
 {% block content %}{% endblock %}
 </main>
 {% block footer %}
-<footer class="footer wrap">
-  <div class="grid12">
-    <p class="mark" aria-hidden="true">FixScribe</p>
-    <div class="cols">
-      <div><span>FixScribe</span><span>Meta Global AI Developer Hackathon, 2026</span></div>
-      <div><a href="/#how">How it works</a><a href="/#agent">The agent</a><a href="/#models">Models</a></div>
-      <div><span>Muse Wonder · Muse Spark</span><span>SAM 3.1 · Muse Voice</span></div>
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <p class="footer-mark"><span class="glyph" aria-hidden="true"></span>FixScribe</p>
+      <ul class="footer-rows">
+        <li><a href="/#how">How it works<span aria-hidden="true">→</span></a></li>
+        <li><a href="/#agent">The agent<span aria-hidden="true">→</span></a></li>
+        <li><a href="/#models">Models<span aria-hidden="true">→</span></a></li>
+        <li><a href="/#start">Start a guide<span aria-hidden="true">→</span></a></li>
+      </ul>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 FixScribe<br>Meta Global AI Developer Hackathon</p>
+      <p><b>Our aim</b><br>Turn what people know with their hands into guides anyone can trust.</p>
+      <p><b>Built with Meta models</b><br>Muse Wonder · Muse Spark · SAM 3.1 · Muse Voice</p>
     </div>
   </div>
 </footer>
 {% endblock %}
+<script src="/static/landing.js" defer></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

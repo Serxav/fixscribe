@@ -1,8 +1,19 @@
-# FixScribe design v4 — "Civic editorial"
+# FixScribe design v5 — "Civic editorial, warmer"
 
-Reference: the 2025-26 sites of the US National Design Studio (ndstudio.gov, trumprx.gov).
-FixScribe must look like a serious public tool, not like an AI demo: plain words, one typeface,
-a strict grid, lots of space, and the real media doing the talking.
+References: the 2025-26 sites of the US National Design Studio (grid, restraint) and the page
+organization of anthropic.com (two-tone statements, cards with rows, tag + picture tiles, dark
+footer, calm reveal on scroll). We borrow structure, never brand: no logos, fonts or signature
+colors of either. FixScribe must look like a serious public tool, not like an AI demo.
+
+## v5 additions
+- Header: section pills left, wordmark centered (the three-step glyph), one dark pill right.
+- Big statements are two-tone: first sentence Inter Tight 500 in ink, the rest Instrument Serif
+  in grey (`.headline .lead` / `.rest`).
+- Soft cards (`.card-x`, radius 14 px) for things you can act on; hairlines for lists.
+- Illustrations are drawn by `scripts/draw_art.py` (isometric, manual style, one color field each).
+- Motion: `[data-reveal]` rises in once; the hero table comes apart on scroll (`[data-assemble]`);
+  the agent trace appears line by line. All of it off with reduced motion, visible without JS.
+- Radius: 14 px cards and media, 10 px buttons, pills 999 px. (Overrides rule 7 below.)
 
 ## Rules (check every page against them)
 1. **One family, regular weight.** Inter Tight 400 everywhere; 500 only for small headings

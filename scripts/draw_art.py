@@ -129,17 +129,28 @@ def grid(w, h, step, color, opacity) -> str:
 
 
 def hero() -> str:
+    """The exploded table, in layers the landing animates on scroll (assembled -> exploded).
+
+    The drawing is the exploded state. ``fs-top`` and ``fs-bolts`` are lowered by the page script
+    (data-lift-top / data-lift-bolt pixels) to show the table assembled; ``fs-guides`` and
+    ``fs-callouts`` fade in as it comes apart. Without the script it stays exploded.
+    """
     w, h = 1600, 900
+    lift, bolts_up = 40, 10
     iso = Iso(520, 540, 4.3)
-    blue_tones = ("#ffffff", "#e4e9fb", "#c7d1f6")
-    body = grid(w, h, 40, WHITE, 0.08)
-    body += table(iso, lift=40, tones=blue_tones, bolts_up=10, guides=True)
-    # arrow: the top comes down
-    ax, ay = iso.p(0, 0, LEG_H + 40 + TOP[2])
-    body += f'<path d="M{ax:.0f} {ay - 80:.0f} V{ay - 16:.0f} m-9 -14 l9 14 l9 -14" fill="none" stroke="{WHITE}" stroke-width="2"/>'
-    # callouts: letter at the part, leader to a label on the right
+    tones = ("#ffffff", "#e4e9fb", "#c7d1f6")
+    legs = "".join(box(iso, x, y, 0, LEG, LEG, LEG_H, tones) for x, y in CORNERS)
+    bolts, guides = "", ""
+    for x, y in CORNERS:
+        cx, cy = x + LEG / 2, y + LEG / 2
+        z0 = LEG_H + bolts_up
+        bolts += bolt(iso, cx, cy, z0 - 2, z0 + 10)
+        guides += dashed(iso, (cx, cy, z0 + 10), (cx, cy, LEG_H + lift))
+    top = box(iso, 0, 0, LEG_H + lift, *TOP, tones)
+    ax, ay = iso.p(0, 0, LEG_H + lift + TOP[2])
+    guides += f'<path d="M{ax:.0f} {ay - 80:.0f} V{ay - 16:.0f} m-9 -14 l9 14 l9 -14" fill="none" stroke="{WHITE}" stroke-width="2"/>'
     parts = [
-        ((60, 20, LEG_H + 46), "A", "Tabletop", "proven at 00:12.4 · SAM fill 81%"),
+        ((60, 20, LEG_H + lift + 6), "A", "Tabletop", "proven at 00:12.4 · SAM fill 81%"),
         (
             (71.5, 8.5, LEG_H + 18),
             "B",
@@ -148,15 +159,16 @@ def hero() -> str:
         ),
         ((71.5, 8.5, 22), "C", "Leg ×4", "proven at 00:31.0 · SAM fill 77%"),
     ]
+    callouts = ""
     for i, (where, mark, name, proof) in enumerate(parts):
         px, py = iso.p(*where)
         lx, ly = 980, 300 + i * 150
-        body += f'<polyline points="{px:.0f},{py:.0f} {lx - 60},{ly - 6} {lx - 24},{ly - 6}" fill="none" stroke="{WHITE}" stroke-width="1.4"/>'
-        body += f'<circle cx="{px:.0f}" cy="{py:.0f}" r="4" fill="{WHITE}"/>'
-        body += letter(lx, ly - 6, mark, fill="#3760f2", ink=WHITE)
-        body += text(lx + 32, ly, name, 30, WHITE)
-        body += text(lx + 32, ly + 32, proof, 16, WHITE, mono=True, opacity=0.8)
-    body += text(
+        callouts += f'<polyline points="{px:.0f},{py:.0f} {lx - 60},{ly - 6} {lx - 24},{ly - 6}" fill="none" stroke="{WHITE}" stroke-width="1.4"/>'
+        callouts += f'<circle cx="{px:.0f}" cy="{py:.0f}" r="4" fill="{WHITE}"/>'
+        callouts += letter(lx, ly - 6, mark, fill="#3760f2", ink=WHITE)
+        callouts += text(lx + 32, ly, name, 30, WHITE)
+        callouts += text(lx + 32, ly + 32, proof, 16, WHITE, mono=True, opacity=0.8)
+    callouts += text(
         w - 48,
         h - 44,
         "Exploded view, drawn only from parts the agent proved on the video.",
@@ -166,12 +178,25 @@ def hero() -> str:
         anchor="end",
         opacity=0.8,
     )
-    return svg(
+    body = (
+        grid(w, h, 40, WHITE, 0.08)
+        + legs
+        + f'<g class="fs-bolts">{bolts}</g>'
+        + f'<g class="fs-guides">{guides}</g>'
+        + f'<g class="fs-top">{top}</g>'
+        + f'<g class="fs-callouts">{callouts}</g>'
+    )
+    out = svg(
         w,
         h,
         body,
-        "Exploded view of a side table with three proven parts: tabletop, legs and hanger bolts",
+        "A side table comes apart into three proven parts: tabletop, hanger bolts and legs",
         "#3760f2",
+    )
+    return out.replace(
+        "<svg ",
+        f'<svg data-lift-top="{lift * iso.k:.1f}" data-lift-bolt="{bolts_up * iso.k:.1f}" ',
+        1,
     )
 
 

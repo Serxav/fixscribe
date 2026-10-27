@@ -1,84 +1,111 @@
 {% extends "base.html" %}
 {% block title %}FixScribe — a guide that proves every step{% endblock %}
 {% block content %}
-<section class="hero grid12" id="start">
-  <div class="col-r-wide">
-    <h1 class="display">FixScribe watches one video of a person building or repairing something, and turns it into a guide that proves every step.</h1>
+<section class="hero" id="start">
+  <h1 class="headline" data-reveal>
+    <span class="lead">FixScribe turns one video of a person building or repairing something into a guide that proves every step.</span>
+    <span class="rest">It names every part, points at it on the frame, checks each claim outside the model, and asks you when it is not sure.</span>
+  </h1>
+  <form class="start" action="/upload" method="post" enctype="multipart/form-data" id="upload-form" data-reveal style="--d:.12s">
+    <label class="btn btn-primary btn-lg">
+      Record a video
+      <input class="visually-hidden" type="file" name="video" accept="video/*" capture="environment" data-autosubmit>
+    </label>
+    <label class="btn btn-glass btn-lg">
+      Upload a video
+      <input class="visually-hidden" type="file" name="video" accept="video/mp4,video/quicktime,.mov,.m4v,.mp4" data-autosubmit>
+    </label>
+    <p class="note">One take from a phone. Talk through it or stay silent. MP4 or MOV, up to 10 minutes.</p>
+    <p id="upload-status" class="note hidden" role="status">Uploading…</p>
+  </form>
+</section>
 
-    <form class="start" action="/upload" method="post" enctype="multipart/form-data" id="upload-form">
-      <label class="btn btn-primary btn-lg">
-        Record a video
-        <input class="visually-hidden" type="file" name="video" accept="video/*" capture="environment" data-autosubmit>
-      </label>
-      <label class="btn btn-glass btn-lg">
-        Upload a video
-        <input class="visually-hidden" type="file" name="video" accept="video/mp4,video/quicktime,.mov,.m4v,.mp4" data-autosubmit>
-      </label>
-      <p class="note">One take from a phone. Talk through it or stay silent. MP4 or MOV, up to 10 minutes.</p>
-      <p id="upload-status" class="note hidden" role="status">Uploading…</p>
-    </form>
+<section class="assemble" data-assemble aria-label="A table comes apart into its proven parts">
+  <div class="assemble-stick">
+    <div class="assemble-panel">{% include "art/hero.svg" %}</div>
+    <p class="assemble-hint mono" aria-hidden="true">Scroll — the table comes apart into the parts the agent proved</p>
   </div>
 </section>
 
-<figure class="bleed art-bleed" style="margin-block:0">
-  {% include "art/hero.svg" %}
-</figure>
-
-<section class="band grid12">
-  <div class="col-l"><p class="kicker">Instructions people trust</p></div>
-  <div class="col-r">
-    <p class="prose">Most instructions are written by someone who already knows how. They skip the step that seems obvious, and that is the step where you get stuck.</p>
-    <p class="prose">The person who just did the job knows it best. FixScribe keeps their hands, their words and their order of work, and checks each claim against the video before it reaches the guide.</p>
-    <p class="prose">If it cannot prove a step, it says so. If it is not sure, it asks.</p>
-  </div>
+<section class="statement">
+  <p class="headline small-headline" data-reveal>
+    <span class="lead">Most instructions are written by someone who already knows how.</span>
+    <span class="rest">They skip the step that seems obvious — the one where you get stuck. The person who just did the job knows it best, so FixScribe keeps their hands, their words and their order of work.</span>
+  </p>
 </section>
 
-<section class="band" id="how">
-  <div class="sect"><span class="num">I</span><span>How it works</span></div>
+<section class="block" id="how">
+  <div class="block-head" data-reveal>
+    <p class="eyebrow">How it works</p>
+    <h2 class="title">Six steps, each one done by the right model.</h2>
+  </div>
   <div class="tiles-grid">
-    <figure class="tile"><figcaption><span class="mono">01</span> Identify</figcaption>{% include "art/identify.svg" %}<p>The object, the task and its hazards. Safety rules run first: gas, mains panels and airbags get no do-it-yourself steps.</p></figure>
-    <figure class="tile"><figcaption><span class="mono">02</span> Listen</figcaption>{% include "art/listen.svg" %}<p>The narration, transcribed and timed to the second. A step may quote the person only with words they really said.</p></figure>
-    <figure class="tile"><figcaption><span class="mono">03</span> Point</figcaption>{% include "art/point.svg" %}<p>Muse Spark points at the part on a frame, using what is being built to pick the right one of two that look alike.</p></figure>
-    <figure class="tile"><figcaption><span class="mono">04</span> Cut out</figcaption>{% include "art/cutout.svg" %}<p>SAM 3.1 cuts the part out inside that box. A part enters the catalog only when the cut-out fills the box.</p></figure>
-    <figure class="tile"><figcaption><span class="mono">05</span> Check</figcaption>{% include "art/check.svg" %}<p>Code outside the model checks every step: parts proven, times, frame, quote. A refusal goes back to the agent.</p></figure>
-    <figure class="tile"><figcaption><span class="mono">06</span> Build</figcaption>{% include "art/build.svg" %}<p>The guide, step by step, with the parts and counts — and the reverse guide to take it apart again.</p></figure>
+    <figure class="tile" data-reveal><figcaption><span class="tag">01</span>Muse Spark</figcaption>{% include "art/identify.svg" %}<h3>Identify</h3><p>The object, the task and its hazards. Safety rules run first: gas, mains panels and airbags get no do-it-yourself steps.</p></figure>
+    <figure class="tile" data-reveal style="--d:.08s"><figcaption><span class="tag">02</span>Muse Voice</figcaption>{% include "art/listen.svg" %}<h3>Listen</h3><p>The narration, transcribed and timed to the second. A step may quote the person only with words they really said.</p></figure>
+    <figure class="tile" data-reveal style="--d:.16s"><figcaption><span class="tag">03</span>Muse Spark</figcaption>{% include "art/point.svg" %}<h3>Point</h3><p>Spark points at the part on a frame, using what is being built to pick the right one of two that look alike.</p></figure>
+    <figure class="tile" data-reveal><figcaption><span class="tag">04</span>SAM 3.1</figcaption>{% include "art/cutout.svg" %}<h3>Cut out</h3><p>SAM cuts the part out inside that box. A part enters the catalog only when the cut-out fills the box.</p></figure>
+    <figure class="tile" data-reveal style="--d:.08s"><figcaption><span class="tag">05</span>Code, not a model</figcaption>{% include "art/check.svg" %}<h3>Check</h3><p>Every step is checked outside the model: parts proven, times, frame, quote. A refusal goes back to the agent.</p></figure>
+    <figure class="tile" data-reveal style="--d:.16s"><figcaption><span class="tag">06</span>Muse Wonder</figcaption>{% include "art/build.svg" %}<h3>Build</h3><p>The guide, step by step, with the parts and counts — and the reverse guide to take it apart again.</p></figure>
   </div>
 </section>
 
-<section class="band" id="agent">
-  <div class="sect"><span class="num">II</span><span>The agent</span></div>
-  <div class="grid12" style="margin-top:56px">
-    <div class="col-l">
-      <p class="title">You can watch it work.</p>
-      <p class="lede" style="margin-top:20px">Each turn shows what the agent decided, the tool it used and what came back. Refusals are shown too: that is the system doing its job.</p>
+<section class="block" id="agent">
+  <div class="split">
+    <div data-reveal>
+      <p class="eyebrow">The agent</p>
+      <h2 class="title">You can watch it work.</h2>
+      <p class="lede">Each turn shows what the agent decided, the tool it used and what came back. Refusals are shown too: that is the system doing its job. When it is not sure, it stops and asks you one question on the exact frame.</p>
     </div>
-    <div class="col-r">
-<pre class="trace" aria-label="Example of three agent turns">
-<b>07  plan</b>    The bolt is clearest at 12.4 s, before the hand covers it.
-    act     look(t_s=12.4)
-    observe <span class="ok">frame frames/t12.4.jpg</span>
-
-<b>08  plan</b>    Point at the long bolt, not the short one beside it.
-    act     point(frame, "long metal bolt from the bag")
-    observe <span class="ok">1 box [412, 518, 470, 611]</span>
-
-<b>09  act</b>     add_part(A, "metal bolt", x4, box)
-    observe <span class="no">refused: the cut-out fills 6% of the box</span>
-</pre>
+    <div class="trace-card" data-reveal style="--d:.1s">
+      <div class="trace-bar"><span></span><span></span><span></span><b class="mono">agent · turns 07–09</b></div>
+<pre class="trace" aria-label="Three turns of the agent"><span class="tl"><b>07  plan</b>    The bolt is clearest at 12.4 s, before the hand covers it.</span>
+<span class="tl">    act     look(t_s=12.4)</span>
+<span class="tl">    observe <i class="ok">frame frames/t12.4.jpg</i></span>
+<span class="tl"> </span>
+<span class="tl"><b>08  plan</b>    Point at the long bolt, not the short one beside it.</span>
+<span class="tl">    act     point(frame, "long metal bolt from the bag")</span>
+<span class="tl">    observe <i class="ok">1 box [412, 518, 470, 611]</i></span>
+<span class="tl"> </span>
+<span class="tl"><b>09  act</b>     add_part(A, "metal bolt", x4, box)</span>
+<span class="tl">    observe <i class="no">refused: the cut-out fills 6% of the box</i></span></pre>
     </div>
   </div>
 </section>
 
-<section class="band" id="models">
-  <div class="sect"><span class="num">III</span><span>Models</span></div>
-  <div class="grid12" style="margin-top:56px">
-    <div class="col-l"><p class="title">Every model has one job.</p></div>
-    <div class="models col-r">
-      <div><b>Muse Wonder</b><span class="mono">muse-wonder-1.0</span><span class="muted">The investigator. Plans, uses the tools, asks when unsure.</span></div>
-      <div><b>Muse Spark</b><span class="mono">muse-spark-1.3</span><span class="muted">Watches the video, identifies the object, points at parts on a frame.</span></div>
-      <div><b>SAM 3.1</b><span class="mono">sam-3.1</span><span class="muted">Cuts out each part where it was pointed at, and follows it through the clip.</span></div>
-      <div><b>Muse Voice</b><span class="mono">muse-voice-transcribe-1.0</span><span class="muted">Transcribes the narration, timed to the second.</span></div>
-    </div>
+<section class="block" id="models">
+  <div class="block-head" data-reveal>
+    <p class="eyebrow">Models</p>
+    <h2 class="title">Every model has one job.</h2>
+  </div>
+  <div class="cards">
+    <article class="card-x" data-reveal>
+      <p class="meta"><span class="swatch" style="background:#3760f2"></span>Agent<span class="mono">muse-wonder-1.0</span></p>
+      <h3>Muse Wonder</h3>
+      <p class="desc">The investigator. It plans the work, uses the tools one turn at a time and asks you when it is not sure.</p>
+      <dl class="rows-x"><div><dt>Job</dt><dd>Investigate the video</dd></div><div><dt>Turns</dt><dd>about 30 per video</dd></div></dl>
+      <a class="btn btn-soft btn-block arrow" href="#agent">See the agent</a>
+    </article>
+    <article class="card-x" data-reveal style="--d:.08s">
+      <p class="meta"><span class="swatch" style="background:#c9b99c"></span>Vision<span class="mono">muse-spark-1.3</span></p>
+      <h3>Muse Spark</h3>
+      <p class="desc">Watches the whole video, image and sound, identifies the object and points at each part on a frame.</p>
+      <dl class="rows-x"><div><dt>Job</dt><dd>Watch and point</dd></div><div><dt>Output</dt><dd>boxes on a 0–1000 grid</dd></div></dl>
+      <a class="btn btn-soft btn-block arrow" href="#how">See it point</a>
+    </article>
+    <article class="card-x" data-reveal style="--d:.16s">
+      <p class="meta"><span class="swatch" style="background:#ff5a1f"></span>Segmentation<span class="mono">sam-3.1</span></p>
+      <h3>SAM 3.1</h3>
+      <p class="desc">Cuts each part out exactly where it was pointed at, and follows it through the clip.</p>
+      <dl class="rows-x"><div><dt>Job</dt><dd>Cut out and follow</dd></div><div><dt>Prompt</dt><dd>a box, not a word</dd></div></dl>
+      <a class="btn btn-soft btn-block arrow" href="#how">See the cut-out</a>
+    </article>
+    <article class="card-x" data-reveal style="--d:.24s">
+      <p class="meta"><span class="swatch" style="background:#121212"></span>Speech<span class="mono">muse-voice-transcribe-1.0</span></p>
+      <h3>Muse Voice</h3>
+      <p class="desc">Transcribes the narration, timed to the second, so every quote in the guide can be checked.</p>
+      <dl class="rows-x"><div><dt>Job</dt><dd>Listen</dd></div><div><dt>Output</dt><dd>timed turns</dd></div></dl>
+      <a class="btn btn-soft btn-block arrow" href="#how">See it listen</a>
+    </article>
   </div>
 </section>
 {% endblock %}
