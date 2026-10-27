@@ -1,10 +1,9 @@
 # ruff: noqa: E501 -- SVG markup reads better on one line per element
-"""Draw the landing illustrations as SVG (isometric, furniture-manual style).
+"""Draw the six method illustrations of the landing as SVG.
 
 Run: ``python -m scripts.draw_art`` -> writes web/templates/art/*.svg (inlined by the templates,
-so they use the page fonts). Every drawing shows one real step of FixScribe's method, using
-one example object: a small side table made of a top (A), four legs (B) and four hanger bolts (C).
-No external images, no AI-generated pictures: geometry only.
+so they use the page fonts). The six drawings follow one job, a phone battery swap: identify,
+listen, point, cut out, check, build. The isometric helpers are shared with draw_mosaic.
 """
 
 import math
@@ -48,12 +47,6 @@ def box(
     )
 
 
-def ellipse(iso: Iso, x, y, z, r, fill, stroke=INK, sw=1.4) -> str:
-    cx, cy = iso.p(x, y, z)
-    rx, ry = r * iso.k * 1.22, r * iso.k * 0.71
-    return f'<ellipse cx="{cx:.1f}" cy="{cy:.1f}" rx="{rx:.1f}" ry="{ry:.1f}" fill="{fill}" stroke="{stroke}" stroke-width="{sw}"/>'
-
-
 def bolt(iso: Iso, x, y, z0, z1, color=INK) -> str:
     """A hanger bolt standing up: shaft from z0 to z1, threads as ticks."""
     a, b = iso.p(x, y, z0), iso.p(x, y, z1)
@@ -63,18 +56,6 @@ def bolt(iso: Iso, x, y, z0, z1, color=INK) -> str:
         cx, cy = iso.p(x, y, z)
         out += f'<line x1="{cx - 0.8 * iso.k:.1f}" y1="{cy + 0.3 * iso.k:.1f}" x2="{cx + 0.8 * iso.k:.1f}" y2="{cy - 0.3 * iso.k:.1f}" stroke="{WHITE}" stroke-width="1"/>'
     return out
-
-
-def dashed(iso: Iso, a3, b3, color=INK, sw=1.4) -> str:
-    a, b = iso.p(*a3), iso.p(*b3)
-    return f'<line x1="{a[0]:.1f}" y1="{a[1]:.1f}" x2="{b[0]:.1f}" y2="{b[1]:.1f}" stroke="{color}" stroke-width="{sw}" stroke-dasharray="5 5"/>'
-
-
-def letter(cx, cy, text, r=17, fill=WHITE, ink=INK) -> str:
-    return (
-        f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r}" fill="{fill}" stroke="{ink}" stroke-width="1.6"/>'
-        f'<text x="{cx:.1f}" y="{cy + 5.5:.1f}" text-anchor="middle" font-family="{MONO}" font-size="16" fill="{ink}">{text}</text>'
-    )
 
 
 def text(x, y, s, size=18, fill=INK, mono=False, anchor="start", weight=400, opacity=1.0) -> str:
@@ -102,65 +83,65 @@ LEG_H = 48
 CORNERS = [(5, 5), (68, 5), (5, 68), (68, 68)]
 
 
-def table(
-    iso: Iso, lift: float = 0.0, tones=None, bolts_up: float = 0.0, guides=False, stroke=INK
-) -> str:
-    """The side table. ``lift`` raises the top (exploded view); ``bolts_up`` floats the bolts."""
-    tones = tones or ("#ffffff", "#e3e7f1", "#c9d0e2")
+def phone_at(x: float, y: float, k: float, battery_class: str = "") -> str:
+    """The opened phone of the mosaic, its top-left corner at (x, y), scaled by k."""
+    from scripts.draw_mosaic import phone_parts
+
+    return f'<g transform="translate({x - 109 * k:.1f} {y - 16 * k:.1f}) scale({k})">{phone_parts(battery_class)}</g>'
+
+
+def corners(x0, y0, x1, y1, color=WHITE, arm=36, sw=3) -> str:
+    """Viewfinder corners around a rectangle."""
     out = ""
-    for x, y in CORNERS:  # back to front
-        out += box(iso, x, y, 0, LEG, LEG, LEG_H, tones, stroke)
-        cx, cy = x + LEG / 2, y + LEG / 2
-        z0 = LEG_H + bolts_up
-        out += bolt(iso, cx, cy, z0 - 2, z0 + 10, stroke)
-        if guides:
-            out += dashed(iso, (cx, cy, z0 + 10), (cx, cy, LEG_H + lift), stroke)
-    out += box(iso, 0, 0, LEG_H + lift, *TOP, tones, stroke)
+    for cx, cy, dx, dy in ((x0, y0, 1, 1), (x1, y0, -1, 1), (x0, y1, 1, -1), (x1, y1, -1, -1)):
+        out += f'<path d="M{cx} {cy + arm * dy} V{cy} H{cx + arm * dx}" fill="none" stroke="{color}" stroke-width="{sw}"/>'
     return out
 
 
-def grid(w, h, step, color, opacity) -> str:
-    lines = "".join(f'<line x1="{x}" y1="0" x2="{x}" y2="{h}"/>' for x in range(step, w, step))
-    lines += "".join(f'<line x1="0" y1="{y}" x2="{w}" y2="{y}"/>' for y in range(step, h, step))
-    return f'<g stroke="{color}" stroke-width="1" opacity="{opacity}">{lines}</g>'
+def pill(x, y, label, fill="none", ink=WHITE, stroke=WHITE, size=16) -> tuple[str, float]:
+    width = 22 + len(label) * size * 0.6
+    out = f'<rect x="{x}" y="{y}" width="{width:.0f}" height="{size * 2}" rx="{size}" fill="{fill}" stroke="{stroke}" stroke-opacity=".6"/>'
+    out += text(x + 11, y + size * 1.36, label, size, ink, mono=True)
+    return out, width
 
 
-# --- drawings ---------------------------------------------------------------------------------
+def orange_box(x, y, w, h, tag="1") -> str:
+    return (
+        f'<rect class="mz-box" x="{x}" y="{y}" width="{w}" height="{h}" fill="none" stroke="#ff5a1f" stroke-width="6" pathLength="100"/>'
+        f'<g class="mz-tag"><rect x="{x}" y="{y - 40}" width="38" height="38" fill="#ff5a1f"/>'
+        + text(x + 19, y - 12, tag, 24, WHITE, mono=True, anchor="middle")
+        + "</g>"
+    )
 
 
 def tile_identify() -> str:
     w, h = 800, 1000
-    iso = Iso(400, 520, 3.5)
-    body = table(iso, tones=("#ffffff", "#dfe3ee", "#c3cadb"))
-    # viewfinder corners
-    for cx, cy, dx, dy in (
-        (150, 200, 1, 1),
-        (650, 200, -1, 1),
-        (150, 760, 1, -1),
-        (650, 760, -1, -1),
-    ):
-        body += f'<path d="M{cx} {cy + 40 * dy} V{cy} H{cx + 40 * dx}" fill="none" stroke="{WHITE}" stroke-width="3"/>'
-    chips = [
-        ("object", "side table"),
-        ("category", "furniture"),
-        ("task", "assemble"),
-        ("hazard", "heavy part"),
+    body = phone_at(258, 92, 1.5)
+    body += corners(180, 60, 620, 620)
+    body += '<rect class="mz-scan" x="180" y="-90" width="440" height="60" fill="url(#idscan)"/>'
+    body += '<defs><linearGradient id="idscan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".55"/></linearGradient></defs>'
+    body += '<rect x="60" y="660" width="680" height="284" rx="26" fill="#ffffff"/>'
+    body += text(92, 708, "MUSE SPARK · IDENTIFY", 15, "#6b6b6b", mono=True)
+    rows = [
+        ("Object", "Smartphone"),
+        ("Task", "Battery swap"),
+        ("Safety", "Caution · do it yourself"),
     ]
-    y = 840
-    x = 80
-    for key, value in chips:
-        label = f"{key}: {value}"
-        width = 14 + len(label) * 10.2
-        if x + width > w - 60:
-            x, y = 80, y + 52
-        body += f'<rect x="{x}" y="{y}" width="{width:.0f}" height="36" fill="none" stroke="{WHITE}" stroke-opacity=".7"/>'
-        body += text(x + 10, y + 24, label, 17, WHITE, mono=True)
+    for i, (key, value) in enumerate(rows):
+        y = 760 + i * 52
+        body += text(92, y, key, 20, "#6b6b6b") + text(260, y, value, 22, INK, weight=500)
+        body += f'<line x1="92" y1="{y + 18}" x2="708" y2="{y + 18}" stroke="{INK}" stroke-opacity=".08"/>'
+    body += f'<circle cx="636" cy="{860 - 7}" r="7" fill="#1d7a3a"/>'
+    x = 92
+    for hazard in ("lithium battery", "glass"):
+        chip, width = pill(x, 896, hazard, fill="#fff4e5", ink="#a35a00", stroke="#a35a00", size=15)
+        body += chip
         x += width + 12
     return svg(
         w,
         h,
         body,
-        "The object is identified: side table, furniture, assemble, heavy part",
+        "Muse Spark identifies a smartphone, the battery swap task and its hazards",
         "#1b2a55",
     )
 
@@ -168,153 +149,159 @@ def tile_identify() -> str:
 def tile_listen() -> str:
     w, h = 800, 1000
     body = ""
-    heights = [abs(math.sin(i * 0.61) * math.cos(i * 0.23)) for i in range(64)]
-    for i, v in enumerate(heights):
-        x = 70 + i * 10.4
-        bar = 12 + v * 170
-        hot = 22 <= i <= 37
-        color = "#ffd60a" if hot else WHITE
-        body += f'<rect x="{x:.1f}" y="{330 - bar / 2:.1f}" width="5" height="{bar:.1f}" fill="{color}" opacity="{1 if hot else 0.55}"/>'
-    body += f'<line x1="70" y1="470" x2="730" y2="470" stroke="{WHITE}" stroke-opacity=".25"/>'
+    for i in range(56):
+        x = 70 + i * 11.8
+        v = abs(math.sin(i * 0.57) * math.cos(i * 0.19))
+        bar = 14 + v * 190
+        hot = 20 <= i <= 35
+        body += f'<rect x="{x:.1f}" y="{330 - bar / 2:.1f}" width="6" height="{bar:.1f}" rx="3" fill="{"#ffd60a" if hot else WHITE}" opacity="{1 if hot else 0.45}"/>'
+    body += f'<rect x="{70 + 20 * 11.8 - 8:.0f}" y="210" width="{16 * 11.8 + 10:.0f}" height="240" rx="12" fill="#ffd60a" opacity=".08"/>'
+    body += f'<line x1="70" y1="480" x2="730" y2="480" stroke="{WHITE}" stroke-opacity=".2"/>'
     lines = [
-        ("00:41.0", "Take one bolt from the bag,", False),
-        ("00:44.2", "the bolt goes into the leg", True),
-        ("00:47.9", "and turn it by hand until it stops.", False),
+        ("00:38.5", "Okay, the screws first.", False),
+        ("00:41.0", "the four little screws", True),
+        ("00:44.6", "keep them in the tray.", False),
     ]
-    for i, (t, words, hot) in enumerate(lines):
-        y = 560 + i * 92
-        body += text(70, y, t, 18, WHITE, mono=True, opacity=0.6)
+    for i, (stamp, words, hot) in enumerate(lines):
+        y = 570 + i * 96
+        body += text(70, y, stamp, 18, WHITE, mono=True, opacity=0.55)
         if hot:
-            body += f'<rect x="196" y="{y - 30}" width="{len(words) * 14.6:.0f}" height="42" fill="#ffd60a"/>'
-        body += text(206, y, words, 27, INK if hot else WHITE)
-    body += text(70, 900, "quote found in the narration", 18, "#ffd60a", mono=True)
+            body += f'<rect x="198" y="{y - 34}" width="{len(words) * 15.2:.0f}" height="48" rx="6" fill="#ffd60a"/>'
+        body += text(210, y, words, 28, INK if hot else WHITE, opacity=1 if hot else 0.85)
+    body += text(70, 900, "MUSE VOICE · timed to the second", 17, WHITE, mono=True, opacity=0.6)
+    body += text(70, 934, "the quote of step 2 is found here", 17, "#ffd60a", mono=True)
     return svg(
         w,
         h,
         body,
-        "The narration is transcribed and timed; the quote for a step is found in it",
+        "Muse Voice transcribes the narration to the second; the step's quote is found in it",
         "#121212",
     )
 
 
 def tile_point() -> str:
     w, h = 800, 1000
-    fx, fy, fw, fh = 70, 150, 660, 600  # the video frame
-    body = f'<rect x="{fx}" y="{fy}" width="{fw}" height="{fh}" fill="#2b2b2b"/>'
-    # top view of the parts on the floor
-    body += f'<rect x="{fx + 60}" y="{fy + 50}" width="300" height="300" fill="#d8cbb4" stroke="#1a1a1a" stroke-width="2"/>'
-    for i in range(4):
-        body += f'<rect x="{fx + 410}" y="{fy + 60 + i * 52}" width="190" height="30" fill="#c9b99c" stroke="#1a1a1a" stroke-width="2"/>'
-    bolts = [
-        (fx + 120, fy + 450, 120),
-        (fx + 200, fy + 470, 120),
-        (fx + 390, fy + 455, 64),
-        (fx + 470, fy + 480, 64),
-    ]
-    for x, y, length in bolts:
-        body += f'<line x1="{x}" y1="{y}" x2="{x + length}" y2="{y}" stroke="#d9dde3" stroke-width="9" stroke-linecap="round"/>'
-        body += f'<circle cx="{x}" cy="{y}" r="9" fill="#eef0f3"/>'
-    # 0..1000 ticks along the frame
+    fx, fy, fw, fh = 70, 130, 660, 620
+    body = f'<rect x="{fx}" y="{fy}" width="{fw}" height="{fh}" rx="6" fill="#26303a"/>'
+    body += "".join(
+        f'<path d="M{fx} {fy + y} H{fx + fw}" stroke="#fff" stroke-opacity=".05"/>'
+        for y in range(40, fh, 40)
+    )
+    body += phone_at(232, fy + 34, 1.65)
     for i in range(11):
-        tx = fx + fw * i / 10
-        ty = fy + fh * i / 10
-        body += f'<line x1="{tx:.0f}" y1="{fy - 10}" x2="{tx:.0f}" y2="{fy}" stroke="{INK}" stroke-width="1.4"/>'
-        body += f'<line x1="{fx - 10}" y1="{ty:.0f}" x2="{fx}" y2="{ty:.0f}" stroke="{INK}" stroke-width="1.4"/>'
-    body += text(fx, fy - 20, "0", 15, INK, mono=True)
-    body += text(fx + fw, fy - 20, "1000", 15, INK, mono=True, anchor="end")
-    # the right bolt (long) and the one that only looks alike (short)
-    body += f'<rect x="{fx + 100}" y="{fy + 430}" width="240" height="60" fill="none" stroke="#ff5a1f" stroke-width="4"/>'
-    body += f'<rect x="{fx + 365}" y="{fy + 428}" width="190" height="72" fill="none" stroke="#9a9a9a" stroke-width="2" stroke-dasharray="7 6"/>'
-    body += f'<rect x="{fx + 100}" y="{fy + 392}" width="34" height="34" fill="#ff5a1f"/>' + text(
-        fx + 117, fy + 416, "1", 18, WHITE, mono=True, anchor="middle"
+        tx, ty = fx + fw * i / 10, fy + fh * i / 10
+        body += f'<line x1="{tx:.0f}" y1="{fy - 12}" x2="{tx:.0f}" y2="{fy}" stroke="{INK}" stroke-width="1.6"/>'
+        body += f'<line x1="{fx - 12}" y1="{ty:.0f}" x2="{fx}" y2="{ty:.0f}" stroke="{INK}" stroke-width="1.6"/>'
+    body += text(fx, fy - 22, "0", 15, INK, mono=True) + text(
+        fx + fw, fy - 22, "1000", 15, INK, mono=True, anchor="end"
     )
-    body += text(70, 820, "long metal bolt  [152, 717, 515, 817]", 20, INK, mono=True)
+    # the logic board looks like a part too: Spark skips it, the step is about the battery
+    bx, by = 232 - 109 * 1.65 + 198 * 1.65, fy + 34 - 16 * 1.65 + 38 * 1.65
+    body += f'<rect x="{bx - 6:.0f}" y="{by - 6:.0f}" width="{68 * 1.65 + 12:.0f}" height="{110 * 1.65 + 12:.0f}" fill="none" stroke="#5b6472" stroke-width="4" stroke-dasharray="10 8"/>'
+    x0, y0 = 232 - 109 * 1.65 + 132 * 1.65, fy + 34 - 16 * 1.65 + 154 * 1.65
+    bw, bh = 136 * 1.65, 146 * 1.65
+    body += orange_box(round(x0), round(y0), round(bw), round(bh))
+    cx, cy = x0 + bw / 2, y0 + bh / 2
+    body += f'<path d="M{cx - 18:.0f} {cy:.0f} h36 M{cx:.0f} {cy - 18:.0f} v36" stroke="#ff5a1f" stroke-width="3"/>'
+    n = [
+        round((x0 - fx) / fw * 1000),
+        round((y0 - fy) / fh * 1000),
+        round((x0 + bw - fx) / fw * 1000),
+        round((y0 + bh - fy) / fh * 1000),
+    ]
+    body += text(70, 810, f"battery  [{n[0]}, {n[1]}, {n[2]}, {n[3]}]", 22, INK, mono=True)
     body += text(
-        70, 860, "not the short one next to it: same look, other step", 18, "#5c5c5c", mono=True
+        70,
+        850,
+        "not the logic board above it: the step is about the battery",
+        17,
+        "#5c5c5c",
+        mono=True,
     )
+    body += text(70, 930, "MUSE SPARK · points with the context", 17, "#5c5c5c", mono=True)
     return svg(
         w,
         h,
         body,
-        "Muse Spark points at the long bolt on a frame, on a 0 to 1000 grid, using the context",
+        "Muse Spark points at the battery on a frame on a 0 to 1000 grid and skips the logic board",
         "#e8e2d4",
     )
 
 
 def tile_cutout() -> str:
     w, h = 800, 1000
-    iso = Iso(330, 610, 6.0)
-    tones = ("#ffffff", "#ffe2d6", "#ffc4ad")
-    body = ""
-    # grounding box around the leg on the frame, then the cut-out lifted off it
-    a, b = iso.p(0, LEG, 0), iso.p(LEG, 0, LEG_H)
-    body += f'<rect x="{a[0] - 30:.0f}" y="{b[1] - 30:.0f}" width="{b[0] - a[0] + 60:.0f}" height="{a[1] - b[1] + 70:.0f}" fill="none" stroke="{WHITE}" stroke-width="2" stroke-dasharray="8 7"/>'
-    body += box(iso, 0, 0, 0, LEG, LEG, LEG_H, ("#ff8a5c", "#ff7a47", "#f06a36"), stroke="#b84519")
-    lifted = Iso(500, 520, 6.0)
-    sx, sy = lifted.p(LEG / 2, LEG / 2, 0)
-    body += f'<ellipse cx="{sx:.0f}" cy="{sy + 80:.0f}" rx="70" ry="20" fill="#000" opacity=".18"/>'
-    body += box(lifted, 0, 0, 0, LEG, LEG, LEG_H, tones)
-    body += text(70, 880, "SAM 3.1 cut-out fills 77% of the box", 20, WHITE, mono=True)
+    body = phone_at(120, 150, 1.45, battery_class="")
+    bx, by = 120 + (136 - 109) * 1.45, 150 + (158 - 16) * 1.45
+    bw, bh = 128 * 1.45, 138 * 1.45
+    body += '<defs><pattern id="hatch" width="12" height="12" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="5" height="12" fill="#fff" opacity=".85"/></pattern></defs>'
+    body += f'<rect x="{bx:.0f}" y="{by:.0f}" width="{bw:.0f}" height="{bh:.0f}" rx="10" fill="url(#hatch)" stroke="#fff" stroke-width="4"/>'
+    body += f'<path d="M{bx + bw + 10:.0f} {by + 40:.0f} C 520 300, 560 260, 590 250" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="9 8"/>'
+    cut = (
+        '<g class="mz-lift" transform="translate(470 250) rotate(-7)">'
+        '<ellipse cx="100" cy="300" rx="110" ry="16" fill="#000" opacity=".18"/>'
+        f'<rect x="0" y="0" width="{bw:.0f}" height="{bh:.0f}" rx="12" fill="#c7d1f6" stroke="{INK}" stroke-width="3"/>'
+        + text(24, 48, "Li-ion 3.85 V", 18, INK, mono=True, opacity=0.7)
+        + f'<path d="M24 74 h130 M24 94 h90" stroke="{INK}" stroke-width="2.5" opacity=".3"/>'
+        + "".join(
+            f'<rect x="{x}" y="{bh - 6:.0f}" width="22" height="34" rx="4" fill="#222"/>'
+            for x in (26, 136)
+        )
+        + "</g>"
+    )
+    body += cut
+    body += text(70, 880, "SAM 3.1 cut-out fills 92% of the box", 22, WHITE, mono=True)
     body += text(70, 920, "below 10%, the part is refused", 18, WHITE, mono=True, opacity=0.75)
     return svg(
-        w, h, body, "SAM 3.1 cuts the leg out inside the box the agent pointed at", "#ff5a1f"
+        w, h, body, "SAM 3.1 cuts the battery out inside the box Spark pointed at", "#ff5a1f"
     )
 
 
 def tile_check() -> str:
     w, h = 800, 1000
     rows = [
-        (True, "parts B, C proven by SAM"),
-        (True, "times 31.0–44.8 s fit the video"),
-        (True, "result seen on frames/t44.0.jpg"),
+        (True, "part D, the battery, proven by SAM"),
+        (True, "times 44.8–58.0 s fit the video"),
+        (True, "result seen on frames/t57.5.jpg"),
         (True, "quote found in the narration"),
         (False, "refused: frame outside the step"),
     ]
-    body = text(70, 170, 'add_step(n=3, action="insert")', 22, INK, mono=True)
-    body += f'<line x1="70" y1="200" x2="730" y2="200" stroke="{INK}" stroke-opacity=".2"/>'
+    body = '<rect x="50" y="110" width="700" height="760" rx="26" fill="#ffffff" stroke="#000" stroke-opacity=".06"/>'
+    body += text(90, 180, 'add_step(n=3, action="remove")', 22, INK, mono=True)
+    body += f'<line x1="90" y1="214" x2="710" y2="214" stroke="{INK}" stroke-opacity=".15"/>'
     for i, (ok, label) in enumerate(rows):
-        y = 280 + i * 104
+        y = 290 + i * 108
+        color = "#1d7a3a" if ok else "#bf000f"
+        body += f'<g class="mz-slide" style="--i:{i}"><circle cx="112" cy="{y - 8}" r="20" fill="{color}" opacity=".12"/>'
         if ok:
-            body += f'<path d="M72 {y - 8} l12 12 l24 -26" fill="none" stroke="#1d7a3a" stroke-width="4"/>'
+            body += f'<path d="M102 {y - 8} l7 7 l14 -16" fill="none" stroke="{color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>'
         else:
-            body += f'<path d="M74 {y - 22} l24 24 m0 -24 l-24 24" fill="none" stroke="#bf000f" stroke-width="4"/>'
-        body += text(134, y + 2, label, 26, INK if ok else "#bf000f")
-        body += f'<line x1="70" y1="{y + 44}" x2="730" y2="{y + 44}" stroke="{INK}" stroke-opacity=".12"/>'
-    body += text(70, 880, "checked by code, outside the model", 18, "#5c5c5c", mono=True)
+            body += f'<path d="M104 {y - 16} l16 16 m0 -16 l-16 16" fill="none" stroke="{color}" stroke-width="4" stroke-linecap="round"/>'
+        body += text(150, y, label, 25, INK if ok else color) + "</g>"
+        body += f'<line x1="90" y1="{y + 46}" x2="710" y2="{y + 46}" stroke="{INK}" stroke-opacity=".08"/>'
+    body += text(70, 930, "CODE · outside the model", 17, "#5c5c5c", mono=True)
     return svg(
-        w,
-        h,
-        body,
-        "Each step is checked by code outside the model; one claim is refused",
-        "#fafafa",
+        w, h, body, "Code outside the model checks each step; one claim is refused", "#efeee8"
     )
 
 
 def tile_build() -> str:
     w, h = 800, 1000
-    iso = Iso(400, 560, 3.6)
-    body = text(70, 130, "3", 64, WHITE)
-    body += text(130, 130, "/ 6", 30, WHITE, opacity=0.6)
-    body += table(
-        iso,
-        lift=30,
-        tones=("#ffffff", "#dbe9e1", "#bed6c8"),
-        bolts_up=6,
-        guides=True,
-        stroke="#06291a",
+    body = text(70, 130, "3", 72, WHITE, weight=500) + text(122, 130, "/ 5", 32, WHITE, opacity=0.6)
+    body += phone_at(268, 170, 1.3, battery_class="mz-lift")
+    body += '<path d="M512 520 V380 m-16 22 l16 -22 l16 22" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>'
+    body += text(70, 820, "Lift the battery", 34, WHITE, weight=500) + text(
+        70, 864, "with the pull tabs.", 34, WHITE, weight=500
     )
-    body += letter(120, 860, "B", fill=WHITE, ink="#06291a") + text(
-        150, 868, "×4", 22, WHITE, mono=True
-    )
-    body += letter(250, 860, "C", fill=WHITE, ink="#06291a") + text(
-        280, 868, "×4", 22, WHITE, mono=True
-    )
-    body += text(70, 940, "Turn each bolt B into a leg C by hand.", 24, WHITE)
+    x = 70
+    for label in ("D  battery ×1", "pull tabs", "00:44.8–00:58.0"):
+        chip, width = pill(x, 900, label, size=15)
+        body += chip
+        x += width + 12
     return svg(
         w,
         h,
         body,
-        "The guide step: turn each bolt into a leg, with the parts and counts",
+        "The guide step: lift the battery with the pull tabs, with its part and time",
         "#0f5132",
     )
 

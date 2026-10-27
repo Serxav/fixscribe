@@ -1,4 +1,3 @@
-// Live coach: send a camera frame every few seconds, show and speak where the user is.
 (function () {
   "use strict";
   var root = document.getElementById("live");

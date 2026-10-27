@@ -1,6 +1,3 @@
-// Repair film: plays the SAM motion clips step by step, with captions and the device voice.
-// "Take apart" plays the steps in order; "Put back" plays them in reverse order, each clip
-// backwards, with the assembly lines.
 (function () {
   "use strict";
   var data = JSON.parse(document.getElementById("film-data").textContent);
@@ -8,18 +5,16 @@
   var video = $("film-video");
   var synth = window.speechSynthesis || null;
   var mode = "apart";
-  var index = -1; // -1 = intro card
+  var index = -1;
   var playing = false;
   var voiceOn = true;
-  var token = 0; // cancels the timers of a step we left
+  var token = 0;
   var MIN_STEP_MS = 4500;
 
   function order() {
     return mode === "apart" ? data.steps : data.steps.slice().reverse();
   }
 
-  // The best voice the device has for the film language. Neural voices first ("Premium",
-  // "Enhanced", "Natural", "Neural"), robotic ones last ("Compact", eSpeak, novelty voices).
   var GOOD = [/premium/i, /enhanced|mejorada|améliorée|optimierte/i, /natural/i, /neural/i, /siri/i, /google/i];
   var BAD = [/compact/i, /espeak/i, /albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|ralph|kathy/i];
   var chosen = null;
@@ -44,7 +39,6 @@
     return chosen;
   }
 
-  // Speak sentence by sentence with a short breath in between: it sounds far less robotic.
   function speak(text, done) {
     if (!synth || !voiceOn || !text) { setTimeout(done, Math.max(MIN_STEP_MS, (text || "").split(" ").length * 380)); return; }
     synth.cancel();
@@ -94,7 +88,7 @@
     var mine = ++token;
     index = i;
     drawRail();
-    if (i >= steps.length) { // the end
+    if (i >= steps.length) {
       video.pause();
       playing = false;
       $("film-toggle").textContent = "▶";
@@ -119,7 +113,7 @@
     if (src) {
       video.src = src;
       video.poster = step.poster || "";
-      video.loop = !ownVoice; // with the real voice, play the moment once, as it was said
+      video.loop = !ownVoice;
       video.muted = !ownVoice || !voiceOn;
       video.onended = function () { clipDone = true; };
       video.play().catch(function () { video.muted = true; video.play().catch(function () {}); });
@@ -181,7 +175,7 @@
     $("film-voice").setAttribute("aria-pressed", String(voiceOn));
     $("film-voice").textContent = voiceOn ? "🔊" : "🔇";
     if (!voiceOn && synth) synth.cancel();
-    video.muted = !voiceOn || video.loop; // the real voice clips are the ones that do not loop
+    video.muted = !voiceOn || video.loop;
   });
 
   function setMode(next) {

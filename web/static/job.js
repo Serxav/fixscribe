@@ -1,4 +1,3 @@
-// Progress page: polls the job API, draws every stage, offers "try again" from the failed stage.
 (function () {
   "use strict";
   var root = document.getElementById("job");

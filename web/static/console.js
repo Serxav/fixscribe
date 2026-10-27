@@ -1,4 +1,3 @@
-// Agent console: poll the agent API, render turns, parts, steps, question and sign-off.
 (function () {
   "use strict";
   var root = document.getElementById("console");
