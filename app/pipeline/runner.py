@@ -77,6 +77,7 @@ def default_stages() -> list[Stage]:
         ingest,
         learn,
         motion,
+        narrate,
         perception,
         plan,
         proof,
@@ -103,6 +104,7 @@ def default_stages() -> list[Stage]:
         stage_of("perception", perception, "perception.json", weight=1.5, optional=True),
         stage_of("motion", motion, "motion.json", weight=2.0, optional=True),
         stage_of("proof", proof, "proof.json", weight=0.1, optional=True),
+        stage_of("narrate", narrate, "narration.json", weight=0.5, optional=True),
         stage_of("publish", publish, "guide.json", weight=0.1),
         stage_of("learn", learn, "profile_suggestions.json", weight=0.1, optional=True),
     ]
@@ -139,6 +141,7 @@ STAGE_LABELS = {
     "perception": "Finding parts and fasteners",
     "motion": "Tracking parts with SAM in motion",
     "proof": "Collecting the proof",
+    "narrate": "Writing the film voice-over",
     "publish": "Writing the guide",
     "learn": "Learning new vocabulary",
     "attempt": "Comparing your attempt",

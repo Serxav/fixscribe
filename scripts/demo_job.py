@@ -254,6 +254,42 @@ def track_colored(video_path, concept):
     return tracks
 
 
+NARRATION = {
+    "intro": "Today we replace the battery of a smartphone. You need a pentalobe and a tri-point"
+    " screwdriver, a suction cup and a plastic pick.",
+    "outro_disassemble": "The old battery is out. Great work.",
+    "outro_assemble": "Everything is back in place. Your phone is ready.",
+    "steps": [
+        {
+            "index": 1,
+            "disassemble": "Remove the two pentalobe screws next to the charging port.",
+            "assemble": "Drive the two pentalobe screws back in next to the charging port.",
+        },
+        {
+            "index": 2,
+            "disassemble": "Lift the screen with the suction cup. Do not push the pick"
+            " deeper than three millimetres.",
+            "assemble": "Lay the screen back and press the edges until it clicks.",
+        },
+        {
+            "index": 3,
+            "disassemble": "Unscrew the three screws of the connector bracket and lift it off.",
+            "assemble": "Put the bracket back and drive in the three screws.",
+        },
+        {
+            "index": 4,
+            "disassemble": "Pry the battery connector straight up with a plastic tool.",
+            "assemble": "Press the battery connector down until it snaps in.",
+        },
+        {
+            "index": 5,
+            "disassemble": "Pull the adhesive strips slowly and lift the battery out.",
+            "assemble": "Place the new battery and press it gently onto the adhesive.",
+        },
+    ],
+}
+
+
 class FakeMeta:
     def __init__(self, settings, **kwargs):
         pass
@@ -282,7 +318,12 @@ class FakeMeta:
         # Pass 2 answers "not sure" (confidence 0), so the plan keeps the first analysis.
         unsure = {"start_s": 0, "end_s": 0, "instruction": "", "action": "other", "removes": []}
         unsure |= {"screw_count": 0, "warnings": [], "confidence": 0}
-        answers = {"repair_analysis": ANALYSIS, "repair_identity": IDENTITY, "refined_step": unsure}
+        answers = {
+            "repair_analysis": ANALYSIS,
+            "repair_identity": IDENTITY,
+            "refined_step": unsure,
+            "film_narration": NARRATION,
+        }
         name = kwargs["text"]["format"]["name"]
         if name not in answers:
             raise RuntimeError(f"the offline demo has no answer for {name}")
