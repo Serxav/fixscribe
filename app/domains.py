@@ -61,14 +61,6 @@ class DomainProfile(BaseModel):
                 raise ValueError(f"unknown hazard: {item!r}")
         return items
 
-    @field_validator("prompt_hint")
-    @classmethod
-    def short_hint(cls, value: str) -> str:
-        sentences = [s for s in value.replace("?", ".").replace("!", ".").split(".") if s.strip()]
-        if not 1 <= len(sentences) <= 3:
-            raise ValueError("prompt_hint must be 1-3 sentences")
-        return value
-
     @model_validator(mode="after")
     def kind_matches_fasteners(self) -> "DomainProfile":
         words = {word for item in self.fasteners for word in item.split()}
