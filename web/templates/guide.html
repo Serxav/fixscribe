@@ -33,8 +33,8 @@
       <div class="stat"><b>{{ guide.difficulty|capitalize }}</b><span>difficulty</span></div>
     </div>
     <div class="btn-row">
-      {% if not pro %}<button class="btn btn-primary btn-lg" type="button" data-repair-open="0">Start repair</button>{% endif %}
-      <a class="btn btn-glass btn-lg" href="#steps">See all steps</a>
+      <a class="btn btn-primary btn-lg" href="/guides/{{ job_id }}/film">▶ Watch the film</a>
+      {% if not pro %}<button class="btn btn-glass btn-lg" type="button" data-repair-open="0">Start repair</button>{% else %}<a class="btn btn-glass btn-lg" href="#steps">See all steps</a>{% endif %}
     </div>
   </article>
 
@@ -97,20 +97,26 @@
 
   {% if v.image or v.clip %}
   <div class="stage" data-stage>
+    {% set first = 'sam' if v.motion else ('3d' if v.image else 'clip') %}
     <div class="seg" role="group" aria-label="View">
-      {% if v.image %}<button type="button" data-view="3d" aria-pressed="true">3D</button><button type="button" data-view="photo" aria-pressed="false">Photo</button>{% endif %}
-      {% if v.clip %}<button type="button" data-view="clip" aria-pressed="{{ 'false' if v.image else 'true' }}">Clip</button>{% endif %}
+      {% if v.motion %}<button type="button" data-view="sam" aria-pressed="true">SAM</button>{% endif %}
+      {% if v.image %}<button type="button" data-view="3d" aria-pressed="{{ 'true' if first == '3d' else 'false' }}">3D</button><button type="button" data-view="photo" aria-pressed="false">Photo</button>{% endif %}
+      {% if v.clip %}<button type="button" data-view="clip" aria-pressed="{{ 'true' if first == 'clip' else 'false' }}">Clip</button>{% endif %}
     </div>
+    {% if v.motion %}
+    <div class="view on" data-view-panel="sam"><video class="fit" src="{{ v.motion }}" muted loop playsinline autoplay preload="metadata"></video><span class="hint">SAM 3.1 is tracking the {{ v.part.label if v.part else 'part' }}</span></div>
+    {% endif %}
     {% if v.image %}
-    <div class="view scene on" data-view-panel="3d" data-image="{{ v.image }}">
+    <div class="view scene{% if first == '3d' %} on{% endif %}" data-view-panel="3d" data-image="{{ v.image }}">
       <div class="rig">
         <div class="shadow"></div>
         <div class="plane" style="background-image:url('{{ v.image }}')">
-          {% if v.part %}<div class="hole" style="left:{{ v.part.x }}%;top:{{ v.part.y }}%;width:{{ v.part.w }}%;height:{{ v.part.h }}%"></div>{% endif %}
+          {% if v.outline %}<svg class="outline" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"><path d="{{ v.outline }}"/></svg>
+          {% elif v.part %}<div class="hole" style="left:{{ v.part.x }}%;top:{{ v.part.y }}%;width:{{ v.part.w }}%;height:{{ v.part.h }}%"></div>{% endif %}
           {% for pin in v.pins %}<div class="pin" style="left:{{ pin.x }}%;top:{{ pin.y }}%"><i class="shaft"></i><b class="head"></b><span class="num">{{ pin.n }}</span></div>{% endfor %}
         </div>
         {% if v.part %}
-        <div class="part3d" data-part style="left:{{ v.part.x }}%;top:{{ v.part.y }}%;width:{{ v.part.w }}%;height:{{ v.part.h }}%;background-image:url('{{ v.image }}')" data-x="{{ v.part.x }}" data-y="{{ v.part.y }}" data-w="{{ v.part.w }}" data-h="{{ v.part.h }}"><span class="tag">{{ v.part.label }}</span></div>
+        <div class="part3d{% if v.part.cutout %} cut{% endif %}" data-part style="left:{{ v.part.x }}%;top:{{ v.part.y }}%;width:{{ v.part.w }}%;height:{{ v.part.h }}%;background-image:url('{{ v.part.cutout or v.image }}')" data-x="{{ v.part.x }}" data-y="{{ v.part.y }}" data-w="{{ v.part.w }}" data-h="{{ v.part.h }}"{% if v.part.cutout %} data-cutout{% endif %}><span class="tag">{{ v.part.label }}</span></div>
         {% endif %}
       </div>
       <span class="hint">Drag to turn · tap to take apart</span>
@@ -118,7 +124,7 @@
     <div class="view" data-view-panel="photo"><img class="fit" src="{{ v.overlay or v.image }}" alt="Step {{ s.index }}: {{ s.title }}" loading="lazy"></div>
     {% endif %}
     {% if v.clip %}
-    <div class="view{% if not v.image %} on{% endif %}" data-view-panel="clip"><video class="fit" src="{{ v.clip }}" muted loop playsinline preload="none"></video></div>
+    <div class="view{% if first == 'clip' %} on{% endif %}" data-view-panel="clip"><video class="fit" src="{{ v.clip }}" muted loop playsinline preload="none"></video></div>
     {% endif %}
   </div>
   {% endif %}

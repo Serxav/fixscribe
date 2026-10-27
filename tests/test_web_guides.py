@@ -187,3 +187,34 @@ def test_guide_page_renders_repair_mode_and_export(jobs_tmp):
     assert 'id="repair"' in text and "Start repair" in text
     assert f"/guides/{job_id}/export.md" in text
     assert f"/guides/{job_id}/tray" in text
+
+
+def test_film_page_and_playlist(jobs_tmp):
+    from app.routes.guides import film_playlist
+    from app.schemas import Narration, NarrationLine, StepMotion
+
+    guide = _guide()
+    guide.steps[0] = guide.steps[0].model_copy(
+        update={
+            "motion": StepMotion(
+                index=1, clip="steps/01_motion.mp4", clip_reverse="steps/01_motion_rev.mp4"
+            )
+        }
+    )
+    guide.narration = Narration(
+        language="es", intro="Hola.", outro_disassemble="Fin.", outro_assemble="Montado.",
+        steps=[NarrationLine(index=1, disassemble="Quita la tapa.", assemble="Pon la tapa.")],
+    )  # fmt: skip
+    film = film_playlist(guide, "abc")
+    first = film["steps"][0]
+    assert first["clip"] == "/media/abc/steps/01_motion.mp4"
+    assert first["reverse"] == "/media/abc/steps/01_motion_rev.mp4"
+    assert (first["say"], first["say_back"], film["language"]) == (
+        "Quita la tapa.",
+        "Pon la tapa.",
+        "es",
+    )
+    job_id = _write_guide(jobs_tmp, guide)
+    page = TestClient(app).get(f"/guides/{job_id}/film")
+    assert page.status_code == 200 and "film-data" in page.text and "Put back" in page.text
+    assert TestClient(app).get("/guides/nothere/film").status_code == 404
