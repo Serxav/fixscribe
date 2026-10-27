@@ -7,7 +7,7 @@ from starlette.concurrency import run_in_threadpool
 from app.artifacts import ArtifactError
 from app.config import Settings
 from app.jobs import job_dir
-from app.pipeline.stepcheck import MAX_PHOTO_BYTES, StepCheckError, check_step
+from app.pipeline.stepcheck import MAX_PHOTO_BYTES, CheckLimitReached, StepCheckError, check_step
 from app.routes.upload import settings_dep
 
 router = APIRouter()
@@ -31,9 +31,8 @@ async def check_photo(
         data = await photo.read(MAX_PHOTO_BYTES + 1)
         result = await run_in_threadpool(check_step, folder, settings, index, data)
     except StepCheckError as exc:
-        message = str(exc)
-        status = 429 if "check limit" in message.lower() else 400
-        return JSONResponse({"error": message}, status_code=status)
+        status = 429 if isinstance(exc, CheckLimitReached) else 400
+        return JSONResponse({"error": str(exc)}, status_code=status)
     except ArtifactError as exc:
         return JSONResponse({"error": str(exc)}, status_code=404)
     finally:

@@ -143,3 +143,12 @@ def test_media_routes(jobs_tmp):
     assert client.get(f"/media/{job_id}/../status.json").status_code == 404
     assert client.get(f"/media/{job_id}/steps/99.jpg").status_code == 404
     assert client.get("/media/nothere/steps/01.jpg").status_code == 404
+
+
+def test_overlay_images_match_the_media_rule():
+    from app.routes.guides import _MEDIA_RE
+
+    assert _MEDIA_RE.fullmatch("steps/03_overlay.jpg")
+    assert _MEDIA_RE.fullmatch("steps/03.mp4") and _MEDIA_RE.fullmatch("video.mp4")
+    assert not _MEDIA_RE.fullmatch("steps/03_overlay.mp4")
+    assert not _MEDIA_RE.fullmatch("../guide.json")
