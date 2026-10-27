@@ -81,6 +81,12 @@ def guide_markdown(guide: Guide, job_id: str) -> str:
         lines += [f"- {reason}" for reason in safety.reasons]
         if safety.reasons:
             lines += [""]
+    prechecks = safety.prechecks if safety is not None else []
+    warnings = [w for w in guide.warnings if w not in prechecks]  # prechecks are listed above
+    if warnings:
+        lines += ["## Warnings", ""]
+        lines += [f"> ⚠ {warning}" for warning in warnings]
+        lines += [""]
     if guide.tools:
         lines += ["## Tools", ""]
         lines += [f"- {tool}" for tool in guide.tools]

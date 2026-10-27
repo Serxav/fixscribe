@@ -208,3 +208,19 @@ def test_route_404(jobs_tmp):
     assert client.get("/guides/nothere/export.md").status_code == 404
     status = create_job(jobs_tmp)  # a job without a guide yet
     assert client.get(f"/guides/{status.job_id}/export.md").status_code == 404
+
+
+def test_general_warnings_are_exported_once():
+    from app.export import guide_markdown
+    from app.schemas import Guide, Safety
+
+    guide = Guide(
+        title="t",
+        device="d",
+        mode="silent",
+        warnings=["Unplug it.", "A charged battery can catch fire."],
+        safety=Safety(level="caution", prechecks=["Unplug it."]),
+    )
+    text = guide_markdown(guide, "abc")
+    assert "> ⚠ A charged battery can catch fire." in text
+    assert text.count("Unplug it.") == 1
