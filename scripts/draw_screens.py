@@ -4,12 +4,13 @@
 Run: ``python -m scripts.draw_screens`` -> writes web/templates/art/screens.html: one SVG phone
 screen per feature, stacked; landing.js shows the one whose text is on screen. Each screen is a
 faithful sketch of a real page of the app (record, progress, guide, reverse guide, check my step,
-live coach, film) plus one marked "coming next" (replace a part).
+live coach, film) plus one marked "coming next" (replace a part). Every photo inside a screen is
+the same opened phone as the mosaic, and every mark sits on its real screws and battery.
 """
 
 from pathlib import Path
 
-from scripts.draw_mosaic import ORANGE, RED, YELLOW, gbox, ring
+from scripts.draw_mosaic import ORANGE, RED, SCREWS, YELLOW, phone_parts, ring
 
 OUT = Path(__file__).resolve().parents[1] / "web" / "templates" / "art" / "screens.html"
 W, H = 360, 760
@@ -20,6 +21,7 @@ CARD = "#ecebe5"
 GREEN = "#1d7a3a"
 FONT = "Inter Tight, Helvetica, Arial, sans-serif"
 MONO = "JetBrains Mono, ui-monospace, Menlo, monospace"
+BATTERY = (136, 158, 264, 296)  # the battery in the phone drawing's own coordinates
 
 
 def t(x, y, s, size=15, fill=INK, mono=False, weight=400, anchor="start", opacity=1.0) -> str:
@@ -41,14 +43,35 @@ def header(title: str) -> str:
     return glyph + t(54, 72, title, 16, weight=500)
 
 
-def phone_mini(x, y, w=110, h=200, fill="#dfe4ee") -> str:
-    """A small opened phone, used inside the screens' photos."""
-    return (
-        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="18" fill="#f4f6fb" stroke="{INK}" stroke-width="2"/>'
-        f'<rect x="{x + 8}" y="{y + 8}" width="{w - 16}" height="{h - 16}" rx="12" fill="{fill}" stroke="{INK}" stroke-width="1.4"/>'
-        f'<rect x="{x + 16}" y="{y + 16}" width="30" height="30" rx="7" fill="#f4f6fb" stroke="{INK}" stroke-width="1.4"/>'
-        f'<rect x="{x + 18}" y="{y + 60}" width="{w - 36}" height="{h * 0.5:.0f}" rx="6" fill="#c7d1f6" stroke="{INK}" stroke-width="1.6"/>'
-    )
+class Phone:
+    """The mosaic's opened phone placed on a screen: top-left corner (x, y), scale k."""
+
+    def __init__(self, x: float, y: float, k: float) -> None:
+        self.x, self.y, self.k = x, y, k
+
+    def at(self, px: float, py: float) -> tuple[float, float]:
+        return self.x + (px - 109) * self.k, self.y + (py - 16) * self.k
+
+    def draw(self, battery_class: str = "") -> str:
+        tx, ty = self.x - 109 * self.k, self.y - 16 * self.k
+        return f'<g transform="translate({tx:.1f} {ty:.1f}) scale({self.k})">{phone_parts(battery_class)}</g>'
+
+    def battery_box(self, pad: float = 5, tag: str = "1") -> str:
+        (x0, y0), (x1, y1) = self.at(BATTERY[0], BATTERY[1]), self.at(BATTERY[2], BATTERY[3])
+        x0, y0, x1, y1 = x0 - pad, y0 - pad, x1 + pad, y1 + pad
+        return (
+            f'<rect class="mz-box" x="{x0:.1f}" y="{y0:.1f}" width="{x1 - x0:.1f}" height="{y1 - y0:.1f}" fill="none" stroke="{ORANGE}" stroke-width="3.5" pathLength="100"/>'
+            f'<g class="mz-tag"><rect x="{x0:.1f}" y="{y0 - 22:.1f}" width="22" height="22" fill="{ORANGE}"/>'
+            + t(round(x0 + 11, 1), round(y0 - 6, 1), tag, 14, "#fff", mono=True, anchor="middle")
+            + "</g>"
+        )
+
+
+def corners(x0, y0, x1, y1, color="#fff", arm=22, sw=2.5) -> str:
+    out = ""
+    for cx, cy, dx, dy in ((x0, y0, 1, 1), (x1, y0, -1, 1), (x0, y1, 1, -1), (x1, y1, -1, -1)):
+        out += f'<path d="M{cx} {cy + arm * dy} V{cy} H{cx + arm * dx}" fill="none" stroke="{color}" stroke-width="{sw}" stroke-opacity=".8"/>'
+    return out
 
 
 def screen(i: int, label: str, body: str, bg=SURFACE) -> str:
@@ -62,53 +85,67 @@ def screen(i: int, label: str, body: str, bg=SURFACE) -> str:
 
 
 def record() -> str:
-    b = status_bar(dark=True)
-    b += '<rect x="0" y="48" width="360" height="560" fill="#2f5d50"/>'
+    b = '<rect x="0" y="0" width="360" height="616" fill="#2f5d50"/>'
     b += "".join(
-        f'<path d="M{x} 48 V608" stroke="#fff" stroke-opacity=".08"/>' for x in range(30, 360, 30)
+        f'<path d="M{x} 0 V616" stroke="#fff" stroke-opacity=".07"/>' for x in range(30, 360, 30)
     )
     b += "".join(
-        f'<path d="M0 {y} H360" stroke="#fff" stroke-opacity=".08"/>' for y in range(78, 608, 30)
+        f'<path d="M0 {y} H360" stroke="#fff" stroke-opacity=".07"/>' for y in range(30, 616, 30)
     )
-    b += phone_mini(120, 200, 120, 220)
-    b += '<path d="M262 250 l60 -40" stroke="#e9c46a" stroke-width="10" stroke-linecap="round"/><path d="M250 258 l14 -9" stroke="#c9ced6" stroke-width="4" stroke-linecap="round"/>'
-    b += (
-        f'<g class="mz-glow"><rect x="24" y="66" width="92" height="28" rx="14" fill="{RED}"/></g>'
-        + t(44, 85, "REC 00:42", 13, "#fff", mono=True)
-    )
+    phone = Phone(100, 150, 0.88)
+    b += '<ellipse cx="180" cy="452" rx="92" ry="10" fill="#000" opacity=".18"/>' + phone.draw()
+    tip_x, tip_y = phone.at(*SCREWS[3])
+    b += f'<g transform="translate({tip_x:.1f} {tip_y:.1f}) rotate(38)"><rect x="-2" y="-96" width="4" height="96" fill="#c9ced6" stroke="{INK}" stroke-width="1"/><rect x="-11" y="-180" width="22" height="88" rx="10" fill="#f2b33d" stroke="{INK}" stroke-width="1.6"/><rect x="-11" y="-150" width="22" height="20" fill="{INK}" opacity=".85"/></g>'
+    b += corners(28, 96, 332, 520)
+    b += f'<rect x="124" y="56" width="112" height="30" rx="15" fill="{RED}"/><circle class="mz-glow" cx="142" cy="71" r="5" fill="#fff"/>'
+    b += t(186, 76, "REC 00:42", 13, "#fff", mono=True, anchor="middle")
+    for i, (label, x) in enumerate((("step 1 · 00:12", 24), ("step 2 · 00:41", 160))):
+        b += (
+            f'<g class="mz-in" style="--i:{i}"><rect x="{x}" y="542" width="124" height="26" rx="13" fill="#000" fill-opacity=".45"/>'
+            + t(x + 62, 559, label, 11.5, "#fff", mono=True, anchor="middle")
+            + "</g>"
+        )
     b += t(
         180,
-        580,
+        596,
         "Say each step out loud — or stay silent.",
-        14,
+        13,
         "#fff",
         anchor="middle",
         opacity=0.85,
     )
-    b += '<rect x="0" y="608" width="360" height="152" fill="#0e0e0e"/>'
-    b += f'<circle cx="180" cy="680" r="36" fill="none" stroke="#fff" stroke-width="4"/><circle class="mz-glow" cx="180" cy="680" r="27" fill="{RED}"/>'
-    b += t(60, 686, "Upload", 13, "#fff", opacity=0.7) + t(
-        300, 686, "Flip", 13, "#fff", anchor="end", opacity=0.7
+    b += '<rect x="0" y="616" width="360" height="144" fill="#0e0e0e"/>'
+    b += f'<circle cx="180" cy="684" r="34" fill="none" stroke="#fff" stroke-width="4"/><rect class="mz-glow" x="166" y="670" width="28" height="28" rx="6" fill="{RED}"/>'
+    b += t(60, 689, "Upload", 13, "#fff", anchor="middle", opacity=0.75) + t(
+        300, 689, "1×", 13, "#fff", anchor="middle", opacity=0.75
     )
-    return screen(0, "Recording a repair video in FixScribe", b, "#0e0e0e")
+    b += status_bar(dark=True)
+    return screen(
+        0, "Recording a repair video in FixScribe; each spoken step is marked", b, "#0e0e0e"
+    )
 
 
 def recognize() -> str:
     b = status_bar() + header("Making your guide")
     b += f'<rect x="20" y="96" width="320" height="150" rx="16" fill="{CARD}"/>'
-    b += '<rect x="36" y="112" width="74" height="118" rx="10" fill="#1b2233"/>' + phone_mini(
-        50, 124, 46, 94
+    b += (
+        '<rect x="36" y="112" width="76" height="118" rx="10" fill="#1b2233"/>'
+        + Phone(44.5, 117, 0.33).draw()
     )
-    b += t(126, 136, "Smartphone", 20, weight=500) + t(
-        126, 158, "electronics · repair", 13, MUTED, mono=True
+    b += t(128, 136, "Smartphone", 20, weight=500) + t(
+        128, 158, "electronics · repair", 13, MUTED, mono=True
     )
-    for i, chip in enumerate(("lithium battery", "glass")):
-        x = 126 + i * 136
+    x = 128
+    for chip in ("lithium battery", "glass"):
+        width = 16 + len(chip) * 7.4
         b += (
-            f'<rect x="{x}" y="176" width="{14 + len(chip) * 7.6:.0f}" height="24" rx="12" fill="none" stroke="#a35a00" stroke-opacity=".5"/>'
-            + t(x + 8, 192, chip, 11.5, "#a35a00", mono=True)
+            f'<rect x="{x}" y="174" width="{width:.0f}" height="24" rx="12" fill="#fff4e5" stroke="#a35a00" stroke-opacity=".45"/>'
+            + t(x + 8, 190, chip, 11.5, "#a35a00", mono=True)
         )
-    b += t(126, 222, "Safety: caution · do-it-yourself allowed", 12, GREEN)
+        x += width + 8
+    b += f'<circle cx="133" cy="217" r="4" fill="{GREEN}"/>' + t(
+        143, 221, "caution · do it yourself", 12, GREEN
+    )
     for i in range(46):
         h = 8 + (abs(((i * 37) % 23) - 11)) * 2.2
         b += f'<rect x="{24 + i * 6.9:.1f}" y="{300 - h / 2:.1f}" width="3" height="{h:.1f}" rx="1.5" fill="{INK if 14 < i < 30 else "#b9b8b2"}"/>'
@@ -140,20 +177,20 @@ def recognize() -> str:
 def guide() -> str:
     b = status_bar() + header("Replace the battery")
     b += t(24, 106, "5 steps · 92% proven · 25 min", 13, MUTED, mono=True)
-    b += '<rect x="20" y="122" width="320" height="260" rx="14" fill="#1b2233"/>' + phone_mini(
-        118, 146, 124, 214
-    )
-    b += gbox(132, 202, 96, 116)
-    for i, (x, y) in enumerate([(146, 340), (214, 340)], start=1):
-        b += ring(x, y, i, r=8)
+    b += '<rect x="20" y="122" width="320" height="260" rx="14" fill="#1b2233"/>'
+    phone = Phone(116, 136, 0.7)
+    b += phone.draw()
+    for i, (sx, sy) in enumerate(SCREWS, start=1):
+        x, y = phone.at(sx, sy)
+        b += ring(round(x, 1), round(y, 1), i, r=7)
     b += (
         t(24, 414, "STEP 2", 12, MUTED, mono=True)
         + t(24, 444, "Remove the four screws", 22, weight=500)
-        + t(24, 470, "at the bottom of the frame.", 22, weight=500)
+        + t(24, 470, "that hold the battery bracket.", 22, weight=500)
     )
     b += (
         f'<rect x="24" y="490" width="312" height="52" rx="10" fill="{CARD}"/>'
-        + t(38, 513, "“four little screws here”", 15)
+        + t(38, 513, "“the four little screws”", 15)
         + t(38, 532, "you, at 00:41", 12, MUTED, mono=True)
     )
     b += f'<path d="M20 566 H340" stroke="{INK}" stroke-opacity=".12"/>' + t(24, 592, "Proof", 15)
@@ -166,7 +203,9 @@ def guide() -> str:
     b += f'<rect x="186" y="618" width="154" height="46" rx="10" fill="{INK}"/>' + t(
         263, 646, "Check this step", 14, "#fff", anchor="middle"
     )
-    return screen(2, "A FixScribe guide step with its box, numbered screws, quote and proof", b)
+    return screen(
+        2, "A FixScribe guide step with the four screws numbered, the quote and its proof", b
+    )
 
 
 def reverse() -> str:
@@ -184,7 +223,7 @@ def reverse() -> str:
     ]
     for i, (text, part) in enumerate(steps):
         y = 182 + i * 92
-        b += f'<g class="mz-slide" style="--i:{i}"><path d="M20 {y - 26} H340" stroke="{INK}" stroke-opacity=".12"/>'
+        b += f'<g class="mz-in" style="--i:{i}"><path d="M20 {y - 26} H340" stroke="{INK}" stroke-opacity=".12"/>'
         b += t(24, y, f"0{i + 1}", 13, MUTED, mono=True) + t(64, y, text, 18)
         if part:
             b += t(64, y + 24, part, 12, MUTED, mono=True)
@@ -197,48 +236,48 @@ def reverse() -> str:
 
 
 def check() -> str:
-    b = status_bar(dark=True)
-    b += '<rect x="0" y="48" width="360" height="600" fill="#2b2b2b"/>' + phone_mini(
-        90, 120, 180, 380
-    )
-    marks = [(118, 470, True), (242, 470, True), (118, 150, False), (242, 150, False)]
-    for x, y, done in marks:
-        if done:
-            b += f'<circle cx="{x}" cy="{y}" r="14" fill="none" stroke="#7ee2a0" stroke-width="3.5"/><path d="M{x - 6} {y} l4 4 l8 -9" stroke="#7ee2a0" stroke-width="2.5" fill="none"/>'
+    b = '<rect x="0" y="0" width="360" height="760" fill="#2b2b2b"/>'
+    phone = Phone(51, 104, 1.42)
+    b += phone.draw()
+    for i, (sx, sy) in enumerate(SCREWS):
+        x, y = phone.at(sx, sy)
+        if i >= 2:
+            b += f'<circle cx="{x:.1f}" cy="{y:.1f}" r="15" fill="#0e3b22" fill-opacity=".55" stroke="#7ee2a0" stroke-width="3"/><path d="M{x - 6:.1f} {y:.1f} l4 4 l8 -9" stroke="#7ee2a0" stroke-width="2.5" fill="none"/>'
         else:
-            b += f'<g class="mz-glow"><circle cx="{x}" cy="{y}" r="14" fill="none" stroke="#ff8a80" stroke-width="3.5"/></g><circle cx="{x}" cy="{y}" r="5" fill="#d9dde3" stroke="{INK}" stroke-width="1.4"/>'
+            b += f'<circle class="mz-glow" cx="{x:.1f}" cy="{y:.1f}" r="15" fill="none" stroke="#ff8a80" stroke-width="3.5"/>'
     b += t(24, 82, "Check this step · SAM 3.1", 13, "#fff", mono=True, opacity=0.8)
     b += f'<rect x="16" y="664" width="328" height="76" rx="14" fill="{INK}"/><circle cx="44" cy="702" r="7" fill="#ffb340"/>'
     b += t(62, 697, "Not yet", 16, "#fff", weight=500) + t(
         62, 718, "2 screws are still in place, at the top.", 13, "#fff", opacity=0.8
     )
+    b += status_bar(dark=True)
     return screen(
-        4, "Check my step: a photo of your own object, two screws still in place", b, "#0e0e0e"
+        4, "Check my step: a photo of your own phone, two screws still in place", b, "#0e0e0e"
     )
 
 
 def live() -> str:
-    b = ""
-    b += '<rect x="0" y="0" width="360" height="760" fill="#24302b"/>' + phone_mini(
-        104, 150, 152, 300
-    )
-    b += f'<g class="mz-lift"><rect x="126" y="236" width="108" height="150" rx="6" fill="#c7d1f6" stroke="{INK}" stroke-width="1.6"/></g>'
+    b = '<rect x="0" y="0" width="360" height="760" fill="#24302b"/>'
+    phone = Phone(89, 112, 1.0)
+    b += phone.draw(battery_class="mz-lift")
+    b += corners(40, 96, 320, 470)
     b += (
         t(24, 82, "Live coach", 13, "#fff", mono=True, opacity=0.8)
         + '<circle class="mz-glow" cx="326" cy="77" r="6" fill="#30d158"/>'
     )
-    b += '<rect x="14" y="520" width="332" height="216" rx="22" fill="#1c1c1e" fill-opacity=".86"/>'
-    b += t(34, 556, "STEP 3 OF 5", 12, "#fff", mono=True, opacity=0.7) + t(
-        326, 556, "ON TRACK", 12, "#30d158", mono=True, anchor="end"
+    b += '<rect x="14" y="512" width="332" height="224" rx="22" fill="#1c1c1e" fill-opacity=".92"/>'
+    b += t(34, 548, "STEP 3 OF 5", 12, "#fff", mono=True, opacity=0.7) + t(
+        326, 548, "ON TRACK", 12, "#30d158", mono=True, anchor="end"
     )
-    b += t(34, 596, "Lift the battery", 24, "#fff", weight=500) + t(
-        34, 626, "with the pull tabs.", 24, "#fff", weight=500
+    b += t(34, 588, "Lift the battery", 24, "#fff", weight=500) + t(
+        34, 618, "with the pull tabs.", 24, "#fff", weight=500
     )
-    b += t(34, 662, "Next: disconnect the flex cable", 14, "#fff", opacity=0.7)
+    b += t(34, 654, "Next: disconnect the flex cable", 14, "#fff", opacity=0.7)
     for i in range(14):
         h = 6 + (abs(((i * 29) % 13) - 6)) * 2.4
         b += f'<rect class="mz-glow" x="{34 + i * 7}" y="{700 - h / 2:.1f}" width="3" height="{h:.1f}" rx="1.5" fill="#fff" style="animation-delay:{i * 0.09:.2f}s"/>'
     b += t(150, 704, "speaking", 12, "#fff", mono=True, opacity=0.6)
+    b += status_bar(dark=True)
     return screen(
         5,
         "Live coach: the camera sees your work and says which step you are on and what comes next",
@@ -248,17 +287,13 @@ def live() -> str:
 
 
 def film() -> str:
-    b = ""
-    b += (
-        '<rect x="0" y="0" width="360" height="760" fill="#0e0e0e"/>'
-        + '<rect x="0" y="120" width="360" height="420" fill="#1b2233"/>'
-        + phone_mini(110, 150, 140, 260)
-    )
-    b += gbox(126, 226, 108, 124)
+    b = '<rect x="0" y="0" width="360" height="760" fill="#0e0e0e"/><rect x="0" y="112" width="360" height="440" fill="#1b2233"/>'
+    phone = Phone(80, 128, 1.1)
+    b += phone.draw() + phone.battery_box()
     b += t(24, 82, "Replace the battery · film", 13, "#fff", mono=True, opacity=0.8)
     b += (
-        '<rect x="20" y="470" width="320" height="56" rx="10" fill="#000" fill-opacity=".72"/>'
-        + t(180, 504, "Unscrew the four screws at the bottom.", 14, "#fff", anchor="middle")
+        '<rect x="24" y="486" width="312" height="48" rx="10" fill="#000" fill-opacity=".72"/>'
+        + t(180, 516, "Lift the battery with the pull tabs.", 14, "#fff", anchor="middle")
     )
     b += '<rect x="24" y="584" width="312" height="4" rx="2" fill="#fff" fill-opacity=".2"/><rect class="mz-grow" x="24" y="584" width="140" height="4" rx="2" fill="#fff"/>'
     b += "".join(
@@ -268,9 +303,9 @@ def film() -> str:
     b += t(24, 620, "01:12", 12, "#fff", mono=True, opacity=0.7) + t(
         336, 620, "04:30", 12, "#fff", mono=True, anchor="end", opacity=0.7
     )
-    b += '<circle cx="180" cy="680" r="30" fill="#fff"/><path d="M172 666 v28 l22 -14 z" fill="#0e0e0e"/>'
-    b += t(60, 686, "Take apart", 13, "#fff", opacity=0.6) + t(
-        300, 686, "Put back", 13, "#fff", anchor="end", opacity=0.6
+    b += '<circle cx="180" cy="684" r="30" fill="#fff"/><path d="M172 670 v28 l22 -14 z" fill="#0e0e0e"/>'
+    b += t(60, 689, "Take apart", 13, "#fff", anchor="middle", opacity=0.6) + t(
+        300, 689, "Put back", 13, "#fff", anchor="middle", opacity=0.6
     )
     b += status_bar(dark=True)
     return screen(6, "The narrated instruction film, with captions and step markers", b, "#0e0e0e")
@@ -283,8 +318,7 @@ def replace() -> str:
     for i, name in enumerate(parts):
         x, y = 20 + (i % 2) * 164, 126 + (i // 2) * 96
         on = name.startswith("D")
-        fill = ORANGE if on else CARD
-        b += f'<rect x="{x}" y="{y}" width="156" height="84" rx="12" fill="{fill}"/>'
+        b += f'<rect x="{x}" y="{y}" width="156" height="84" rx="12" fill="{ORANGE if on else CARD}"/>'
         b += t(x + 16, y + 34, name[0], 22, "#fff" if on else INK, mono=True) + t(
             x + 16, y + 62, name[2:], 15, "#fff" if on else INK
         )
@@ -296,7 +330,7 @@ def replace() -> str:
     for i, (a, s) in enumerate(plan):
         y = 450 + i * 74
         b += (
-            f'<g class="mz-slide" style="--i:{i}"><circle cx="38" cy="{y - 5}" r="12" fill="{INK}"/>'
+            f'<g class="mz-in" style="--i:{i}"><circle cx="38" cy="{y - 5}" r="12" fill="{INK}"/>'
             + t(38, y, str(i + 1), 12, "#fff", mono=True, anchor="middle")
         )
         b += t(62, y, a, 18) + t(62, y + 22, s, 12, MUTED, mono=True) + "</g>"
