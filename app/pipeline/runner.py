@@ -173,18 +173,36 @@ def run_job(
     settings: "Settings",
     stages: list[Stage] | None = None,
     jobs_dir: Path | None = None,
+    resume: bool = False,
 ) -> JobStatus:
+    """Run every stage in order. With `resume`, reuse the finished stages of the last run.
+
+    Resume keeps a stage only while every stage before it was kept too: once one stage runs
+    again (it failed, its version changed or its file is gone), all later stages run again,
+    because their inputs may have changed. So a failed job restarts at the stage that failed,
+    without paying again for the Meta calls of the stages before it.
+    """
     jobs_dir = settings.jobs_dir if jobs_dir is None else jobs_dir
     folder = job_dir(job_id, jobs_dir)
     stages = stages_for(read_status(job_id, jobs_dir)) if stages is None else stages
     total = sum(stage.weight for stage in stages) or 1.0
     with job_lock(folder):
         update_status(job_id, jobs_dir, state="running", error=None, warnings=[], progress=0.0)
+        previous = artifacts.load_optional(folder, Manifest) if resume else None
         manifest = Manifest()
         done = 0.0
         warnings: list[str] = []
+        reusing = previous is not None
         for stage in stages:
             update_status(job_id, jobs_dir, stage=stage.name, progress=done / total)
+            reusing = reusing and reusable(stage, previous, folder)
+            if reusing:
+                manifest.stages[stage.name] = previous.stages[stage.name].model_copy(
+                    update={"status": "skipped", "seconds": 0.0, "usd": 0.0}
+                )
+                artifacts.save(folder, manifest)
+                done += stage.weight
+                continue
             if stage.output:
                 (folder / stage.output).unlink(missing_ok=True)  # never reuse a stale result
             record, error = run_stage(stage, folder, settings)
@@ -202,6 +220,16 @@ def run_job(
                 update_status(job_id, jobs_dir, warnings=warnings)
             done += stage.weight
         return update_status(job_id, jobs_dir, state="done", stage=None, progress=1.0)
+
+
+def reusable(stage: Stage, previous: Manifest | None, folder: Path) -> bool:
+    """True when the last run finished this stage with the same version and its file is there."""
+    record = previous.stages.get(stage.name) if previous else None
+    if record is None or record.status not in ("done", "skipped"):
+        return False
+    if record.version != stage.version:
+        return False
+    return stage.output is None or (folder / stage.output).is_file()
 
 
 def run_stage(
@@ -234,16 +262,16 @@ def job_usd(folder: Path) -> float:
     return SpendCounter(folder / "spend.json", budget_usd=float("inf")).total()
 
 
-def start_job(job_id: str, jobs_dir: Path) -> subprocess.Popen:
+def start_job(job_id: str, jobs_dir: Path, resume: bool = False) -> subprocess.Popen:
     """Launch the runner for one job in a separate process and return at once."""
     folder = job_dir(job_id, jobs_dir)
+    command = [sys.executable, "-m", "app.pipeline.runner", job_id, str(jobs_dir)]
+    if resume:
+        command.append("--resume")
     # The child gets its own copy of the log file, so we can close ours right away.
     with open(folder / "runner.log", "a") as log:
         return subprocess.Popen(
-            [sys.executable, "-m", "app.pipeline.runner", job_id, str(jobs_dir)],
-            stdout=log,
-            stderr=subprocess.STDOUT,
-            start_new_session=True,
+            command, stdout=log, stderr=subprocess.STDOUT, start_new_session=True
         )
 
 
@@ -251,17 +279,23 @@ def main(argv: list[str] | None = None) -> int:
     from app.config import get_settings
 
     args = sys.argv[1:] if argv is None else argv
+    resume = "--resume" in args
+    args = [arg for arg in args if arg != "--resume"]
     if len(args) not in (1, 2):
-        print("usage: python -m app.pipeline.runner <job_id> [jobs_dir]")
+        print("usage: python -m app.pipeline.runner <job_id> [jobs_dir] [--resume]")
         return 2
-    jobs_dir = Path(args[1]) if len(args) == 2 else get_settings().jobs_dir
+    settings = get_settings()
+    jobs_dir = Path(args[1]) if len(args) == 2 else settings.jobs_dir
     logging.basicConfig(level=logging.INFO)
     try:
-        status = run_job(args[0], get_settings(), jobs_dir=jobs_dir)
+        status = run_job(args[0], settings, jobs_dir=jobs_dir, resume=resume)
     except (JobAlreadyRunning, FileNotFoundError, ValueError) as exc:
         print(exc)
         return 1
     print(f"job {status.job_id}: {status.state}")
+    if status.state == "failed":
+        print(f"failed at stage '{status.stage}': {status.error}")
+        print(f"fix it, then: python -m app.pipeline.runner {status.job_id} --resume")
     return 0 if status.state == "done" else 1
 
 
