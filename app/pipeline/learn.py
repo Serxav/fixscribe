@@ -12,17 +12,15 @@ from typing import Any
 from app import artifacts
 from app.domains import DomainProfile, profile_for
 from app.schemas import Guide, Identity, ProfileSuggestion, ProfileSuggestions
+from app.text import drop_article
 
 VERSION = "1"
-ARTICLES = ("a", "an", "the")
 
 
 def normalize_term(text: str, singular: bool = True) -> str:
     """Lower case, collapse spaces, drop one leading article, simple singular."""
     term = re.sub(r"\s+", " ", text.lower().strip())
-    words = term.split(" ")
-    if words and words[0] in ARTICLES:
-        term = " ".join(words[1:])
+    term = drop_article(term)
     if singular and len(term) > 3 and term.endswith("s") and not term.endswith("ss"):
         term = term[:-1]
     return term

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from app import artifacts
+from app.text import plural
 from app.schemas import (
     Claim,
     Fusion,
@@ -96,7 +97,7 @@ def fastener_claim(
     """How many fasteners come out, from SAM's before/after count and the re-check."""
     if not step.screws or step.screws.count <= 0:
         return None
-    kind = f"{step.screws.kind}s"
+    kind = plural(step.screws.kind)
     sources = []
     ran = step_perception is not None
     removed = len(step_perception.removed) if step_perception is not None else 0

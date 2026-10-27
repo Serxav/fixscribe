@@ -19,6 +19,7 @@ from app import artifacts
 from app.artifacts import ArtifactError
 from app.config import Settings
 from app.meta_client import BudgetExceeded, make_client
+from app.text import plural
 from app.pipeline.ingest import IngestError, find_original
 from app.pipeline.media import extract_still
 from app.pipeline.perception import (
@@ -155,7 +156,6 @@ def check_step(
         raise StepCheckError("budget reached") from exc
     expected = step_perception.screws_after if step_perception else None
     count = len(found)
-    plural = f"{kind}s"
     result = StepCheck(
         step=step.index,
         verdict="unclear",
@@ -170,17 +170,20 @@ def check_step(
     if expected is None or not aligned:
         if aligned:
             result.message = (
-                f"SAM found {count} {plural}, but the guide has no measurement to compare with."
+                f"SAM found {count} {plural(kind, count)},"
+                " but the guide has no measurement to compare with."
             )
         else:
             result.message = (
-                f"SAM found {count} {plural}; the photo could not be matched to the guide."
+                f"SAM found {count} {plural(kind, count)};"
+                " the photo could not be matched to the guide."
             )
     elif count <= expected:
         result.verdict = "done"
-        result.message = f"No {plural} left where the guide removes them."
+        result.message = f"No {plural(kind)} left where the guide removes them."
     else:
-        result.verdict = "not_yet"
-        result.message = f"{count - expected} {plural} are still in place."
+        remaining = count - expected
+        verb = "is" if remaining == 1 else "are"
+        result.message = f"{remaining} {plural(kind, remaining)} {verb} still in place."
     _save_result(checks_dir, step.index, number, result)
     return result
