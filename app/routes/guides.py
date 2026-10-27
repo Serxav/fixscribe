@@ -6,9 +6,8 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import FileResponse, HTMLResponse
 
 from app.config import Settings
-from app.jobs import job_dir
+from app.routes.common import job_folder, load_guide
 from app.routes.upload import settings_dep, templates
-from app.schemas import Guide
 
 router = APIRouter()
 
@@ -42,18 +41,9 @@ def guide_page(
     job_id: str,
     settings: Settings = Depends(settings_dep),  # noqa: B008
 ):
-    jobs_dir = settings.data_dir / "jobs"
-    try:
-        folder = job_dir(job_id, jobs_dir)
-    except ValueError:
-        return _not_ready(request, job_id, valid_id=False)
-    guide_path = folder / "guide.json"
-    if not guide_path.exists():
-        return _not_ready(request, job_id, valid_id=True)
-    try:
-        guide = Guide.model_validate_json(guide_path.read_text())
-    except (OSError, ValueError):
-        return _not_ready(request, job_id, valid_id=True)
+    folder, guide = load_guide(job_id, settings)
+    if guide is None:
+        return _not_ready(request, job_id, valid_id=folder is not None)
     total_screws = sum(step.screws.count if step.screws else 0 for step in guide.steps)
     screw_checks = [check for check in guide.checks if "screw" in check.lower()]
     other_checks = [check for check in guide.checks if "screw" not in check.lower()]
@@ -81,10 +71,8 @@ def media_file(
 ):
     if not _MEDIA_RE.fullmatch(path):
         return HTMLResponse("<h1>not found</h1>", status_code=404)
-    jobs_dir = settings.data_dir / "jobs"
-    try:
-        folder = job_dir(job_id, jobs_dir)
-    except ValueError:
+    folder = job_folder(job_id, settings)
+    if folder is None:
         return HTMLResponse("<h1>not found</h1>", status_code=404)
     target = folder / path
     if not target.is_file():

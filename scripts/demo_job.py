@@ -165,7 +165,7 @@ class FakeMeta:
 
 def main() -> int:
     settings = get_settings()
-    jobs_dir = settings.data_dir / "jobs"
+    jobs_dir = settings.jobs_dir
     job_id = create_job(jobs_dir).job_id
     original = Path(jobs_dir / job_id / "original.mp4")
     # A moving test pattern with a tone: portrait, like a phone video.

@@ -11,7 +11,6 @@ from pydantic import BaseModel, Field
 
 from app.artifacts import write_json_atomic
 
-JOBS_DIR = Path("data/jobs")
 JOB_ID_PATTERN = re.compile(r"[0-9a-f]{12}")
 
 
@@ -32,14 +31,14 @@ def now_iso() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
 
-def job_dir(job_id: str, jobs_dir: Path = JOBS_DIR) -> Path:
+def job_dir(job_id: str, jobs_dir: Path) -> Path:
     # The id comes from URLs, so check it before building a path (no "../").
     if not JOB_ID_PATTERN.fullmatch(job_id):
         raise ValueError(f"invalid job id: {job_id!r}")
     return jobs_dir / job_id
 
 
-def create_job(jobs_dir: Path = JOBS_DIR, reference_job: str | None = None) -> JobStatus:
+def create_job(jobs_dir: Path, reference_job: str | None = None) -> JobStatus:
     """A new job folder. With `reference_job`, an attempt to compare against that guide."""
     if reference_job is not None:
         job_dir(reference_job, jobs_dir)  # validates the id
@@ -60,14 +59,14 @@ def create_job(jobs_dir: Path = JOBS_DIR, reference_job: str | None = None) -> J
     return status
 
 
-def read_status(job_id: str, jobs_dir: Path = JOBS_DIR) -> JobStatus:
+def read_status(job_id: str, jobs_dir: Path) -> JobStatus:
     path = job_dir(job_id, jobs_dir) / "status.json"
     if not path.exists():
         raise FileNotFoundError(f"job not found: {job_id}")
     return JobStatus.model_validate_json(path.read_text())
 
 
-def update_status(job_id: str, jobs_dir: Path = JOBS_DIR, **changes: Any) -> JobStatus:
+def update_status(job_id: str, jobs_dir: Path, **changes: Any) -> JobStatus:
     # The web process and the runner can both update a job: lock the read-modify-write.
     folder = job_dir(job_id, jobs_dir)
     with open(folder / "status.lock", "a") as lock:
@@ -83,7 +82,7 @@ def seconds_since_update(status: JobStatus) -> float:
     return (datetime.now(UTC) - datetime.fromisoformat(status.updated_at)).total_seconds()
 
 
-def jobs_created_today(jobs_dir: Path = JOBS_DIR) -> int:
+def jobs_created_today(jobs_dir: Path) -> int:
     """Count jobs created today (UTC), to enforce DAILY_JOB_LIMIT."""
     if not jobs_dir.exists():
         return 0

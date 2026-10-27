@@ -36,7 +36,7 @@ async def upload_video(
     video: UploadFile,
     settings: Settings = Depends(settings_dep),  # noqa: B008
 ):
-    jobs_dir = settings.data_dir / "jobs"
+    jobs_dir = settings.jobs_dir
     filename = video.filename or ""
     ext = Path(filename).suffix.lower()
     if ext not in ALLOWED_EXTENSIONS:

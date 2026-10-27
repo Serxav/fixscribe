@@ -30,7 +30,7 @@ def main(argv: list[str] | None = None) -> int:
     if not settings.model_api_key:
         print("MODEL_API_KEY is not set")
         return 1
-    jobs_dir = settings.data_dir / "jobs"
+    jobs_dir = settings.jobs_dir
     spend = SpendCounter(settings.data_dir / "spend.json", settings.budget_usd)
     before = spend.total()
 

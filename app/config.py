@@ -24,6 +24,11 @@ class Settings:
     job_budget_usd: float = 1.0  # [JOB_BUDGET_USD]
     data_dir: Path = Path("data")  # [DATA_DIR]
 
+    @property
+    def jobs_dir(self) -> Path:
+        """The one folder that holds every job (web, runner and scripts all use this)."""
+        return self.data_dir / "jobs"
+
 
 def _parse_bool(value: str) -> bool:
     return value.strip().lower() in ("true", "1", "yes")

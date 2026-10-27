@@ -6,8 +6,8 @@ from starlette.concurrency import run_in_threadpool
 
 from app.artifacts import ArtifactError
 from app.config import Settings
-from app.jobs import job_dir
 from app.pipeline.stepcheck import MAX_PHOTO_BYTES, CheckLimitReached, StepCheckError, check_step
+from app.routes.common import job_folder
 from app.routes.upload import settings_dep
 
 router = APIRouter()
@@ -20,10 +20,8 @@ async def check_photo(
     photo: UploadFile = File(...),  # noqa: B008
     settings: Settings = Depends(settings_dep),  # noqa: B008
 ):
-    jobs_dir = settings.data_dir / "jobs"
-    try:
-        folder = job_dir(job_id, jobs_dir)
-    except ValueError:
+    folder = job_folder(job_id, settings)
+    if folder is None:
         return JSONResponse({"error": f"unknown job: {job_id}"}, status_code=404)
     if not (folder / "guide.json").is_file():
         return JSONResponse({"error": "guide not ready"}, status_code=404)
