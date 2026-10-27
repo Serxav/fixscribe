@@ -338,6 +338,17 @@ details.proof[open] summary::after { content: "–"; }
 .models .mono { color: var(--ink-3); }
 @media (min-width: 700px) { .models > div { grid-template-columns: 1fr 1fr 2fr; align-items: baseline; gap: var(--gutter); } }
 
+/* Illustrations (scripts/draw_art.py), laid out like a portfolio grid */
+.art-bleed svg { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+.tiles-grid { display: grid; gap: 56px var(--gutter); margin-top: 56px; }
+@media (min-width: 640px) { .tiles-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1000px) { .tiles-grid { grid-template-columns: repeat(3, 1fr); } }
+.tile { margin: 0; }
+.tile figcaption { font-size: 15px; margin-bottom: 12px; display: flex; gap: 14px; align-items: baseline; }
+.tile figcaption .mono { color: var(--ink-3); }
+.tile svg { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; }
+.tile p { margin: 14px 0 0; font-size: 15px; line-height: 1.4; color: var(--ink-3); max-width: 30em; }
+
 /* Footer: a big wordmark, small columns */
 .footer { padding-block: 120px 48px; color: var(--ink); font-size: 14px; text-align: left; }
 .footer .grid12 { row-gap: 32px; align-items: end; }
