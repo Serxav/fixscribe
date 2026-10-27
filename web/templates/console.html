@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f5f7">
+<title>{{ title }} · Agent console · FixScribe</title>
+<link rel="stylesheet" href="/static/app.css">
+<link rel="stylesheet" href="/static/console.css">
+</head>
+<body>
+<div class="console" id="console" data-job-id="{{ job_id }}">
+  <header class="console-top">
+    <a class="console-back" href="/jobs/{{ job_id }}" aria-label="Back to the job">‹</a>
+    <div class="console-title">
+      <span class="console-kicker">Agent console</span>
+      <h1 id="console-heading">{{ title }}</h1>
+    </div>
+    <span class="pill" id="status-pill">idle</span>
+  </header>
+
+  <div class="console-meta">
+    <span class="tabular" id="turn-count">0 / 30</span>
+    <span class="tabular" id="spend">$0.00</span>
+    <span class="console-actions">
+      <button type="button" id="btn-start" class="btn-start" hidden>Start agent</button>
+      <button type="button" id="btn-resume" class="btn-start" hidden>Resume</button>
+    </span>
+  </div>
+
+  <div class="done-banner" id="done-banner" hidden>
+    <p>Guide approved</p>
+    <a id="done-link" href="/guides/{{ job_id }}">Open the guide</a>
+  </div>
+
+  <div class="empty" id="empty-state" hidden>
+    <p>The agent investigates the video, proves each part and step, and asks you when unsure.</p>
+    <button type="button" id="btn-start-empty" class="btn-start">Start agent</button>
+  </div>
+
+  <div class="columns">
+    <section aria-label="Timeline">
+      <h2>Timeline</h2>
+      <div id="timeline"></div>
+    </section>
+
+    <section aria-label="Case record">
+      <h2>Case record</h2>
+      <div class="question" id="question-card" hidden>
+        <h3>Question from the agent</h3>
+        <p id="question-text"></p>
+        <div class="qframe" id="question-frame-wrap" hidden>
+          <img id="question-frame" alt="Frame the agent is asking about">
+          <div id="question-box" hidden></div>
+        </div>
+        <div id="question-options"></div>
+        <div class="qsend">
+          <input type="text" id="answer-input" maxlength="500" placeholder="Type your answer">
+          <button type="button" id="btn-send">Send</button>
+        </div>
+        <p class="form-error" id="answer-error" hidden></p>
+      </div>
+
+      <div class="signoff" id="signoff-card" hidden>
+        <h3>Review the finished guide</h3>
+        <textarea id="signoff-notes" placeholder="Notes (required to request changes)"></textarea>
+        <div class="signoff-row">
+          <button type="button" id="btn-approve" class="btn-approve">Approve guide</button>
+          <button type="button" id="btn-reject" class="btn-reject">Request changes</button>
+        </div>
+        <p class="form-error" id="signoff-error" hidden></p>
+      </div>
+
+      <h3>Parts</h3>
+      <div class="parts" id="parts"></div>
+
+      <h3>Steps</h3>
+      <ol class="steps" id="steps"></ol>
+
+      <div id="notes"></div>
+    </section>
+  </div>
+
+  <div class="overlay" id="overlay" hidden>
+    <img id="overlay-img" alt="Full size observation image">
+  </div>
+</div>
+<script src="/static/console.js"></script>
+</body>
+</html>
