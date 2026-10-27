@@ -6,6 +6,7 @@ message; it never crashes the web server.
 """
 
 import fcntl
+import functools
 import logging
 import subprocess
 import sys
@@ -16,6 +17,8 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+from pydantic import BaseModel
 
 from app import artifacts
 from app.jobs import (
@@ -277,13 +280,54 @@ def run_job(
 
 
 def reusable(stage: Stage, previous: Manifest | None, folder: Path) -> bool:
-    """True when the last run finished this stage with the same version and its file is there."""
+    """True when the last run finished this stage with the same version and its file is valid."""
     record = previous.stages.get(stage.name) if previous else None
     if record is None or record.status not in ("done", "skipped"):
         return False
     if record.version != stage.version:
         return False
-    return stage.output is None or (folder / stage.output).is_file()
+    return output_problem(stage, folder) is None
+
+
+@functools.cache
+def artifact_model(filename: str) -> type[BaseModel] | None:
+    """The schema model stored in `filename` (the class whose FILENAME it is)."""
+    from app import schemas
+
+    for value in vars(schemas).values():
+        if isinstance(value, type) and issubclass(value, BaseModel):
+            if getattr(value, "FILENAME", None) == filename:
+                return value
+    return None
+
+
+def output_problem(stage: Stage, folder: Path) -> str | None:
+    """Why the stage's own file is not usable (missing or invalid), or None when it is fine."""
+    if stage.output is None:
+        return None
+    if not (folder / stage.output).is_file():
+        return f"did not write {stage.output}"
+    model = artifact_model(stage.output)
+    if model is None:
+        return None
+    try:
+        artifacts.load(folder, model)
+    except artifacts.ArtifactError as exc:
+        return str(exc)
+    return None
+
+
+def check_output(stage: Stage, folder: Path) -> None:
+    """A stage only counts as done when its file is there and valid.
+
+    An invalid file is deleted, so later stages see "missing" (which every stage handles)
+    instead of crashing on a broken optional input.
+    """
+    problem = output_problem(stage, folder)
+    if problem is not None:
+        if stage.output:
+            (folder / stage.output).unlink(missing_ok=True)
+        raise artifacts.ArtifactError(f"invalid output: {problem}")
 
 
 def run_stage(
@@ -296,6 +340,7 @@ def run_stage(
     error = None
     try:
         stage.run(folder, settings)
+        check_output(stage, folder)
     except Exception as exc:
         error = (exc, traceback.format_exc())
     record = StageRecord(
