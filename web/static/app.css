@@ -329,11 +329,6 @@ details.proof[open] summary::after { content: "–"; }
 .start { margin-top: 40px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .start .note { flex-basis: 100%; margin: 10px 0 0; font-size: 14px; color: var(--ink-3); }
 
-/* The Meta line above the headline */
-.built { margin: 0 0 28px; display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink-2);
-  padding: 8px 14px 8px 10px; border-radius: 999px; background: var(--paper); }
-.built-mark { width: 22px; height: 12px; border-radius: 999px; background: linear-gradient(90deg, #0866ff, #7a5cff); flex: none; }
-
 /* What FixScribe does: a phone that shows the screen of the feature you are reading about */
 .story-grid { display: grid; gap: 24px; }
 @media (min-width: 900px) { .story-grid { grid-template-columns: 5fr 7fr; gap: 72px; } }
@@ -373,6 +368,11 @@ details.proof[open] summary::after { content: "–"; }
   grid-template-columns: repeat(3, var(--tile)); } }
 .mz-tile { margin: 0; width: var(--tile); aspect-ratio: 1; border-radius: 12px; overflow: hidden; will-change: transform, opacity; transform-origin: 50% 50%; }
 .mz-tile[data-center] { position: relative; z-index: 2; box-shadow: 0 30px 60px rgba(0, 0, 0, .18); }
+/* With the script, the center drawing is laid out at its biggest size and only ever scaled down,
+   so it stays sharp (a small layer scaled up is a blurry bitmap). */
+.mz-tile[data-center].big { overflow: visible; box-shadow: none; will-change: auto; }
+.mz-tile[data-center].big svg { position: absolute; transform-origin: 50% 50%; will-change: transform;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, .18); overflow: hidden; }
 .mz-tile svg { display: block; width: 100%; height: 100%; }
 .mosaic-caption { max-width: 40em; text-align: center; padding-inline: var(--margin); font-size: clamp(20px, 2vw, 30px); }
 .js .mosaic-caption { opacity: 0; }

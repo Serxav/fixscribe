@@ -4,12 +4,12 @@ FixScribe must look like a serious public tool, not like an AI demo: plain words
 lots of space, warm neutrals, colored technical drawings and calm motion.
 
 ## v6 additions
-- A "Built on Meta AI" line above the headline; the models section is titled "Built on Meta AI".
-  Accent is #0866ff. Meta's own logos are never used: names of the models only.
+- The models section is titled "Built on Meta AI"; accent is #0866ff. Meta's own logos are never used: names of the models only.
 - "What FixScribe does": a sticky phone shows the real screen of each feature
   (`scripts/draw_screens.py`); each feature says "Available" or "Coming next". Never claim more.
 - The mosaic has 21 objects (7 x 3, 3 x 7 on a phone); the phone in the middle is drawn finer and
-  shows its part labels only while it is big (`--detail`).
+  shows its part labels only while it is big (`--detail`). It is laid out at its biggest size
+  and only scaled down, so it is never a blurry enlarged bitmap.
 
 ## v5 additions
 - Header: section pills left, wordmark centered (the three-step glyph), one dark pill right.

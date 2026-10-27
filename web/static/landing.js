@@ -52,6 +52,7 @@
   var stick = stage.querySelector(".mosaic-stick");
   var caption = stage.querySelector(".mosaic-caption");
   var center = grid.querySelector("[data-center]");
+  var art = center.querySelector("svg");
   var tiles = Array.prototype.slice.call(grid.children);
   var startScale = 1;
   var queued = false;
@@ -67,6 +68,12 @@
       tile.ring = Math.round(Math.max(Math.abs(tile.dx), Math.abs(tile.dy)) / size);
     });
     startScale = Math.max(1, Math.min(stick.clientWidth * 0.9 / size, (stick.clientHeight - 30) * 0.86 / size));
+    // Lay the drawing out at its biggest size, centred on its cell; draw() only scales it down.
+    var big = size * startScale;
+    center.classList.add("big");
+    art.style.width = art.style.height = big.toFixed(1) + "px";
+    art.style.left = art.style.top = ((size - big) / 2).toFixed(1) + "px";
+    art.style.borderRadius = (12 * startScale).toFixed(1) + "px";
   };
 
   var draw = function () {
@@ -75,7 +82,8 @@
     var room = box.height - window.innerHeight;
     var p = room > 0 ? clamp(-box.top / room) : 1;
     var shrink = ease(clamp((p - 0.1) / 0.4));
-    center.style.transform = "scale(" + (startScale + (1 - startScale) * shrink).toFixed(3) + ")";
+    var scale = startScale + (1 - startScale) * shrink;
+    art.style.transform = "scale(" + (scale / startScale).toFixed(4) + ")";
     center.style.setProperty("--detail", clamp(1 - shrink * 2.2).toFixed(2));
     tiles.forEach(function (tile) {
       if (tile === center) return;
