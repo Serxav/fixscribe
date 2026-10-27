@@ -1,6 +1,13 @@
 from app import artifacts
-from app.pipeline.publish import UNVERIFIED_SCREWS, build_guide, run, screws_verified
-from app.schemas import Box, Frames, Guide, Plan, ScrewMap, Step, StepMedia
+from app.pipeline.publish import (
+    PRO_ONLY_CHECK,
+    PRO_ONLY_STEP,
+    UNVERIFIED_SCREWS,
+    build_guide,
+    run,
+    screws_verified,
+)
+from app.schemas import Box, Frames, Guide, Identity, Plan, Safety, ScrewMap, Step, StepMedia
 
 
 def step(index, start, end, **extra):
@@ -93,3 +100,74 @@ def test_box_at_the_edge_is_kept_inside_the_image():
     guide = build_guide(plan(counted), None, perception_for(1, [0.98]))
     box = guide.steps[0].screws.boxes[0]
     assert box.x + box.w <= 1.0
+
+
+def car(**extra):
+    base = {"object_name": "family car", "category": "automotive", "task": "repair"}
+    return Identity(**(base | extra))
+
+
+def test_identity_and_safety_are_copied_into_the_guide():
+    identity = car(language="es")
+    safety = Safety(level="normal")
+    guide = build_guide(plan(step(1, 0, 10)), None, identity=identity, safety=safety)
+    assert guide.identity == identity
+    assert guide.safety == safety
+    assert guide.language == "es"
+
+
+def test_automotive_steps_use_bolts():
+    counted = step(1, 0, 10, action="unscrew", removes=["wheel"], screws=ScrewMap(count=2))
+    guide = build_guide(plan(counted), None, identity=car())
+    assert guide.steps[0].screws.kind == "bolt"
+    assert guide.reassembly[0].screws.kind == "bolt"
+
+
+def test_perception_screw_map_uses_the_domain_kind():
+    loose = step(1, 0, 10, action="unscrew", removes=["wheel"])
+    guide = build_guide(plan(loose), None, perception_for(1, [0.1, 0.6]), identity=car())
+    assert guide.steps[0].screws.kind == "bolt"
+
+
+def test_caution_puts_prechecks_first_without_duplicates():
+    safety = Safety(level="caution", prechecks=["Switch the engine off and let it cool."])
+    warned = plan(step(1, 0, 10), checks=[])
+    warned = warned.model_copy(
+        update={"warnings": ["Wear gloves.", "Switch the engine off and let it cool."]}
+    )
+    guide = build_guide(warned, None, identity=car(), safety=safety)
+    assert guide.warnings == ["Switch the engine off and let it cool.", "Wear gloves."]
+    assert guide.steps[0].instruction == "..."  # instructions are kept on caution
+
+
+def test_professional_only_hides_instructions_and_reassembly():
+    safety = Safety(
+        level="professional_only",
+        reasons=["Gas lines and appliances must be worked on by a certified gas technician."],
+        prechecks=["Call a certified technician."],
+    )
+    counted = step(1, 0, 10, action="unscrew", removes=["cover"], screws=ScrewMap(count=2))
+    guide = build_guide(plan(counted), None, identity=car(), safety=safety)
+    assert [s.instruction for s in guide.steps] == [PRO_ONLY_STEP]
+    assert guide.reassembly == []
+    assert f"{PRO_ONLY_CHECK} Gas lines" in " ".join(guide.checks)
+    assert guide.warnings[0] == "Call a certified technician."
+    assert guide.steps[0].screws.kind == "bolt"  # the evidence stays, the words go
+
+
+def test_no_identity_keeps_screw_kind():
+    counted = step(1, 0, 10, action="unscrew", removes=["cover"], screws=ScrewMap(count=2))
+    guide = build_guide(plan(counted), None)
+    assert guide.steps[0].screws.kind == "screw"
+
+
+def test_run_passes_identity_and_safety(tmp_path):
+    identity = car()
+    safety = Safety(level="caution", prechecks=["Switch the engine off and let it cool."])
+    artifacts.save(tmp_path, plan(step(1, 0, 10)))
+    artifacts.save(tmp_path, identity)
+    artifacts.save(tmp_path, safety)
+    guide = run(tmp_path, settings=None)
+    assert guide.identity == identity
+    assert guide.safety == safety
+    assert guide.warnings[0] == "Switch the engine off and let it cool."
