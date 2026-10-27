@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any
 
 from app import artifacts
-from app.text import plural
 from app.schemas import (
     Claim,
     Fusion,
@@ -24,6 +23,7 @@ from app.schemas import (
     StepProof,
     Transcript,
 )
+from app.text import plural
 
 VERSION = "1"
 REFINE_CONFIDENCE = 0.7  # a timecode re-check below this is not trusted

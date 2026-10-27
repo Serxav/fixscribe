@@ -19,7 +19,6 @@ from app import artifacts
 from app.artifacts import ArtifactError
 from app.config import Settings
 from app.meta_client import BudgetExceeded, make_client
-from app.text import plural
 from app.pipeline.ingest import IngestError, find_original
 from app.pipeline.media import extract_still
 from app.pipeline.perception import (
@@ -30,6 +29,7 @@ from app.pipeline.perception import (
     roi_of,
 )
 from app.schemas import Guide, IngestInfo, Perception, Step, StepCheck, StepPerception
+from app.text import plural
 
 MAX_PHOTO_BYTES = 15 * 1024**2
 MAX_CHECKS_PER_JOB = 20
@@ -182,6 +182,7 @@ def check_step(
         result.verdict = "done"
         result.message = f"No {plural(kind)} left where the guide removes them."
     else:
+        result.verdict = "not_yet"
         remaining = count - expected
         verb = "is" if remaining == 1 else "are"
         result.message = f"{remaining} {plural(kind, remaining)} {verb} still in place."

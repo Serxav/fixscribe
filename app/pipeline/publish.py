@@ -10,7 +10,6 @@ from typing import Any
 from app import artifacts
 from app.domains import profile_for
 from app.pipeline.assembly import build_reassembly
-from app.text import plural
 from app.schemas import (
     Box,
     Frames,
@@ -24,6 +23,7 @@ from app.schemas import (
     Step,
     StepPerception,
 )
+from app.text import plural
 
 VERSION = "3"
 
@@ -120,7 +120,8 @@ def build_guide(
     proof: Proof | None = None,
 ) -> Guide:
     steps, perception_notes = with_perception(with_media(plan.steps, frames), perception)
-    steps = with_kind(steps, profile_for(identity.category).fastener_kind if identity else "screw")
+    kind = profile_for(identity.category).fastener_kind if identity else "screw"
+    steps = with_kind(steps, kind)
     level = safety.level if safety else "normal"
     warnings = (
         plan.warnings if level == "normal" else with_prechecks(plan.warnings, safety.prechecks)
@@ -135,14 +136,6 @@ def build_guide(
         reassembly = assembled.steps
         checks += assembled.warnings
         if any(step.screws and step.screws.count for step in steps) and not screws_verified(steps):
-            kind = next(
-                (
-                    step.screws.kind
-                    for step in steps
-                    if step.screws and step.screws.count and step.screws.kind
-                ),
-                "screw",
-            )
             checks.append(unverified_note(kind))
     return Guide(
         title=plan.title,

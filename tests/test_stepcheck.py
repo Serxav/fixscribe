@@ -178,7 +178,7 @@ def test_unclear_without_guide_measurement(tmp_path, monkeypatch):
 
     assert result.verdict == "unclear"
     assert result.expected_left is None
-    assert "SAM found 1 bolts" in result.message
+    assert "SAM found 1 bolt," in result.message
 
 
 def test_no_fastener_step_needs_no_sam_call(tmp_path, monkeypatch):
@@ -392,3 +392,11 @@ def test_route_bad_job_and_missing_guide_are_404(jobs_tmp, monkeypatch):
         files={"photo": ("photo.png", _photo_bytes(), "image/png")},
     )
     assert response.status_code == 404
+
+
+def test_one_remaining_fastener_is_singular(tmp_path, monkeypatch):
+    settings = _job(tmp_path, [_step(1)])
+    _patch(monkeypatch, _ref(tmp_path))
+    result = check_step(tmp_path, settings, 1, _photo_bytes(), client=FakeClient(count=1))
+    assert result.verdict == "not_yet"
+    assert result.message == "1 bolt is still in place."
