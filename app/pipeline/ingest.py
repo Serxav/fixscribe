@@ -7,10 +7,8 @@ never touched (stills and SAM read it later at native resolution).
 """
 
 import json
-import os
 import statistics
 import subprocess
-from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -289,16 +287,6 @@ def extract_audio(src: Path, dst: Path) -> None:
     )
 
 
-def _convert(make: Callable[[Path], None], tmp: Path, final: Path) -> None:
-    """Build the output at a tmp path, then move it atomically into place."""
-    try:
-        make(tmp)
-    except Exception:
-        tmp.unlink(missing_ok=True)
-        raise
-    os.replace(tmp, final)
-
-
 def run(job_dir: Path, settings: Settings) -> IngestInfo:
     """Ingest the upload: normalize to a CFR mp4, extract WAV, record ingest.json."""
     src = find_original(job_dir)
@@ -308,17 +296,11 @@ def run(job_dir: Path, settings: Settings) -> IngestInfo:
             f"video too long: {source.duration_s:g} s (max {settings.max_video_seconds} s)"
         )
     has_audio = _has_audio(_ffprobe_json(src))
-    _convert(
-        lambda tmp: normalize_video(src, tmp, source),
-        job_dir / "video.tmp.mp4",
-        job_dir / "video.mp4",
-    )
+    with artifacts.atomic_path(job_dir / "video.mp4") as tmp:
+        normalize_video(src, tmp, source)
     if has_audio:
-        _convert(
-            lambda tmp: extract_audio(src, tmp),
-            job_dir / "audio.tmp.wav",
-            job_dir / "audio.wav",
-        )
+        with artifacts.atomic_path(job_dir / "audio.wav") as tmp:
+            extract_audio(src, tmp)
     out = probe_source(job_dir / "video.mp4")
     info = IngestInfo(
         duration_s=out.duration_s,

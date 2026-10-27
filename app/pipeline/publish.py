@@ -23,11 +23,20 @@ from app.schemas import (
     Step,
     StepPerception,
 )
+from app.text import plural
 
 VERSION = "3"
-UNVERIFIED_SCREWS = (
-    "Screw counts come from the video analysis only; they have not been verified on the images yet."
-)
+
+
+def unverified_note(kind: str) -> str:
+    """Honest note when the fastener count is not verified on the images yet."""
+    return (
+        f"The {plural(kind)} count comes from the video analysis only;"
+        " it has not been verified on the images yet."
+    )
+
+
+UNVERIFIED_SCREWS = unverified_note("screw")
 PRO_ONLY_STEP = (
     "A qualified professional must do this step. FixScribe does not give instructions for it."
 )
@@ -111,7 +120,8 @@ def build_guide(
     proof: Proof | None = None,
 ) -> Guide:
     steps, perception_notes = with_perception(with_media(plan.steps, frames), perception)
-    steps = with_kind(steps, profile_for(identity.category).fastener_kind if identity else "screw")
+    kind = profile_for(identity.category).fastener_kind if identity else "screw"
+    steps = with_kind(steps, kind)
     level = safety.level if safety else "normal"
     warnings = (
         plan.warnings if level == "normal" else with_prechecks(plan.warnings, safety.prechecks)
@@ -126,7 +136,7 @@ def build_guide(
         reassembly = assembled.steps
         checks += assembled.warnings
         if any(step.screws and step.screws.count for step in steps) and not screws_verified(steps):
-            checks.append(UNVERIFIED_SCREWS)
+            checks.append(unverified_note(kind))
     return Guide(
         title=plan.title,
         device=plan.device,

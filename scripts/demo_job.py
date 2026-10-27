@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 from app.config import get_settings
 from app.jobs import create_job
-from app.pipeline import analyze, perception, refine, transcribe
+from app.meta_client import set_client_factory
 from app.pipeline.runner import run_job
 
 SECONDS = 36
@@ -107,6 +107,21 @@ ANALYSIS = {
 }
 
 
+IDENTITY = {
+    "object_name": "smartphone",
+    "category": "electronics",
+    "brand": "",
+    "model": "",
+    "task": "repair",
+    "problem": "battery replacement",
+    "hazards": ["lithium_battery", "sharp_edges"],
+    "skill": "intermediate",
+    "language": "en",
+    "evidence": ["offline demo answer"],
+    "confidence": 0.5,
+}
+
+
 class FakeMeta:
     def __init__(self, settings, **kwargs):
         pass
@@ -132,7 +147,14 @@ class FakeMeta:
         return "file-demo"
 
     def respond(self, **kwargs):
-        return SimpleNamespace(output_text=json.dumps(ANALYSIS))
+        # Pass 2 answers "not sure" (confidence 0), so the plan keeps the first analysis.
+        unsure = {"start_s": 0, "end_s": 0, "instruction": "", "action": "other", "removes": []}
+        unsure |= {"screw_count": 0, "warnings": [], "confidence": 0}
+        answers = {"repair_analysis": ANALYSIS, "repair_identity": IDENTITY, "refined_step": unsure}
+        name = kwargs["text"]["format"]["name"]
+        if name not in answers:
+            raise RuntimeError(f"the offline demo has no answer for {name}")
+        return SimpleNamespace(output_text=json.dumps(answers[name]))
 
     def delete_file(self, file_id):
         pass
@@ -143,7 +165,7 @@ class FakeMeta:
 
 def main() -> int:
     settings = get_settings()
-    jobs_dir = settings.data_dir / "jobs"
+    jobs_dir = settings.jobs_dir
     job_id = create_job(jobs_dir).job_id
     original = Path(jobs_dir / job_id / "original.mp4")
     # A moving test pattern with a tone: portrait, like a phone video.
@@ -156,10 +178,7 @@ def main() -> int:
         ],
         check=True,
     )  # fmt: skip
-    transcribe.MetaClient = FakeMeta
-    analyze.MetaClient = FakeMeta
-    refine.MetaClient = FakeMeta
-    perception.MetaClient = FakeMeta
+    set_client_factory(FakeMeta)  # one switch: no stage can reach the real Meta API
     status = run_job(job_id, settings, jobs_dir=jobs_dir)
     print(f"job {job_id}: {status.state} {status.error or ''}".rstrip())
     if status.state == "done":

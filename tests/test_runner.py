@@ -2,8 +2,10 @@ import json
 
 import pytest
 
+from app import artifacts
 from app.jobs import create_job, read_status
 from app.pipeline.runner import JobAlreadyRunning, Stage, is_running, job_lock, run_job
+from app.schemas import Manifest
 
 SETTINGS = object()  # stages in these tests do not read settings
 
@@ -209,3 +211,84 @@ def test_stages_follow_the_job_kind(monkeypatch):
     assert runner.stages_for(JobStatus(**base, kind="attempt", reference_job="b" * 12)) == [
         "attempt"
     ]
+
+
+def _counting_stages(calls, fail_at=None):
+    from app.pipeline.runner import Stage
+
+    def make(name, optional=False):
+        def run(folder, settings):
+            calls.append(name)
+            if name == fail_at:
+                raise RuntimeError(f"{name} broke")
+            (folder / f"{name}.json").write_text("{}")
+
+        return Stage(name, run, optional=optional, output=f"{name}.json")
+
+    return [make("a"), make("b"), make("c", optional=True), make("d")]
+
+
+def test_resume_restarts_at_the_failed_stage(tmp_path):
+    from app.config import Settings
+    from app.jobs import create_job
+    from app.pipeline.runner import run_job
+
+    settings = Settings(data_dir=tmp_path)
+    job_id = create_job(settings.jobs_dir).job_id
+    calls = []
+    status = run_job(job_id, settings, _counting_stages(calls, fail_at="b"))
+    assert status.state == "failed" and status.stage == "b"  # we know which stage failed
+    assert calls == ["a", "b"]
+
+    calls.clear()
+    status = run_job(job_id, settings, _counting_stages(calls), resume=True)
+    assert status.state == "done"
+    assert calls == ["b", "c", "d"]  # "a" was reused, not paid again
+    manifest = artifacts.load(settings.jobs_dir / job_id, Manifest)
+    assert manifest.stages["a"].status == "skipped"
+
+
+def test_resume_reruns_everything_after_a_rerun_stage(tmp_path):
+    from app.config import Settings
+    from app.jobs import create_job
+    from app.pipeline.runner import run_job
+
+    settings = Settings(data_dir=tmp_path)
+    job_id = create_job(settings.jobs_dir).job_id
+    calls = []
+    run_job(job_id, settings, _counting_stages(calls))
+    (settings.jobs_dir / job_id / "b.json").unlink()  # b's result is gone
+    calls.clear()
+    run_job(job_id, settings, _counting_stages(calls), resume=True)
+    assert calls == ["b", "c", "d"]
+
+
+def test_optional_failure_keeps_the_job_alive_and_is_retried_on_resume(tmp_path):
+    from app.config import Settings
+    from app.jobs import create_job
+    from app.pipeline.runner import run_job
+
+    settings = Settings(data_dir=tmp_path)
+    job_id = create_job(settings.jobs_dir).job_id
+    calls = []
+    status = run_job(job_id, settings, _counting_stages(calls, fail_at="c"))
+    assert status.state == "done" and status.warnings == ["c failed: c broke"]
+    calls.clear()
+    status = run_job(job_id, settings, _counting_stages(calls), resume=True)
+    assert calls == ["c", "d"] and status.warnings == []
+
+
+def test_cli_resume_flag(tmp_path, monkeypatch, capsys):
+    from app.pipeline import runner
+
+    seen = {}
+
+    def fake_run_job(job_id, settings, jobs_dir=None, resume=False):
+        seen.update(job_id=job_id, jobs_dir=jobs_dir, resume=resume)
+        return read_status(job_id, jobs_dir)
+
+    job_id = create_job(tmp_path).job_id
+    monkeypatch.setattr(runner, "run_job", fake_run_job)
+    assert runner.main([job_id, str(tmp_path), "--resume"]) == 1  # job is still "queued"
+    assert seen == {"job_id": job_id, "jobs_dir": tmp_path, "resume": True}
+    assert runner.main([]) == 2

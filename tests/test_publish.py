@@ -192,3 +192,11 @@ def test_run_passes_identity_and_safety(tmp_path):
     assert guide.identity == identity
     assert guide.safety == safety
     assert guide.warnings[0] == "Switch the engine off and let it cool."
+
+
+def test_unverified_note_names_the_fastener_kind():
+    from app.pipeline.publish import UNVERIFIED_SCREWS, unverified_note
+
+    assert unverified_note("bolt").startswith("The bolts count comes from the video analysis")
+    assert unverified_note("glass").startswith("The glasses count")
+    assert UNVERIFIED_SCREWS == unverified_note("screw")

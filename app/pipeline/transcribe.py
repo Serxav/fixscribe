@@ -5,7 +5,7 @@ from pathlib import Path
 
 from app import artifacts
 from app.config import Settings
-from app.meta_client import MetaClient
+from app.meta_client import MetaClient, make_client
 from app.schemas import Transcript, Turn
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> 
         artifacts.save(job_dir, result)
         return result
     if client is None:
-        client = MetaClient(settings, job_dir=job_dir)
+        client = make_client(settings, job_dir=job_dir)
     data = client.transcribe(
         wav,
         mode="ENDPOINTING",

@@ -18,7 +18,7 @@ from PIL import Image, ImageOps
 from app import artifacts
 from app.artifacts import ArtifactError
 from app.config import Settings
-from app.meta_client import BudgetExceeded, MetaClient
+from app.meta_client import BudgetExceeded, make_client
 from app.pipeline.ingest import IngestError, find_original
 from app.pipeline.media import extract_still
 from app.pipeline.perception import (
@@ -29,6 +29,7 @@ from app.pipeline.perception import (
     roi_of,
 )
 from app.schemas import Guide, IngestInfo, Perception, Step, StepCheck, StepPerception
+from app.text import plural
 
 MAX_PHOTO_BYTES = 15 * 1024**2
 MAX_CHECKS_PER_JOB = 20
@@ -141,7 +142,7 @@ def check_step(
         )
     region = roi_of(step_perception.part if step_perception else None)
     if client is None:
-        client = MetaClient(settings, job_dir=job_dir)
+        client = make_client(settings, job_dir=job_dir)
     photo_path = checks_dir / f"step_{step.index:02d}_photo_{number}.png"
     photo_path.parent.mkdir(parents=True, exist_ok=True)
     if not cv2.imwrite(str(photo_path), photo_img):
@@ -155,7 +156,6 @@ def check_step(
         raise StepCheckError("budget reached") from exc
     expected = step_perception.screws_after if step_perception else None
     count = len(found)
-    plural = f"{kind}s"
     result = StepCheck(
         step=step.index,
         verdict="unclear",
@@ -170,17 +170,21 @@ def check_step(
     if expected is None or not aligned:
         if aligned:
             result.message = (
-                f"SAM found {count} {plural}, but the guide has no measurement to compare with."
+                f"SAM found {count} {plural(kind, count)},"
+                " but the guide has no measurement to compare with."
             )
         else:
             result.message = (
-                f"SAM found {count} {plural}; the photo could not be matched to the guide."
+                f"SAM found {count} {plural(kind, count)};"
+                " the photo could not be matched to the guide."
             )
     elif count <= expected:
         result.verdict = "done"
-        result.message = f"No {plural} left where the guide removes them."
+        result.message = f"No {plural(kind)} left where the guide removes them."
     else:
         result.verdict = "not_yet"
-        result.message = f"{count - expected} {plural} are still in place."
+        remaining = count - expected
+        verb = "is" if remaining == 1 else "are"
+        result.message = f"{remaining} {plural(kind, remaining)} {verb} still in place."
     _save_result(checks_dir, step.index, number, result)
     return result

@@ -10,7 +10,6 @@ artifact.
 """
 
 import math
-import os
 import statistics
 from pathlib import Path
 from typing import Any
@@ -21,7 +20,7 @@ import numpy as np
 from app import artifacts
 from app.config import Settings
 from app.domains import profile_for
-from app.meta_client import BudgetExceeded, Detection, MetaClient
+from app.meta_client import BudgetExceeded, Detection, make_client
 from app.pipeline.ingest import find_original
 from app.pipeline.media import extract_still
 from app.pipeline.overlay import draw_part, draw_screws, save_jpeg
@@ -37,6 +36,7 @@ from app.schemas import (
     Step,
     StepPerception,
 )
+from app.text import ARTICLES, plural
 
 MAX_STEPS = 12
 BEFORE_S = 0.5
@@ -47,7 +47,6 @@ MIN_CONFIDENCE = 0.3
 NMS_IOU = 0.5
 SAME_SCREW = 0.04
 
-_ARTICLES = {"a", "an", "the"}
 _BUDGET_NOTE = "SAM budget reached."
 
 
@@ -59,17 +58,13 @@ def fastener_concept(job_dir: Path) -> str:
     return profile_for(identity.category).fastener_kind
 
 
-def _plural(concept: str) -> str:
-    return concept + "s"
-
-
 def _clean_phrase(text: str | None) -> str | None:
     if not text:
         return None
     cleaned = "".join(
         ch if ch.isalnum() or ch.isspace() or ch == "-" else " " for ch in text.lower()
     )
-    words = [word for word in cleaned.split() if word not in _ARTICLES]
+    words = [word for word in cleaned.split() if word not in ARTICLES]
     if not words:
         return None
     return " ".join(words[-2:])
@@ -165,7 +160,7 @@ _ALIGN_FAILED_NOTE = "Camera moved too much to verify the screws."
 def _align_failed_note(fastener: str) -> str:
     if fastener == "screw":
         return _ALIGN_FAILED_NOTE
-    return f"Camera moved too much to verify the {_plural(fastener)}."
+    return f"Camera moved too much to verify the {plural(fastener)}."
 
 
 def _gray_small(image: Any) -> tuple[Any, float]:
@@ -215,14 +210,9 @@ def align_after_to_before(before_img: Any, after_img: Any) -> np.ndarray | None:
 
 
 def _write_png_atomic(image: Any, path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f".{path.stem}.tmp.png")
-    try:
+    with artifacts.atomic_path(path) as tmp:
         if not cv2.imwrite(str(tmp), image):
             raise OSError(f"cannot write image: {path}")
-        os.replace(tmp, path)
-    finally:
-        tmp.unlink(missing_ok=True)
 
 
 def _crop_upscaled(image: Any, roi: tuple[float, float, float, float]) -> Any:
@@ -483,7 +473,7 @@ def _process_step(
         sp.removed = records
         if len(records) != _screw_count(step):
             sp.notes.append(
-                f"SAM found {len(records)} {_plural(fastener)} removed, "
+                f"SAM found {len(records)} {plural(fastener)} removed, "
                 f"the analysis counted {_screw_count(step)}."
             )
     sp.overlay = _make_overlay(job_dir, step, keyframe_path, sp)
@@ -496,7 +486,7 @@ def run(job_dir: Path, settings: Settings, client: Any = None) -> Perception:
     frames = artifacts.load_optional(job_dir, Frames)
     ingest = artifacts.load_optional(job_dir, IngestInfo)
     if client is None:
-        client = MetaClient(settings, job_dir=job_dir)
+        client = make_client(settings, job_dir=job_dir)
     fastener = fastener_concept(job_dir)
     eligible = [
         step

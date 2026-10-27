@@ -9,9 +9,9 @@ import json
 import shutil
 from pathlib import Path
 
-from app import artifacts
+from app import artifacts, spark
 from app.config import Settings
-from app.meta_client import MetaClient
+from app.meta_client import MetaClient, make_client
 from app.pipeline import media
 from app.pipeline.ingest import find_original
 from app.schemas import IDENTITY_JSON_SCHEMA, Identity, IngestInfo, Transcript
@@ -81,7 +81,7 @@ def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> 
     ingest = artifacts.load(job_dir, IngestInfo)
     transcript = artifacts.load_optional(job_dir, Transcript)
     if client is None:
-        client = MetaClient(settings, job_dir=job_dir)
+        client = make_client(settings, job_dir=job_dir)
     stills_dir = job_dir / "identify"
     try:
         if ingest.source is None:
@@ -96,24 +96,23 @@ def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> 
         )
         transcript_text = spoken_text(transcript)
         prompt = build_prompt(transcript_text)
-        response = client.respond(
-            model=settings.spark_model,
-            input=build_input(prompt, paths),
-            max_output_tokens=MAX_OUTPUT_TOKENS,
-            text={
-                "format": {
-                    "type": "json_schema",
-                    "name": "repair_identity",
-                    "schema": IDENTITY_JSON_SCHEMA,
-                    "strict": True,
-                }
-            },
-            timeout_s=IDENTIFY_TIMEOUT_S,
-        )
-        # Keep Spark's raw answer: if parsing fails, this is what we debug the prompt with.
-        raw = response.output_text or ""
-        (job_dir / "identify_raw.txt").write_text(raw, encoding="utf-8")
-        identity = parse_identity(raw)
+        try:
+            data = spark.ask_json(
+                client,
+                settings,
+                name="repair_identity",
+                schema=IDENTITY_JSON_SCHEMA,
+                prompt=prompt,
+                images=paths,
+                raw_path=job_dir / "identify_raw.txt",
+                max_output_tokens=MAX_OUTPUT_TOKENS,
+                timeout_s=IDENTIFY_TIMEOUT_S,
+            )
+        except spark.SparkAnswerError as exc:
+            raise IdentifyError("Spark returned an invalid identity") from exc
+        # Keep Spark's raw answer: ask_json saved it to identify_raw.txt, so a
+        # parsing failure can still be debugged from the prompt.
+        identity = parse_identity(json.dumps(data))
         artifacts.save(job_dir, identity)
         return identity
     finally:

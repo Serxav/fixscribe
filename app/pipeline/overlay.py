@@ -1,13 +1,12 @@
 """Draw SAM highlights and numbered screw markers on a keyframe."""
 
-import os
-import tempfile
 from pathlib import Path
 from typing import Any
 
 import cv2
 import numpy as np
 
+from app import artifacts
 from app.meta_client import Detection
 
 # Signal lime #D4FF3A and graphite #0E0F11, in OpenCV BGR order.
@@ -250,18 +249,6 @@ def draw_screws(
 def save_jpeg(image: Any, path: Path, quality: int = 88) -> None:
     """Write a JPEG atomically via a temp file in the same folder."""
     path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path: str | None = None
-    try:
-        with tempfile.NamedTemporaryFile(dir=str(path.parent), delete=False, suffix=".jpg") as tmp:
-            tmp_path = tmp.name
-        if not cv2.imwrite(tmp_path, image, [int(cv2.IMWRITE_JPEG_QUALITY), int(quality)]):
+    with artifacts.atomic_path(path) as tmp_path:
+        if not cv2.imwrite(str(tmp_path), image, [int(cv2.IMWRITE_JPEG_QUALITY), int(quality)]):
             raise OSError(f"cannot write image: {path}")
-        os.replace(tmp_path, path)
-        tmp_path = None
-    finally:
-        if tmp_path is not None:
-            try:
-                os.unlink(tmp_path)
-            except OSError:
-                pass

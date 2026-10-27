@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
-from app import artifacts
+from app import artifacts, meta_client
 from app.config import Settings
 from app.jobs import create_job
 from app.main import app
@@ -178,7 +178,7 @@ def test_unclear_without_guide_measurement(tmp_path, monkeypatch):
 
     assert result.verdict == "unclear"
     assert result.expected_left is None
-    assert "SAM found 1 bolts" in result.message
+    assert "SAM found 1 bolt," in result.message
 
 
 def test_no_fastener_step_needs_no_sam_call(tmp_path, monkeypatch):
@@ -306,7 +306,7 @@ def jobs_tmp(tmp_path, monkeypatch):
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     fake = FakeClient(count=0)
-    monkeypatch.setattr(stepcheck, "MetaClient", lambda *args, **kwargs: fake)
+    monkeypatch.setattr(meta_client, "_factory", lambda *args, **kwargs: fake)
     monkeypatch.setattr(stepcheck, "align_after_to_before", lambda *args: IDENTITY)
     app.dependency_overrides[settings_dep] = lambda: Settings(model_api_key="", data_dir=data_dir)
     yield (data_dir / "jobs", fake)
@@ -392,3 +392,11 @@ def test_route_bad_job_and_missing_guide_are_404(jobs_tmp, monkeypatch):
         files={"photo": ("photo.png", _photo_bytes(), "image/png")},
     )
     assert response.status_code == 404
+
+
+def test_one_remaining_fastener_is_singular(tmp_path, monkeypatch):
+    settings = _job(tmp_path, [_step(1)])
+    _patch(monkeypatch, _ref(tmp_path))
+    result = check_step(tmp_path, settings, 1, _photo_bytes(), client=FakeClient(count=1))
+    assert result.verdict == "not_yet"
+    assert result.message == "1 bolt is still in place."

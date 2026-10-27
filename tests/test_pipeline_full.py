@@ -7,10 +7,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from app import artifacts
+from app import artifacts, meta_client
 from app.config import Settings
 from app.jobs import create_job
-from app.pipeline import analyze, identify, perception, refine, transcribe
 from app.pipeline.publish import UNVERIFIED_SCREWS
 from app.pipeline.runner import default_stages, run_job
 from app.schemas import Guide, Identity, Manifest, ProfileSuggestions, Proof
@@ -124,11 +123,7 @@ class FakeMeta:
 @pytest.fixture
 def fake_meta(monkeypatch):
     FakeMeta.calls = []
-    monkeypatch.setattr(transcribe, "MetaClient", FakeMeta)
-    monkeypatch.setattr(analyze, "MetaClient", FakeMeta)
-    monkeypatch.setattr(identify, "MetaClient", FakeMeta)
-    monkeypatch.setattr(refine, "MetaClient", FakeMeta)
-    monkeypatch.setattr(perception, "MetaClient", FakeMeta)
+    monkeypatch.setattr(meta_client, "_factory", FakeMeta)
     return FakeMeta
 
 

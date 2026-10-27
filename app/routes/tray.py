@@ -4,9 +4,8 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
 from app.config import Settings
-from app.jobs import job_dir
+from app.routes.common import load_guide
 from app.routes.upload import settings_dep, templates
-from app.schemas import Guide
 from app.tray import reassembly_lines, tray_cells
 
 router = APIRouter()
@@ -33,18 +32,9 @@ def tray_page(
     job_id: str,
     settings: Settings = Depends(settings_dep),  # noqa: B008
 ):
-    jobs_dir = settings.data_dir / "jobs"
-    try:
-        folder = job_dir(job_id, jobs_dir)
-    except ValueError:
-        return _not_ready(request, job_id, valid_id=False)
-    guide_path = folder / "guide.json"
-    if not guide_path.exists():
-        return _not_ready(request, job_id, valid_id=True)
-    try:
-        guide = Guide.model_validate_json(guide_path.read_text())
-    except (OSError, ValueError):
-        return _not_ready(request, job_id, valid_id=True)
+    folder, guide = load_guide(job_id, settings)
+    if guide is None:
+        return _not_ready(request, job_id, valid_id=folder is not None)
     return templates.TemplateResponse(
         request,
         "tray.html",
