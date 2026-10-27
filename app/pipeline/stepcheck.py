@@ -35,7 +35,11 @@ MAX_CHECKS_PER_JOB = 20
 
 
 class StepCheckError(Exception):
-    pass
+    """A user-facing reason the photo could not be checked."""
+
+
+class CheckLimitReached(StepCheckError):
+    """This job already answered MAX_CHECKS_PER_JOB photos (protects the Meta budget)."""
 
 
 def load_photo(data: bytes) -> np.ndarray:
@@ -99,7 +103,9 @@ def check_step(
     checks_dir = job_dir / "checks"
     existing = sorted(checks_dir.glob("step_*.json")) if checks_dir.is_dir() else []
     if len(existing) >= MAX_CHECKS_PER_JOB:
-        raise StepCheckError(f"check limit reached for this job ({MAX_CHECKS_PER_JOB} checks max)")
+        raise CheckLimitReached(
+            f"check limit reached for this job ({MAX_CHECKS_PER_JOB} checks max)"
+        )
     number = len(existing) + 1
     while (checks_dir / f"step_{step.index:02d}_{number}.json").exists():
         number += 1

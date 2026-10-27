@@ -12,7 +12,7 @@ from app.schemas import Guide
 
 router = APIRouter()
 
-_MEDIA_RE = re.compile(r"^(video\.mp4|steps/\d{2}\.(jpg|mp4))$")
+_MEDIA_RE = re.compile(r"^(video\.mp4|steps/\d{2}(_overlay)?\.jpg|steps/\d{2}\.mp4)$")
 
 
 def _not_ready(request: Request, job_id: str, *, valid_id: bool):
