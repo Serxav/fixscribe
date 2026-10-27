@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.routes import ask as ask_routes
 from app.routes import checks as checks_routes
+from app.routes import console as console_routes
 from app.routes import export as export_routes
 from app.routes import guides as guides_routes
 from app.routes import jobs as jobs_routes
@@ -24,6 +25,7 @@ app.include_router(export_routes.router)
 app.include_router(checks_routes.router)
 app.include_router(ask_routes.router)
 app.include_router(tray_routes.router)
+app.include_router(console_routes.router)
 
 
 @app.get("/health")

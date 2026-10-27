@@ -11,6 +11,7 @@
     <div id="error" class="warn {% if not status.error %}hidden{% endif %}" style="text-align:left">{{ status.error or "" }}</div>
     <div class="stack" style="margin-top:18px">
       <a id="guide-link" href="/guides/{{ job_id }}" class="btn btn-primary btn-lg btn-block hidden">Open the guide</a>
+      <a id="console-link" href="/jobs/{{ job_id }}/console" class="btn btn-glass btn-lg btn-block">Agent console</a>
       <button id="resume-button" type="button" class="btn btn-primary btn-lg btn-block hidden">Try again from where it stopped</button>
       <a id="retry-link" href="/" class="btn btn-glass btn-lg btn-block hidden">Try another video</a>
     </div>
