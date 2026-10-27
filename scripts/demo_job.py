@@ -208,32 +208,67 @@ def color_mask(image, color):
     return (np.abs(image.astype(np.int16) - target).max(axis=2) < 28).astype(np.uint8)
 
 
-def track_colored(video_path, concept):
-    """Offline stand-in for SAM video tracking: per-frame color masks with stable ids."""
+def palette_color_at(image, box):
+    """The scene color (part or screw) that covers most of the box (majority of pixels)."""
+    left, top, right, bottom = (int(v) for v in box)
+    region = image[max(0, top) : bottom, max(0, left) : right]
+    colors = [c for _, c, *_ in PARTS] + [SCREW_COLOR]
+    return max(colors, key=lambda c: int(color_mask(region, c).sum()) if region.size else 0)
+
+
+def track_colored(video_path, concept=None, boxes=(), size=None):
+    """Offline stand-in for SAM video tracking.
+
+    With a concept: every component of the concept's color, with stable ids. With box prompts:
+    only the prompted objects, each followed from its box (nearest component of its color).
+    """
     import cv2
 
-    color = color_of(concept)
     capture = cv2.VideoCapture(str(video_path))
-    tracks, previous, next_id, index = [], {}, 1, 0
+    images = []
     while True:
         ok, image = capture.read()
         if not ok:
             break
-        height, width = image.shape[:2]
-        if color is not None:
-            mask = color_mask(image, color)
-            count, labels, stats, centroids = cv2.connectedComponentsWithStats(mask)
-            objects, current = [], {}
+        images.append(image)
+    capture.release()
+    if not images:
+        return []
+    height, width = images[0].shape[:2]
+    if boxes:
+        seeds = []
+        for object_id, frame, box in boxes:
+            color = palette_color_at(images[min(frame, len(images) - 1)], box)
+            seeds.append((object_id, color, ((box[0] + box[2]) / 2, (box[1] + box[3]) / 2)))
+    else:
+        color = color_of(concept)
+        seeds = [(None, color, None)] if color else []
+    tracks, previous, next_id = [], {}, 1
+    for index, image in enumerate(images):
+        objects, current, claimed = [], {}, set()
+        for seed_id, color, start in seeds:
+            count, labels, stats, centroids = cv2.connectedComponentsWithStats(
+                color_mask(image, color)
+            )
             for label in range(1, count):
                 x, y, w, h, area = stats[label]
                 if area < max(12, 0.00004 * width * height):
                     continue
                 cx, cy = centroids[label]
-                near = [
-                    oid for oid, (px, py) in previous.items() if abs(px - cx) + abs(py - cy) < 40
-                ]
-                object_id = near[0] if near else next_id
-                next_id += 0 if near else 1
+                if seed_id is not None:  # follow only the prompted object
+                    px, py = previous.get(seed_id, start)
+                    if abs(px - cx) + abs(py - cy) > 60:
+                        continue
+                    object_id = seed_id
+                else:
+                    near = [
+                        o for o, (px, py) in previous.items() if abs(px - cx) + abs(py - cy) < 40
+                    ]
+                    object_id = near[0] if near else next_id
+                    next_id += 0 if near else 1
+                if object_id in current or (color, label) in claimed:
+                    continue
+                claimed.add((color, label))
                 current[object_id] = (cx, cy)
                 objects.append(
                     SimpleNamespace(
@@ -244,13 +279,10 @@ def track_colored(video_path, concept):
                         svg_path=None,
                     )
                 )
-            previous = current
-            if objects:
-                tracks.append(
-                    SimpleNamespace(frame=index, width=width, height=height, objects=objects)
-                )
-        index += 1
-    capture.release()
+        previous = {**previous, **current} if seeds and seeds[0][0] is not None else current
+        if objects:
+            frame = SimpleNamespace(frame=index, width=width, height=height, objects=objects)
+            tracks.append(frame)
     return tracks
 
 
@@ -335,8 +367,8 @@ class FakeMeta:
     def segment(self, image_path, concept, max_side=1280):
         return find_colored(image_path, concept, max_side)
 
-    def segment_video(self, video_path, concept, max_frames=600):
-        return track_colored(video_path, concept)
+    def segment_video(self, video_path, concept=None, boxes=(), size=None, max_frames=600):
+        return track_colored(video_path, concept, boxes, size)
 
 
 def main() -> int:
