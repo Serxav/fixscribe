@@ -1,82 +1,62 @@
-"use strict";
+// Progress page: polls the job API, draws every stage, offers "try again" from the failed stage.
+(function () {
+  "use strict";
+  var root = document.getElementById("job");
+  if (!root) return;
+  var jobId = root.dataset.jobId;
+  var POLL_MS = 1500;
+  var $ = function (id) { return document.getElementById(id); };
 
-const STAGE_LABELS = {
-  ingest: "Preparing the video",
-  transcribe: "Listening to the narration",
-  scenes: "Finding the steps",
-  analyze: "Watching the repair",
-  guide: "Writing the guide",
-  frames: "Picking the best photos",
-};
+  function escapeHtml(text) {
+    var div = document.createElement("div");
+    div.textContent = text == null ? "" : String(text);
+    return div.innerHTML;
+  }
 
-function jobId() {
-  const holder = document.getElementById("job");
-  if (holder && holder.dataset.jobId) {
-    return holder.dataset.jobId;
+  function render(data) {
+    var percent = Math.round((data.progress || 0) * 100);
+    if (data.state === "done") percent = 100;
+    $("ring").style.setProperty("--p", percent);
+    $("percent").textContent = percent + "%";
+    var stages = data.stages || [];
+    var running = stages.filter(function (s) { return s.status === "running"; })[0];
+    $("stage-label").textContent = data.state === "done" ? "Your guide is ready"
+      : data.state === "failed" ? "Stopped" : running ? running.label + "…" : "Starting…";
+    $("state-label").textContent = data.warnings && data.warnings.length
+      ? data.warnings.length + " optional step(s) skipped" : "";
+    $("error").textContent = data.error || "";
+    $("error").classList.toggle("hidden", !data.error);
+    $("guide-link").classList.toggle("hidden", data.state !== "done");
+    $("resume-button").classList.toggle("hidden", data.state !== "failed");
+    $("retry-link").classList.toggle("hidden", data.state !== "failed");
+    if (data.state === "done") $("headline").textContent = "Done";
+    if (stages.length) {
+      $("stage-list").innerHTML = stages.map(function (s) {
+        var time = s.seconds != null && s.status !== "waiting" ? s.seconds.toFixed(1) + " s" : "";
+        var error = s.error ? '<span class="err">' + escapeHtml(s.error) + "</span>" : "";
+        return '<li class="' + s.status + '"><i class="dot ' + s.status + '"></i><span>' + escapeHtml(s.label) +
+          '</span><span class="muted small tabular">' + time + "</span>" + error + "</li>";
+      }).join("");
+    }
   }
-  const parts = window.location.pathname.split("/").filter(Boolean);
-  return parts[parts.length - 1] || "";
-}
 
-async function refresh() {
-  const id = jobId();
-  const bar = document.getElementById("progress-bar");
-  const stageLabel = document.getElementById("stage-label");
-  const stateLabel = document.getElementById("state-label");
-  const errorBox = document.getElementById("error");
-  const guideLink = document.getElementById("guide-link");
-  const retryLink = document.getElementById("retry-link");
-  let status;
-  try {
-    const response = await fetch(`/api/jobs/${encodeURIComponent(id)}`);
-    if (!response.ok) {
-      throw new Error(`status ${response.status}`);
-    }
-    status = await response.json();
-  } catch {
-    if (stateLabel) {
-      stateLabel.textContent = "Could not reach the server, retrying…";
-    }
-    return;
+  function poll() {
+    fetch("/api/jobs/" + jobId, { cache: "no-store" })
+      .then(function (response) { return response.json(); })
+      .then(function (data) {
+        render(data);
+        if (data.state === "done") { setTimeout(function () { window.location.href = "/guides/" + jobId; }, 900); return; }
+        if (data.state !== "failed") setTimeout(poll, POLL_MS);
+      })
+      .catch(function () { setTimeout(poll, POLL_MS * 2); });
   }
-  const progress = Math.max(0, Math.min(1, Number(status.progress || 0)));
-  if (bar) {
-    bar.style.width = `${progress * 100}%`;
-  }
-  if (stageLabel) {
-    stageLabel.textContent = STAGE_LABELS[status.stage] || status.stage || "";
-  }
-  if (stateLabel) {
-    stateLabel.textContent = status.state || "";
-  }
-  const stageKeys = Object.keys(STAGE_LABELS);
-  const currentIndex = stageKeys.indexOf(status.stage);
-  document.querySelectorAll("#stage-list [data-stage]").forEach((item) => {
-    const index = stageKeys.indexOf(item.dataset.stage);
-    const done = status.state === "done" || (currentIndex >= 0 && index < currentIndex);
-    item.classList.toggle("is-done", done);
-    item.classList.toggle("is-current", status.state !== "done" && index === currentIndex);
-    const dot = item.querySelector(".stage-dot");
-    if (dot) {
-      dot.textContent = done ? "✓" : String(index + 1);
-    }
+
+  $("resume-button").addEventListener("click", function () {
+    $("resume-button").disabled = true;
+    fetch("/api/jobs/" + jobId + "/resume", { method: "POST" })
+      .then(function () { $("resume-button").disabled = false; poll(); })
+      .catch(function () { $("resume-button").disabled = false; });
   });
-  if (status.state === "done") {
-    window.clearInterval(window.__fixscribeTimer);
-    if (guideLink) {
-      guideLink.classList.remove("hidden");
-    }
-  } else if (status.state === "failed") {
-    window.clearInterval(window.__fixscribeTimer);
-    if (errorBox) {
-      errorBox.textContent = status.error || "The job failed.";
-      errorBox.style.display = "flex";
-    }
-    if (retryLink) {
-      retryLink.classList.remove("hidden");
-    }
-  }
-}
 
-window.__fixscribeTimer = window.setInterval(refresh, 2000);
-void refresh();
+  poll();
+})();

@@ -1,109 +1,190 @@
 {% extends "base.html" %}
-{% block title %}{% if guide %}{{ guide.title }} — FixScribe{% else %}Guide not ready — FixScribe{% endif %}{% endblock %}
+{% block title %}{% if guide %}{{ guide.title }} · FixScribe{% else %}Guide not ready · FixScribe{% endif %}{% endblock %}
+{% block crumb %}{% if guide %}{{ guide.title }}{% endif %}{% endblock %}
 {% block content %}
 {% if not guide %}
-<div class="card reveal is-visible">
-<h1 class="hero-title" style="margin-top:8px;">This guide is not ready yet.</h1>
-<p class="secondary">The video is still being turned into a guide, or the guide does not exist yet.</p>
-{% if valid_id %}
-<p style="margin-top:20px;"><a class="btn-quiet" href="/jobs/{{ job_id }}" style="width:100%;">Check the job progress</a></p>
-{% endif %}
-<p style="margin-top:12px;"><a class="btn-quiet" href="/" style="width:100%;">Back to FixScribe home</a></p>
-</div>
+<section class="glass card stack" style="margin-top:32px">
+  <h1 class="title">This guide is not ready yet</h1>
+  {% if valid_id %}
+  <p class="lede">FixScribe is still working on it, or the job stopped.</p>
+  <a class="btn btn-primary" href="/jobs/{{ job_id }}">See the progress</a>
+  {% else %}
+  <p class="lede">This link is not valid.</p>
+  <a class="btn btn-glass" href="/">Film a repair</a>
+  {% endif %}
+</section>
 {% else %}
-<p class="eyebrow">{{ guide.device }}</p>
-<h1 class="hero-title" style="margin-top:0;">{{ guide.title }}</h1>
-{% if guide.summary %}<p class="body-text" style="margin:0;">{{ guide.summary }}</p>{% endif %}
-<div class="pills-row">
-<span class="pill">{{ guide.difficulty | capitalize }}</span>
-{% if guide.estimated_minutes > 0 %}<span class="pill">~{{ guide.estimated_minutes }} min</span>{% endif %}
-<span class="pill"><span class="tabular">{{ guide.steps | length }}</span>&nbsp;steps</span>
-{% if total_screws > 0 %}<span class="pill"><span class="tabular">{{ total_screws }}</span>&nbsp;screws</span>{% endif %}
+{% set pro = level == "professional_only" %}
+<div id="guide" data-job-id="{{ job_id }}">
+
+<section class="grid-2" style="margin-top:12px">
+  <article class="glass card stack sticky">
+    <div class="chips">
+      {% if guide.identity %}<span class="chip accent">{{ guide.identity.category|capitalize }}</span>{% endif %}
+      {% if pro %}<span class="chip chip-bad">Professional only</span>{% elif level == "caution" %}<span class="chip chip-warn">Caution</span>{% endif %}
+    </div>
+    <h1 class="title">{{ guide.title }}</h1>
+    {% if guide.identity %}<p class="muted" style="margin:0">{{ guide.identity.object_name }}{% if guide.identity.brand %} · {{ guide.identity.brand }} {{ guide.identity.model }}{% endif %}</p>{% endif %}
+    {% if guide.summary %}<p class="lede">{{ guide.summary }}</p>{% endif %}
+    <div class="stats">
+      <div class="stat"><b>{{ guide.steps|length }}</b><span>steps</span></div>
+      <div class="stat"><b>{{ fasteners_total.split(' ')[0] if fasteners_total else 0 }}</b><span>{{ fasteners_total.split(' ', 1)[1] if fasteners_total else 'fasteners' }}</span></div>
+      <div class="stat"><b>{% if guide.estimated_minutes %}~{{ guide.estimated_minutes }}{% else %}–{% endif %}</b><span>minutes</span></div>
+      <div class="stat"><b>{{ guide.difficulty|capitalize }}</b><span>difficulty</span></div>
+    </div>
+    <div class="btn-row">
+      {% if not pro %}<button class="btn btn-primary btn-lg" type="button" data-repair-open="0">Start repair</button>{% endif %}
+      <a class="btn btn-glass btn-lg" href="#steps">See all steps</a>
+    </div>
+  </article>
+
+  <aside class="stack">
+    {% if proof_percent is not none %}
+    <div class="glass card" style="display:flex;gap:18px;align-items:center">
+      <div class="ring" style="--p: {{ proof_percent }}"><div><b>{{ proof_percent }}%</b><span>verified</span></div></div>
+      <div>
+        <h2 class="h3">Proof score</h2>
+        <p class="muted small" style="margin:6px 0 0">How much of this guide is backed by the video, the narration and SAM measurements. Open “Proof” on any step to see where each sentence comes from.</p>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if level != "normal" and guide.safety %}
+    <div class="safety{% if pro %} pro{% endif %}">
+      <header>
+        <span class="badge" aria-hidden="true">⚠︎</span>
+        <div><h2 class="h3">{% if pro %}Professional only{% else %}Before you start{% endif %}</h2>
+        {% if guide.identity and guide.identity.hazards %}<div class="chips" style="margin-top:6px">{% for h in guide.identity.hazards %}<span class="chip {% if pro %}chip-bad{% else %}chip-warn{% endif %}">{{ h|replace('_', ' ') }}</span>{% endfor %}</div>{% endif %}</div>
+      </header>
+      {% for reason in guide.safety.reasons if not reason.startswith("Hazards:") %}<p class="small" style="margin:12px 0 0">{{ reason }}</p>{% endfor %}
+      {% if guide.safety.prechecks %}
+      <ul class="checklist">
+        {% for check in guide.safety.prechecks %}<li><label><input type="checkbox"><span>{{ check }}</span></label></li>{% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if guide.tools or guide.parts %}
+    <div class="glass card stack">
+      {% if guide.tools %}<div><span class="kicker">Tools</span><div class="chips" style="margin-top:8px">{% for t in guide.tools %}<span class="chip">{{ t }}</span>{% endfor %}</div></div>{% endif %}
+      {% if guide.parts %}<div><span class="kicker">Parts</span><div class="chips" style="margin-top:8px">{% for p in guide.parts %}<span class="chip">{{ p }}</span>{% endfor %}</div></div>{% endif %}
+    </div>
+    {% endif %}
+
+    {% for w in guide.warnings %}{% if not guide.safety or w not in guide.safety.prechecks %}<div class="warn">{{ w }}</div>{% endif %}{% endfor %}
+  </aside>
+</section>
+
+<div class="section-head" id="steps">
+  <h2 class="h2">Take apart</h2>
+  <span class="muted small">{{ guide.steps|length }} steps · drag the 3D views</span>
 </div>
-{% if guide.tools %}
-<p class="caption" style="margin:0 0 6px;">Tools</p>
-<div class="chips-scroll">{% for tool in guide.tools %}<span class="chip">{{ tool }}</span>{% endfor %}</div>
-{% endif %}
-{% if guide.warnings %}
-<div class="card warn-card" role="note" style="margin-top:24px;">
-<p class="section-title" style="display:flex;gap:10px;align-items:center;"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10v4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17.2" r="1" fill="currentColor"/></svg>Safety</p>
-<ul style="margin:0;padding-left:20px;">{% for warning in guide.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>
-</div>
-{% endif %}
-<div class="segmented" role="tablist" aria-label="Guide direction">
-<button type="button" role="tab" id="tab-take-apart" aria-selected="true" aria-controls="view-take-apart" data-view="take-apart">Take apart</button>
-<button type="button" role="tab" id="tab-put-back" aria-selected="false" aria-controls="view-put-back" data-view="put-back">Put back</button>
-</div>
-<section id="view-take-apart" role="tabpanel" aria-labelledby="tab-take-apart">
-{% for step in guide.steps %}
-<article class="card reveal" data-step-card>
-<div style="display:flex;gap:16px;align-items:flex-start;">
-<span class="step-number tabular">{{ "%02d" | format(step.index) }}</span>
-<div style="flex:1;min-width:0;">
-<h2 class="section-title">{{ step.title }}</h2>
-{% if step.review == "needs_review" %}<p style="margin:0 0 8px;"><span class="badge-review">Check this step</span></p>{% endif %}
-</div>
-</div>
-<div style="margin-top:16px;">
-{% if step.clip %}
-<video class="step-media" muted loop playsinline preload="metadata"{% if step.image %} poster="/media/{{ job_id }}/{{ step.image }}"{% endif %} src="/media/{{ job_id }}/{{ step.clip }}" data-step-clip></video>
-{% elif step.image %}
-<img class="step-media-img" src="/media/{{ job_id }}/{{ step.image }}" alt="Step {{ step.index }}: {{ step.title }}">
-{% else %}
-<div class="media-placeholder"><span class="step-number tabular">{{ "%02d" | format(step.index) }}</span></div>
-{% endif %}
-</div>
-<p class="body-text" style="margin:16px 0 0;">{{ step.instruction }}</p>
-<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
-{% if step.action %}<span class="chip">{{ step.action | replace("_", " ") | capitalize }}</span>{% endif %}
-{% if step.screws and step.screws.count > 0 %}<span class="chip"><span class="tabular">{{ step.screws.count }}</span>&nbsp;screws</span>{% endif %}
-</div>
-{% for warning in step.warnings %}
-<p class="warn-row"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10v4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17.2" r="1" fill="currentColor"/></svg><span>{{ warning }}</span></p>
-{% endfor %}
-<p style="margin:16px 0 0;"><button type="button" class="btn-pill" data-watch data-start="{{ step.start_s }}" data-end="{{ step.end_s }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5-11-6.5Z"/></svg>Watch in video</button></p>
+
+{% for v in steps %}{% set s = v.step %}
+<article class="glass step" id="step-{{ s.index }}" data-step="{{ s.index }}" data-start="{{ s.start_s }}">
+  <div class="step-head">
+    <span class="step-num">{{ s.index }}</span>
+    <div style="min-width:0">
+      <h3 class="h3">{{ s.title }}</h3>
+      <div class="chips" style="margin-top:6px">
+        <span class="chip tabular">{{ v.when }}</span>
+        {% if v.fasteners %}<span class="chip accent">{{ v.fasteners }}</span>{% endif %}
+        {% if s.action %}<span class="chip">{{ s.action|capitalize }}</span>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if v.image or v.clip %}
+  <div class="stage" data-stage>
+    <div class="seg" role="group" aria-label="View">
+      {% if v.image %}<button type="button" data-view="3d" aria-pressed="true">3D</button><button type="button" data-view="photo" aria-pressed="false">Photo</button>{% endif %}
+      {% if v.clip %}<button type="button" data-view="clip" aria-pressed="{{ 'false' if v.image else 'true' }}">Clip</button>{% endif %}
+    </div>
+    {% if v.image %}
+    <div class="view scene on" data-view-panel="3d" data-image="{{ v.image }}">
+      <div class="rig">
+        <div class="shadow"></div>
+        <div class="plane" style="background-image:url('{{ v.image }}')">
+          {% if v.part %}<div class="hole" style="left:{{ v.part.x }}%;top:{{ v.part.y }}%;width:{{ v.part.w }}%;height:{{ v.part.h }}%"></div>{% endif %}
+          {% for pin in v.pins %}<div class="pin" style="left:{{ pin.x }}%;top:{{ pin.y }}%"><i class="shaft"></i><b class="head"></b><span class="num">{{ pin.n }}</span></div>{% endfor %}
+        </div>
+        {% if v.part %}
+        <div class="part3d" data-part style="left:{{ v.part.x }}%;top:{{ v.part.y }}%;width:{{ v.part.w }}%;height:{{ v.part.h }}%;background-image:url('{{ v.image }}')" data-x="{{ v.part.x }}" data-y="{{ v.part.y }}" data-w="{{ v.part.w }}" data-h="{{ v.part.h }}"><span class="tag">{{ v.part.label }}</span></div>
+        {% endif %}
+      </div>
+      <span class="hint">Drag to turn · tap to take apart</span>
+    </div>
+    <div class="view" data-view-panel="photo"><img class="fit" src="{{ v.overlay or v.image }}" alt="Step {{ s.index }}: {{ s.title }}" loading="lazy"></div>
+    {% endif %}
+    {% if v.clip %}
+    <div class="view{% if not v.image %} on{% endif %}" data-view-panel="clip"><video class="fit" src="{{ v.clip }}" muted loop playsinline preload="none"></video></div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="step-body">
+    <p class="instruction">{{ s.instruction }}</p>
+    {% if s.review == "needs_review" %}<p class="review">Check this step: FixScribe is not sure about it.</p>{% endif %}
+    {% for w in s.warnings %}<div class="warn">{{ w }}</div>{% endfor %}
+  </div>
+
+  <div class="btn-row" style="margin-top:16px">
+    <button class="btn btn-glass" type="button" data-seek="{{ s.start_s }}">Watch in video</button>
+    {% if v.checkable and not pro %}
+    <label class="btn btn-primary">Check this step<input class="visually-hidden" type="file" accept="image/*" capture="environment" data-check="{{ s.index }}"></label>
+    {% elif not pro %}
+    <button class="btn btn-primary" type="button" data-repair-open="{{ loop.index0 }}">Repair mode</button>
+    {% endif %}
+  </div>
+
+  {% if v.claims %}
+  <details class="proof">
+    <summary>Proof <span class="dots">{% for c in v.claims %}<i class="dot {{ c.status }}"></i>{% endfor %}</span></summary>
+    {% for c in v.claims %}
+    <div class="claim"><i class="dot {{ c.status }}"></i><div><b class="small">{{ c.label }}</b><span class="status">{{ c.status }}</span>
+      {% for src in c.sources %}<p>{{ src }}</p>{% else %}<p>No evidence found yet.</p>{% endfor %}</div></div>
+    {% endfor %}
+  </details>
+  {% endif %}
 </article>
 {% endfor %}
+
+{% if guide.reassembly %}
+<div class="section-head"><h2 class="h2">Put back</h2><span class="muted small">reverse order</span></div>
+<section class="glass card">
+  <ol class="timeline">
+    {% for r in guide.reassembly %}
+    <li><span class="n">{{ r.index }}</span><div><p style="margin:10px 0 0">{{ r.instruction }}</p>
+      {% if r.screws and r.screws.count %}<div class="chips" style="margin-top:8px"><span class="chip accent">{{ r.screws.count }} {{ r.screws.kind }}{% if r.screws.count != 1 %}s{% endif %} from step {{ r.source_step }}</span></div>{% endif %}
+      {% for w in r.warnings %}<div class="warn">{{ w }}</div>{% endfor %}</div></li>
+    {% endfor %}
+  </ol>
 </section>
-<section id="view-put-back" role="tabpanel" aria-labelledby="tab-put-back" hidden>
-{% if screw_checks %}
-<div class="card warn-card">
-<p class="section-title" style="display:flex;gap:10px;align-items:center;"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 10v4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17.2" r="1" fill="currentColor"/></svg>Screw check</p>
-<ul style="margin:0;padding-left:20px;">{% for check in screw_checks %}<li>{{ check }}</li>{% endfor %}</ul>
-</div>
-{% else %}
-<div class="card success-card">
-<p class="section-title" style="display:flex;gap:10px;align-items:center;margin:0;"><svg class="icon" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="m8.5 12.2 2.4 2.4 4.6-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Every screw goes back{% if total_screws > 0 %} <span class="tabular">({{ total_screws }} screws)</span>{% endif %}</span></p>
-</div>
 {% endif %}
-{% for item in reassembly_rows %}
-<div class="card" style="display:flex;gap:16px;align-items:flex-start;">
-<span class="step-number tabular">{{ "%02d" | format(item.step.index) }}</span>
-<div style="flex:1;min-width:0;">
-<p class="body-text" style="margin:0;font-weight:600;">{{ item.step.action }}{% if item.step.parts %} · {{ item.step.parts | join(", ") }}{% endif %}</p>
-<p class="secondary" style="margin:6px 0 0;">{{ item.step.instruction }}</p>
-{% if item.screw_info %}<p style="margin:10px 0 0;"><span class="chip">{{ item.screw_info }}</span></p>{% endif %}
-{% for warning in item.step.warnings %}<p class="warn-row"><span>{{ warning }}</span></p>{% endfor %}
-</div>
-</div>
-{% endfor %}
-{% if other_checks %}
-<div class="card">
-<h2 class="section-title">Notes</h2>
-<ul style="margin:0;padding-left:20px;">{% for check in other_checks %}<li>{{ check }}</li>{% endfor %}</ul>
-</div>
-{% endif %}
+
+<div class="section-head"><h2 class="h2">Automatic checks</h2></div>
+<section class="glass card stack">
+  {% for c in guide.checks %}<div class="warn">{{ c }}</div>{% else %}<p style="margin:0">✓ Every screw goes back: all checks passed.</p>{% endfor %}
+  <div class="btn-row">
+    {% if not pro %}<a class="btn btn-glass" href="/guides/{{ job_id }}/tray">Print fastener tray</a>{% endif %}
+    <a class="btn btn-glass" href="/guides/{{ job_id }}/export.md">Download Markdown</a>
+  </div>
 </section>
-<div id="sheet-root" hidden>
-<div class="sheet-backdrop" data-close-sheet></div>
-<div class="sheet" role="dialog" aria-modal="true" aria-label="Watch in video">
-<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;">
-<p class="section-title" style="margin:0;">Watch in video</p>
-<button type="button" class="btn-quiet" data-close-sheet style="min-height:48px;">Close</button>
+
+<section class="glass card" style="margin-top:18px">
+  <span class="kicker">Full video</span>
+  <video id="main-video" src="/media/{{ job_id }}/video.mp4" controls playsinline preload="metadata" style="width:100%;border-radius:16px;margin-top:10px;background:#000"></video>
+</section>
+
+<div class="repair" id="repair" role="dialog" aria-modal="true" aria-label="Repair mode">
+  <div class="repair-top"><button class="close" type="button" data-repair-close aria-label="Close">✕</button><div class="bars" id="repair-bars"></div><span class="muted small tabular" id="repair-count"></span></div>
+  <div class="repair-body"><div id="repair-media"></div><p class="repair-text" id="repair-text"></p><div id="repair-warn"></div></div>
+  <div class="repair-foot"><button class="btn btn-glass btn-lg" type="button" data-repair-prev>Back</button><button class="btn btn-primary btn-lg" type="button" data-repair-next>Next step</button></div>
 </div>
-<video id="sheet-video" src="/media/{{ job_id }}/video.mp4" controls playsinline preload="metadata"></video>
+
+<div class="toast glass" id="toast" role="status" aria-live="polite"><span class="badge" id="toast-badge">…</span><div><b id="toast-title">Checking…</b><p class="small muted" id="toast-text" style="margin:2px 0 0"></p></div></div>
 </div>
-</div>
-<script src="/static/guide.js"></script>
 {% endif %}
 {% endblock %}
+{% block scripts %}{% if guide %}<script src="/static/guide.js"></script>{% endif %}{% endblock %}

@@ -2,21 +2,25 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f6fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07080c" media="(prefers-color-scheme: dark)">
 <title>{% block title %}FixScribe{% endblock %}</title>
-<script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
-<header class="site-header">
-<div class="page" style="padding-top:0;padding-bottom:0;">
-<a class="wordmark" href="/">FixScribe</a>
-</div>
+<div class="ambient" aria-hidden="true"><i></i><i></i><i></i></div>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="glyph" aria-hidden="true"></span>FixScribe</a>
+    <span class="spacer"></span>
+    <span class="crumb" id="crumb">{% block crumb %}{% endblock %}</span>
+  </div>
 </header>
-<main class="page">
+<main class="wrap">
 {% block content %}{% endblock %}
 </main>
-{% block footer %}<footer class="footer-note caption">Made with FixScribe — Muse Spark, Muse Voice and SAM 3.1 by Meta.</footer>{% endblock %}
+{% block footer %}<footer class="footer">Made with FixScribe — Muse Spark, Muse Voice and SAM 3.1 by Meta.</footer>{% endblock %}
 {% block scripts %}{% endblock %}
 </body>
 </html>

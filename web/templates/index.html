@@ -1,17 +1,57 @@
 {% extends "base.html" %}
-{% block title %}FixScribe{% endblock %}
 {% block content %}
-<h1 class="hero-title">Film a repair.<br>Get a step-by-step guide.</h1>
-<p class="secondary" style="margin:0 0 24px;">Record on your phone. FixScribe watches, listens and writes the guide for you.</p>
-<form action="/upload" method="post" enctype="multipart/form-data" class="card">
-<label class="section-title" for="video" style="display:block;">Repair video</label>
-<p class="secondary" style="margin:0 0 16px;">Choose a video or record one now.</p>
-<input id="video" type="file" name="video" accept="video/*" capture="environment" required class="file-input">
-<button type="submit" class="btn-primary" style="margin-top:16px;">Upload the repair video</button>
-</form>
-<div class="card">
-<p class="body-text" style="margin:0 0 10px;">Narrated: say “step one”, “step two” as you work and FixScribe cuts the steps there.</p>
-<p class="body-text" style="margin:0 0 10px;">Silent: say nothing — FixScribe finds the steps by watching the repair.</p>
-<p class="secondary" style="margin:0;">Works with .mp4, .mov and .m4v videos up to 10 minutes.</p>
-</div>
+<section class="hero">
+  <div class="stack">
+    <span class="kicker">Any repair · any object</span>
+    <h1 class="display">Film a repair.<br><span class="gradient-text">Get a guide you can trust.</span></h1>
+    <p class="lede">FixScribe watches and listens to your video, finds every step, marks each part and screw with SAM, and shows the proof behind every sentence.</p>
+
+    <form class="glass card stack" action="/upload" method="post" enctype="multipart/form-data" id="upload-form">
+      <div>
+        <h2 class="h3">Your repair video</h2>
+        <p class="muted small" style="margin:4px 0 0">Say each step out loud, or stay silent. .mp4, .mov or .m4v, up to 10 minutes.</p>
+      </div>
+      <label class="btn btn-primary btn-lg btn-block">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="3"/><path d="m16 10 5-3v10l-5-3"/></svg>
+        Record video
+        <input class="visually-hidden" type="file" name="video" accept="video/*" capture="environment" data-autosubmit>
+      </label>
+      <label class="btn btn-glass btn-lg btn-block">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        Upload video
+        <input class="visually-hidden" type="file" name="video" accept="video/mp4,video/quicktime,.mov,.m4v,.mp4" data-autosubmit>
+      </label>
+      <p id="upload-status" class="muted small hidden" role="status">Uploading…</p>
+      {% if example_job %}<a class="small" href="/guides/{{ example_job }}">See an example guide →</a>{% endif %}
+    </form>
+  </div>
+
+  <div class="device" aria-hidden="true">
+    <div class="device-body">
+      <div class="device-screen">
+        <div class="ghost"><i style="left:-6px;top:-6px"></i><i style="right:-6px;top:-6px"></i><i style="left:-6px;bottom:-6px"></i><i style="right:-6px;bottom:-6px"></i></div>
+        <div class="scan"></div>
+        <div class="label">4 screws found · back cover</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="tiles" aria-label="What FixScribe does">
+  <div class="glass card"><div class="tile-ico">◎</div><h3 class="h3">Any object</h3><p class="muted small">Phones, washing machines, chairs, cars. It first finds out what it is looking at, then adapts.</p></div>
+  <div class="glass card"><div class="tile-ico">✓</div><h3 class="h3">Every claim has proof</h3><p class="muted small">Each step shows the video seconds, the spoken words and the SAM measurement behind it.</p></div>
+  <div class="glass card"><div class="tile-ico">⚠︎</div><h3 class="h3">Safety first</h3><p class="muted small">Fixed safety rules run before any AI. Gas, mains panels and airbags get no DIY steps.</p></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll("[data-autosubmit]").forEach(function (input) {
+  input.addEventListener("change", function () {
+    if (!input.files.length) return;
+    document.querySelectorAll("[data-autosubmit]").forEach(function (other) { if (other !== input) other.disabled = true; });
+    document.getElementById("upload-status").classList.remove("hidden");
+    document.getElementById("upload-form").submit();
+  });
+});
+</script>
 {% endblock %}

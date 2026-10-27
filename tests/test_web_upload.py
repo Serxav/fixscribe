@@ -127,21 +127,15 @@ def test_health_still_ok(jobs_tmp, no_start):
     assert response.json() == {"status": "ok"}
 
 
-def test_job_js_has_stage_labels():
+def test_job_page_draws_server_stages_and_offers_resume():
+    """Stage labels come from the API (runner.STAGE_LABELS); the page polls and can resume."""
     text = Path("web/static/job.js").read_text()
-    for label in (
-        "Preparing the video",
-        "Listening to the narration",
-        "Finding the steps",
-        "Watching the repair",
-        "Writing the guide",
-        "Picking the best photos",
-    ):
-        assert label in text
-    assert "2000" in text
-    assert "guide-link" in text
-    assert "retry-link" in text
+    assert "/api/jobs/" in text and "/resume" in text
+    assert "POLL_MS = 1500" in text
+    assert "s.label" in text  # labels are drawn from the server, not hard-coded
     page = Path("web/templates/job.html").read_text()
+    for element in ("guide-link", "resume-button", "retry-link", "stage-list"):
+        assert f'id="{element}"' in page
     assert "Open the guide" in page
     assert "Try another video" in page
 
