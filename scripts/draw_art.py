@@ -157,12 +157,13 @@ def hero() -> str:
         body += text(lx + 32, ly, name, 30, WHITE)
         body += text(lx + 32, ly + 32, proof, 16, WHITE, mono=True, opacity=0.8)
     body += text(
-        48,
+        w - 48,
         h - 44,
         "Exploded view, drawn only from parts the agent proved on the video.",
         16,
         WHITE,
         mono=True,
+        anchor="end",
         opacity=0.8,
     )
     return svg(
