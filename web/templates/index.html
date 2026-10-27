@@ -20,16 +20,9 @@
   </div>
 </section>
 
-{% if showcase and showcase.clips %}
-<figure class="bleed" style="margin-block:0">
-  <video src="{{ showcase.clips[0] }}" {% if showcase.poster %}poster="{{ showcase.poster }}"{% endif %} muted loop playsinline autoplay></video>
-  <figcaption class="caption">
-    <span>{{ showcase.title }}</span>
-    <span class="mono">{{ showcase.steps }} steps{% if showcase.proof is not none %} · {{ showcase.proof }}% proven{% endif %}</span>
-    <a class="arrow" href="/guides/{{ example_job }}">Open the guide</a>
-  </figcaption>
+<figure class="bleed art-bleed" style="margin-block:0">
+  {% include "art/hero.svg" %}
 </figure>
-{% endif %}
 
 <section class="band grid12">
   <div class="col-l"><p class="kicker">Instructions people trust</p></div>
@@ -42,16 +35,13 @@
 
 <section class="band" id="how">
   <div class="sect"><span class="num">I</span><span>How it works</span></div>
-  <div class="grid12" style="margin-top:56px">
-    <div class="col-l"><p class="title">One video in.<br>A proven guide out.</p></div>
-    <ol class="rows col-r">
-      <li><span class="n">01</span><div><h3>It finds out what it is looking at</h3><p>The object, the task and its hazards. Fixed safety rules run first: gas, mains panels and airbags get no do-it-yourself steps.</p></div></li>
-      <li><span class="n">02</span><div><h3>It watches and listens</h3><p>The whole video, image and sound together, with the narration transcribed and timed to the second.</p></div></li>
-      <li><span class="n">03</span><div><h3>An agent investigates</h3><p>It names every part like a furniture manual — A, B, C — looks at the frames that matter and points at each part with the context of what is being built.</p></div></li>
-      <li><span class="n">04</span><div><h3>Every claim is checked outside the model</h3><p>A part counts only when SAM 3.1 cuts it out where the agent pointed. A step counts only when its parts are proven, its times fit and the words quoted were really said.</p></div></li>
-      <li><span class="n">05</span><div><h3>When it is unsure, it asks you</h3><p>One short question on the exact frame. You approve the guide before anyone else sees it.</p></div></li>
-      <li><span class="n">06</span><div><h3>Forward and back</h3><p>The guide to take it apart and the guide to put it back together, with the parts that go where.</p></div></li>
-    </ol>
+  <div class="tiles-grid">
+    <figure class="tile"><figcaption><span class="mono">01</span> Identify</figcaption>{% include "art/identify.svg" %}<p>The object, the task and its hazards. Safety rules run first: gas, mains panels and airbags get no do-it-yourself steps.</p></figure>
+    <figure class="tile"><figcaption><span class="mono">02</span> Listen</figcaption>{% include "art/listen.svg" %}<p>The narration, transcribed and timed to the second. A step may quote the person only with words they really said.</p></figure>
+    <figure class="tile"><figcaption><span class="mono">03</span> Point</figcaption>{% include "art/point.svg" %}<p>Muse Spark points at the part on a frame, using what is being built to pick the right one of two that look alike.</p></figure>
+    <figure class="tile"><figcaption><span class="mono">04</span> Cut out</figcaption>{% include "art/cutout.svg" %}<p>SAM 3.1 cuts the part out inside that box. A part enters the catalog only when the cut-out fills the box.</p></figure>
+    <figure class="tile"><figcaption><span class="mono">05</span> Check</figcaption>{% include "art/check.svg" %}<p>Code outside the model checks every step: parts proven, times, frame, quote. A refusal goes back to the agent.</p></figure>
+    <figure class="tile"><figcaption><span class="mono">06</span> Build</figcaption>{% include "art/build.svg" %}<p>The guide, step by step, with the parts and counts — and the reverse guide to take it apart again.</p></figure>
   </div>
 </section>
 
