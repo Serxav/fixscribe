@@ -7,6 +7,8 @@ ArtifactError with the file name and the first bad field, so a stage fails with 
 import json
 import os
 import tempfile
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +17,37 @@ from pydantic import BaseModel, ValidationError
 
 class ArtifactError(Exception):
     pass
+
+
+@contextmanager
+def atomic_path(dst: Path) -> Iterator[Path]:
+    """Yield a temp path in the same folder, then move it over ``dst`` atomically.
+
+    The temp file keeps ``dst``'s suffix, so ffmpeg, cv2 and Pillow pick the
+    format from it. The parent folder is created. On normal exit the temp
+    file replaces ``dst``; on any exception it is deleted and the error raised.
+    """
+    dst = Path(dst)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dst.with_name(f".{dst.stem}.tmp{dst.suffix}")
+    try:
+        yield tmp
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
+    os.replace(tmp, dst)
+
+
+def write_bytes_atomic(dst: Path, data: bytes) -> None:
+    """Write bytes to ``dst`` via a temp file in the same folder."""
+    with atomic_path(dst) as tmp:
+        tmp.write_bytes(data)
+
+
+def write_text_atomic(dst: Path, text: str) -> None:
+    """Write text to ``dst`` via a temp file in the same folder."""
+    with atomic_path(dst) as tmp:
+        tmp.write_text(text, encoding="utf-8")
 
 
 def write_json_atomic(path: Path, data: Any) -> None:

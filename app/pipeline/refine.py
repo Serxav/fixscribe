@@ -19,7 +19,7 @@ from pathlib import Path
 
 import cv2
 
-from app import artifacts
+from app import artifacts, spark
 from app.artifacts import ArtifactError
 from app.config import Settings
 from app.meta_client import BudgetExceeded, MetaError, make_client
@@ -50,14 +50,7 @@ CONFIDENCE_THRESHOLD = 0.6
 MAX_OUTPUT_TOKENS = 8000
 REFINE_TIMEOUT_S = 300.0
 
-TEXT_FORMAT = {
-    "format": {
-        "type": "json_schema",
-        "name": "refined_step",
-        "schema": REFINE_JSON_SCHEMA,
-        "strict": True,
-    }
-}
+TEXT_FORMAT = spark.json_format("refined_step", REFINE_JSON_SCHEMA)
 
 
 def _ordered_drafts(analysis: Analysis) -> list[DraftStep]:
@@ -325,19 +318,21 @@ def refine_step(
     """
     a, b = float(window[0]), float(window[1])
     prompt = build_prompt(draft, fused_start, fused_end, list(turns or []))
-    file_id = client.upload_file(clip_path)
     try:
-        response = client.respond(
-            model=settings.spark_model,
-            input=build_input(prompt, file_id),
-            text=TEXT_FORMAT,
+        data = spark.ask_json(
+            client,
+            settings,
+            name="refined_step",
+            schema=REFINE_JSON_SCHEMA,
+            prompt=prompt,
+            video=clip_path,
             max_output_tokens=MAX_OUTPUT_TOKENS,
             timeout_s=REFINE_TIMEOUT_S,
             retry_timeouts=False,
         )
-    finally:
-        client.delete_file(file_id)
-    refined = parse_refined(response.output_text or "", index)
+    except spark.SparkAnswerError as exc:
+        raise RefineError("Spark returned an invalid refined step") from exc
+    refined = parse_refined(json.dumps(data), index)
     inside = a - 1e-6 <= refined.start_s and refined.end_s <= b + 1e-6
     if not inside or refined.end_s <= refined.start_s:
         # Spark described a moment outside the clip it was shown: its text cannot be trusted
