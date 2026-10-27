@@ -175,11 +175,15 @@ def test_full_pipeline_builds_a_guide(tmp_path, fake_meta):
     manifest = artifacts.load(folder, Manifest)
     assert list(manifest.stages) == [
         "ingest", "transcribe", "identify", "signals", "scenes", "analyze", "fusion", "refine",
-        "plan", "frames", "perception", "publish",
+        "plan", "safety", "frames", "perception", "publish",
     ]  # fmt: skip
     assert all(record.status == "done" for record in manifest.stages.values())
     assert artifacts.load(folder, Identity).category == "electronics"
     assert not (folder / "identify").exists()  # stills only lived for the call
+    # Rules-first safety: an electronics job with a lithium battery is "caution", never blocked.
+    assert guide.safety is not None and guide.safety.level == "caution"
+    assert guide.warnings[: len(guide.safety.prechecks)] == guide.safety.prechecks
+    assert guide.identity is not None and guide.steps[0].screws.kind == "screw"
     # Pass 2 looked again at the screw step and its answer reached the guide.
     assert guide.steps[0].instruction == "Remove the four screws on the back cover."
     assert any(kind == "segment" and concept == "screw" for kind, concept in fake_meta.calls)

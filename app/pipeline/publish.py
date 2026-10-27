@@ -109,37 +109,22 @@ def build_guide(
     safety: Safety | None = None,
 ) -> Guide:
     steps, perception_notes = with_perception(with_media(plan.steps, frames), perception)
-    kind = profile_for(identity.category).fastener_kind if identity else "screw"
-    steps = with_kind(steps, kind)
-    if safety is not None and safety.level == "professional_only":
-        checks = list(plan.checks) + perception_notes
+    steps = with_kind(steps, profile_for(identity.category).fastener_kind if identity else "screw")
+    level = safety.level if safety else "normal"
+    warnings = (
+        plan.warnings if level == "normal" else with_prechecks(plan.warnings, safety.prechecks)
+    )
+    checks = list(plan.checks) + perception_notes
+    if level == "professional_only":
+        # We show what the job involves, never how to do it.
+        steps, reassembly = blocked_steps(steps), []
         checks.append(PRO_ONLY_CHECK + " " + " ".join(safety.reasons))
-        return Guide(
-            title=plan.title,
-            device=plan.device,
-            summary=plan.summary,
-            difficulty=plan.difficulty,
-            estimated_minutes=plan.estimated_minutes,
-            mode=plan.mode,
-            language=identity.language if identity else "en",
-            duration_s=plan.duration_s,
-            tools=plan.tools,
-            parts=plan.parts,
-            warnings=with_prechecks(plan.warnings, safety.prechecks),
-            steps=blocked_steps(steps),
-            reassembly=[],
-            checks=checks,
-            identity=identity,
-            safety=safety,
-        )
-    reassembly = build_reassembly(steps)
-    checks = list(plan.checks) + perception_notes + reassembly.warnings
-    if safety is None or safety.level == "normal":
-        warnings = list(plan.warnings)
     else:
-        warnings = with_prechecks(plan.warnings, safety.prechecks)
-    if any(step.screws and step.screws.count for step in steps) and not screws_verified(steps):
-        checks.append(UNVERIFIED_SCREWS)
+        assembled = build_reassembly(steps)
+        reassembly = assembled.steps
+        checks += assembled.warnings
+        if any(step.screws and step.screws.count for step in steps) and not screws_verified(steps):
+            checks.append(UNVERIFIED_SCREWS)
     return Guide(
         title=plan.title,
         device=plan.device,
@@ -153,7 +138,7 @@ def build_guide(
         parts=plan.parts,
         warnings=warnings,
         steps=steps,
-        reassembly=reassembly.steps,
+        reassembly=reassembly,
         checks=checks,
         identity=identity,
         safety=safety,
