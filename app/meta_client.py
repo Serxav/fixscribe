@@ -79,6 +79,10 @@ class MetaError(Exception):
         self.status_code = status_code
 
 
+class ImagePolicyError(MetaError):
+    """The image model refused the edit (400 content_policy_violation)."""
+
+
 def token_cost(model: str, input_tokens: int, cached_tokens: int, output_tokens: int) -> float:
     """Cost in USD. `cached_tokens` is a subset of `input_tokens`.
 
@@ -182,6 +186,19 @@ def _video_frame_count(path: Path) -> int:
 def _is_number(value: Any) -> bool:
     """True for a real JSON number (bools are not numbers here)."""
     return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+_IMAGE_MIME = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+}
+
+
+def _image_mime(suffix: str) -> str:
+    """MIME type for an image suffix, defaulting to JPEG for the step keyframes."""
+    return _IMAGE_MIME.get(suffix.lower(), "image/jpeg")
 
 
 @dataclass(frozen=True)
@@ -646,6 +663,80 @@ class MetaClient:
             data["audioDurationMs"] = int(round(duration_s * 1000))
         self._add_spend(self._settings.asr_model, asr_cost(duration_s))
         return data
+
+    def edit_image(self, image_path: Path, prompt: str) -> bytes:
+        """Redraw a photo as an illustration with Muse Image.
+
+        Raw JSON POST to ``/v1/images/edits`` with
+        ``{"model", "prompt", "images": [{"image_url": data URL}], "n": 1,
+        "output_format": "webp"}``; the answer is ``data[0].b64_json``.
+        See https://dev.meta.ai/docs/image-generation
+
+        Only 429 and 503 are retried (through the shared retry helper); a
+        400 content-policy refusal raises ImagePolicyError and every other
+        error raises MetaError, both without retries.
+        """
+        if not prompt or not prompt.strip():
+            raise ValueError("prompt must not be empty")
+        try:
+            raw = Path(image_path).read_bytes()
+        except OSError as exc:
+            raise ValueError(f"cannot read image: {image_path}") from exc
+        if not raw:
+            raise ValueError(f"cannot read image: {image_path}")
+        data_url = "data:" + _image_mime(Path(image_path).suffix) + ";base64,"
+        data_url += base64.b64encode(raw).decode("ascii")
+        self._check_budget()
+        url = f"{self._settings.meta_api_base}/images/edits"
+        headers = {
+            "Authorization": f"Bearer {self._settings.model_api_key}",
+            "Accept": "application/json",
+        }
+        body = {
+            "model": "muse-image-1.0",
+            "prompt": prompt,
+            "images": [{"image_url": data_url}],
+            "n": 1,
+            "output_format": "webp",
+        }
+
+        def _do_post() -> bytes:
+            try:
+                resp = self._http.post(
+                    url,
+                    headers=headers,
+                    json=body,
+                    timeout=httpx.Timeout(120.0, connect=10.0),
+                )
+            except httpx.TimeoutException as exc:
+                raise openai.APITimeoutError(request=exc.request) from exc
+            except httpx.TransportError as exc:
+                raise openai.APIConnectionError(message=str(exc), request=exc.request) from exc
+            if resp.status_code == 400:
+                raise ImagePolicyError(
+                    f"image edit refused with status 400: {resp.text[:200]}",
+                    status_code=400,
+                )
+            if resp.status_code == 500:
+                raise MetaError("image edit failed with status 500", status_code=500)
+            if resp.status_code == 429:
+                raise openai.RateLimitError("image edit status 429", response=resp, body=None)
+            if resp.status_code == 503:
+                raise openai.APIStatusError("image edit status 503", response=resp, body=None)
+            if resp.status_code >= 400:
+                raise MetaError(
+                    f"image edit failed with status {resp.status_code}",
+                    status_code=resp.status_code,
+                )
+            try:
+                payload = resp.json()
+                return base64.b64decode(payload["data"][0]["b64_json"])
+            except Exception as exc:
+                raise MetaError("image edit returned an invalid answer") from exc
+
+        result = self._with_retries(_do_post)
+        self._add_spend("muse-image-1.0", PRICES["muse-image-1.0"]["per_image"])
+        return result
 
     def segment(
         self, image_path: Path, concept: str, max_side: int = 1280
