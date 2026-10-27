@@ -56,6 +56,7 @@ class Step(Strict):
     end_s: float = Field(gt=0)
     keyframe_s: float | None = None
     target_part: str | None = None
+    sam_concept: str | None = None  # 1-3 common English words SAM can find ("wooden leg")
     action: str | None = None
     removes: list[str] = Field(default_factory=list)
     depends_on: list[int] = Field(default_factory=list)
@@ -122,6 +123,9 @@ class Guide(Strict):
     identity: "Identity | None" = None  # what the video shows (identify stage)
     safety: "Safety | None" = None  # rules-first safety decision (safety stage)
     proof: "Proof | None" = None  # where every claim of the guide comes from (proof stage)
+    # "assemble" when the video builds something (from identify): the reverse guide then takes
+    # it apart. "disassemble" for repairs and take-apart videos.
+    direction: Literal["disassemble", "assemble"] = "disassemble"
     narration: "Narration | None" = None  # spoken script of the repair film (narrate stage)
 
     @model_validator(mode="after")
@@ -153,6 +157,7 @@ class DraftStep(BaseModel):
     start_s: float
     end_s: float
     target_part: str | None = None
+    sam_concept: str | None = None  # 1-3 common English words SAM can find ("wooden leg")
     action: str | None = None
     removes: list[str] = Field(default_factory=list)
     screw_count: int = Field(default=0, ge=0)
@@ -212,6 +217,7 @@ class Analysis(BaseModel):
 
 
 ACTIONS = [
+    # taking apart
     "remove",
     "disconnect",
     "unscrew",
@@ -219,6 +225,14 @@ ACTIONS = [
     "pry",
     "open",
     "peel",
+    # building / putting together
+    "place",
+    "insert",
+    "attach",
+    "screw in",
+    "connect",
+    "flip",
+    # either
     "inspect",
     "clean",
     "other",
@@ -260,6 +274,7 @@ ANALYSIS_JSON_SCHEMA: dict[str, Any] = _object(
                     "start_s": {"type": "number"},
                     "end_s": {"type": "number"},
                     "target_part": {"type": "string"},
+                    "sam_concept": {"type": "string"},
                     "action": {"type": "string", "enum": ACTIONS},
                     "removes": _STRINGS,
                     "screw_count": {"type": "integer"},

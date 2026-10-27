@@ -99,15 +99,15 @@
       playing = false;
       $("film-toggle").textContent = "▶";
       var outro = mode === "apart" ? data.outro : data.outro_back;
-      showCard(mode === "apart" ? "Taken apart" : "Put back together", data.title, outro);
-      $("film-start").textContent = mode === "apart" ? "▶ Now put it back" : "▶ Watch again";
+      showCard(mode === "apart" ? "Done" : "Done", data.title, outro);
+      $("film-start").textContent = mode === "apart" ? "▶ Now: " + data.backward_label : "▶ Watch again";
       speak(outro, function () {});
       return;
     }
     var step = steps[i];
     $("film-card").classList.add("gone");
     $("film-caption").classList.remove("hidden");
-    $("film-step").textContent = (mode === "apart" ? "Step " : "Put back · step ") + step.index + " · " + step.title;
+    $("film-step").textContent = (mode === "apart" ? "Step " : data.backward_label + " · step ") + step.index + " · " + step.title;
     var ownVoice = mode === "apart" && step.voice;
     var line = mode === "apart" ? (ownVoice && step.words ? step.words : step.say) : step.say_back;
     $("film-line").textContent = line;
@@ -187,12 +187,12 @@
   function setMode(next) {
     mode = next;
     document.querySelectorAll("[data-mode]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.mode === mode)); });
-    $("film-mode-label").textContent = mode === "apart" ? "Take apart" : "Put back";
+    $("film-mode-label").textContent = mode === "apart" ? data.forward_label : data.backward_label;
     token++;
     if (synth) synth.cancel();
     index = -1;
     drawRail();
-    showCard(mode === "apart" ? "FixScribe film" : "Putting it back", data.title, mode === "apart" ? data.intro : "The same repair, backwards: every part and every fastener back in its place.");
+    showCard(mode === "apart" ? "FixScribe film" : data.backward_label, data.title, mode === "apart" ? data.intro : "The same video, backwards, step by step: every part and every fastener.");
     $("film-start").textContent = "▶ Play with voice";
   }
   document.querySelectorAll("[data-mode]").forEach(function (b) {

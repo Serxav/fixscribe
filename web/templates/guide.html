@@ -77,7 +77,7 @@
 </section>
 
 <div class="section-head" id="steps">
-  <h2 class="h2">Take apart</h2>
+  <h2 class="h2">{% if guide.direction == "assemble" %}Build it{% else %}Take apart{% endif %}</h2>
   <span class="muted small">{{ guide.steps|length }} steps · drag the 3D views</span>
 </div>
 
@@ -157,7 +157,7 @@
 {% endfor %}
 
 {% if guide.reassembly %}
-<div class="section-head"><h2 class="h2">Put back</h2><span class="muted small">reverse order</span></div>
+<div class="section-head"><h2 class="h2">{% if guide.direction == "assemble" %}Take it apart{% else %}Put back{% endif %}</h2><span class="muted small">reverse order</span></div>
 <section class="glass card">
   <ol class="timeline">
     {% for r in guide.reassembly %}

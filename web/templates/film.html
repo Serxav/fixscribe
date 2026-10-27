@@ -15,10 +15,10 @@
 
   <header class="film-top">
     <a class="film-back" href="/guides/{{ job_id }}" aria-label="Back to the guide">‹</a>
-    <div class="film-title"><span class="kicker" id="film-mode-label">Take apart</span><b>{{ guide.title }}</b></div>
+    <div class="film-title"><span class="kicker" id="film-mode-label">{{ film.forward_label }}</span><b>{{ guide.title }}</b></div>
     <div class="seg film-seg" role="group" aria-label="Direction">
-      <button type="button" data-mode="apart" aria-pressed="true">Take apart</button>
-      <button type="button" data-mode="back" aria-pressed="false">Put back</button>
+      <button type="button" data-mode="apart" aria-pressed="true">{{ film.forward_label }}</button>
+      <button type="button" data-mode="back" aria-pressed="false">{{ film.backward_label }}</button>
     </div>
   </header>
 

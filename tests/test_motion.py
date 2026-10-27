@@ -221,3 +221,26 @@ def test_add_voice_puts_the_real_sound_of_that_moment_on_the_clip(tmp_path):
     silent = tmp_path / "silent.mp4"
     clip.rename(silent)
     assert motion.add_voice(tmp_path / "nothing.mp4", 0, 1, silent) is False
+
+
+def test_building_counts_the_fasteners_that_appear():
+    objects = {i: {1: (10, 10, 14, 14)} for i in range(20)}
+    for i in range(9, 20):
+        objects[i][2] = (30, 10, 34, 14)  # screwed in at frame 9
+    assert motion.added_fasteners(motion.Track(masks={}, objects=objects)) == {2: 9}
+
+
+def test_lost_tracks_that_grow_to_a_hand_are_dropped():
+    track = motion.Track(masks={}, objects={0: {1: (10, 10, 20, 20), 2: (0, 0, 300, 200)}})
+    kept = motion.drop_lost(track, (720, 1280))
+    assert list(kept.objects[0]) == [1]
+
+
+def test_rings_never_grow_bigger_than_a_fastener_should():
+    frame = np.zeros((400, 400, 3), dtype=np.uint8)
+    out = motion.render_frame(
+        frame, np.zeros((400, 400), dtype=bool), 0.0, {1: (0, 0, 400, 400)}, {1: 1}, 0.5
+    )
+    ring = (out[:, :, 2] > 200) & (out[:, :, 1] > 150)  # the yellow ring
+    ys, xs = np.nonzero(ring)
+    assert xs.max() - xs.min() < 0.15 * 400  # ring + number badge; uncapped it was 600 px

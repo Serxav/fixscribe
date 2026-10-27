@@ -17,6 +17,13 @@ REVERSE_ACTIONS = {
     "pry": "press back",
     "open": "close",
     "peel": "re-apply",
+    # building actions: the reverse guide of an assembly takes it apart
+    "place": "remove",
+    "insert": "pull out",
+    "attach": "detach",
+    "screw in": "unscrew",
+    "connect": "disconnect",
+    "flip": "flip back",
 }
 
 
@@ -25,13 +32,13 @@ class AssemblyResult(BaseModel):
     warnings: list[str] = Field(default_factory=list)
 
 
-def step_action(step: Step) -> str | None:
-    """The disassembly action of a step, or None if the step does not take anything apart."""
+def step_action(step: Step, direction: str = "disassemble") -> str | None:
+    """The action the reverse guide undoes, or None if the step changes nothing to undo."""
     action = (step.action or "").strip().lower()
     if action in REVERSE_ACTIONS:
         return action
     if step.screws and step.screws.count > 0:
-        return "unscrew"
+        return "screw in" if direction == "assemble" else "unscrew"
     return None
 
 
@@ -55,11 +62,12 @@ def screw_places(screws: ScrewMap | None) -> dict[int, tuple[float, float]]:
     }
 
 
-def build_reassembly(steps: list[Step]) -> AssemblyResult:
+def build_reassembly(steps: list[Step], direction: str = "disassemble") -> AssemblyResult:
+    """The reverse guide: reassembly of a repair, or taking apart what an assembly built."""
     result = AssemblyResult()
     seen_parts: dict[str, int] = {}
     for step in reversed(steps):
-        action = step_action(step)
+        action = step_action(step, direction)
         if action is None:
             continue
         parts = step_parts(step)
