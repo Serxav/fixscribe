@@ -12,7 +12,7 @@ import subprocess
 import tempfile
 import time
 import wave
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -24,6 +24,10 @@ import numpy as np
 import openai
 from meta_sam_parser import (
     CompletedOutcome,
+    FramePrompt,
+    PromptBox,
+    PromptObject,
+    build_object_prompt,
     decode_mask_to_raster,
     decode_mask_to_svg_path,
     image_segmentation_format,
@@ -333,6 +337,90 @@ def _parse_video_tracks(text: str) -> list[FrameTrack]:
             )
         tracks.append(FrameTrack(frame=index, width=width, height=height, objects=objects))
     return tracks
+
+
+_MAX_BOX_OBJECTS = 16
+
+
+def _validate_segment_concept(concept: str) -> None:
+    """Reject empty concepts and anything that is not one short noun phrase."""
+    if not concept or not concept.strip():
+        raise ValueError("concept must not be empty")
+    if any(char in concept for char in (",", ";", "+")):
+        raise ValueError("concept must be one short noun phrase")
+
+
+def _validate_prompt_size(size: tuple[int, int] | None) -> tuple[int, int]:
+    """Clip `(width, height)` for box prompts, both positive integers."""
+    if (
+        not isinstance(size, (tuple, list))
+        or len(size) != 2
+        or any(isinstance(v, bool) or not isinstance(v, int) or v <= 0 for v in size)
+    ):
+        raise ValueError("size must be a (width, height) tuple of positive integers")
+    return (int(size[0]), int(size[1]))
+
+
+def _clamp_prompt_box(edges: object, width: int, height: int) -> tuple[int, int, int, int] | None:
+    """Clamp half-open box edges inside the clip; None when nothing is left."""
+    if not isinstance(edges, (tuple, list)) or len(edges) != 4:
+        raise ValueError(f"box must be a (left, top, right, bottom) tuple: {edges!r}")
+    for value in edges:
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"box edges must be numbers: {edges!r}")
+        if isinstance(value, float) and not math.isfinite(value):
+            raise ValueError(f"box edges must be finite numbers: {edges!r}")
+    left, top, right, bottom = (int(value) for value in edges)
+    left = min(max(left, 0), width)
+    right = min(max(right, 0), width)
+    top = min(max(top, 0), height)
+    bottom = min(max(bottom, 0), height)
+    if left >= right or top >= bottom:
+        return None
+    return (left, top, right, bottom)
+
+
+def _build_box_prompt_text(
+    box_list: list[tuple[int, int, tuple[int, int, int, int]]],
+    size: tuple[int, int] | None,
+) -> str:
+    """Build the SAM `input_text` for box prompts, clamped inside `size`.
+
+    Boxes that become empty after clamping are skipped with a warning; at
+    least one must remain. Object ids are grouped so one id carries all of
+    its frames in a single object, as `build_object_prompt` requires.
+    """
+    if size is None:
+        raise ValueError("size is required with boxes")
+    width, height = _validate_prompt_size(size)
+    grouped: dict[Any, list[FramePrompt]] = {}
+    order: list[Any] = []
+    for item in box_list:
+        try:
+            object_id, frame, edges = item
+        except (TypeError, ValueError):
+            raise ValueError(f"box must be (object_id, frame, (l, t, r, b)): {item!r}") from None
+        clamped = _clamp_prompt_box(edges, width, height)
+        if clamped is None:
+            logger.warning(
+                "sam video box prompt for object %r on frame %r is empty, skipped",
+                object_id,
+                frame,
+            )
+            continue
+        left, top, right, bottom = clamped
+        if object_id not in grouped:
+            grouped[object_id] = []
+            order.append(object_id)
+        grouped[object_id].append(FramePrompt(frame=frame, box=PromptBox(left, top, right, bottom)))
+    if not order:
+        raise ValueError("no usable box prompts: every box was empty after clamping")
+    if len(order) > _MAX_BOX_OBJECTS:
+        raise ValueError(f"at most {_MAX_BOX_OBJECTS} prompted objects, got {len(order)}")
+    return build_object_prompt(
+        size=(width, height),
+        objects=[PromptObject(id=oid, prompts=grouped[oid]) for oid in order],
+    )
 
 
 class _InvalidAsrAnswer(Exception):
@@ -841,21 +929,45 @@ class MetaClient:
         return detections, (int(width), int(height))
 
     def segment_video(
-        self, video_path: Path, concept: str, *, max_frames: int = 600
+        self,
+        video_path: Path,
+        concept: str | None = None,
+        *,
+        boxes: Sequence[tuple[int, int, tuple[int, int, int, int]]] = (),
+        size: tuple[int, int] | None = None,
+        max_frames: int = 600,
     ) -> list[FrameTrack]:
-        """Track one concept through a short clip with SAM 3.1 video segmentation.
+        """Track one concept (or boxed objects) through a clip with SAM 3.1 video.
+
+        Exactly one of `concept` / `boxes` must be given. A concept tracks
+        every object matching a word; boxes track exactly the pointed-at
+        objects, one object id per box, with the prompt text built by
+        `meta_sam_parser.build_object_prompt`. Box edges are half-open
+        `(left, top, right, bottom)` clamped inside `size`.
 
         Counts the clip frames with ffprobe, bills `max(50, frames)` video
         frames, and returns one track per answered frame sorted by frame
         index. Uses a plain (non-streaming) Responses call; the client has no
         streaming support.
         """
-        if not concept or not concept.strip():
-            raise ValueError("concept must not be empty")
-        if any(char in concept for char in (",", ";", "+")):
-            raise ValueError("concept must be one short noun phrase")
+        box_list = list(boxes or ())
+        has_concept = concept is not None
+        has_boxes = len(box_list) > 0
+        if has_concept == has_boxes:
+            raise ValueError("exactly one of concept or boxes must be given")
         if max_frames <= 0:
             raise ValueError("max_frames must be positive")
+        if has_boxes:
+            prompt_text = _build_box_prompt_text(box_list, size)
+            # Box/point prompts always return one_bit masks, so no
+            # mask_encoding is sent; confidence as "true" strings.
+            metadata = {"include_confidence": "true"}
+        else:
+            assert concept is not None
+            _validate_segment_concept(concept)
+            prompt_text = concept
+            # Default propagation ("both"); confidence as "true" strings.
+            metadata = {"mask_encoding": "one_bit", "include_confidence": "true"}
         frames = _video_frame_count(video_path)
         if frames > max_frames:
             raise ValueError(f"clip has {frames} frames, over max_frames={max_frames}")
@@ -872,13 +984,12 @@ class MetaClient:
                             "type": "message",
                             "role": "user",
                             "content": [
-                                {"type": "input_text", "text": concept},
+                                {"type": "input_text", "text": prompt_text},
                                 {"type": "input_video", "file_id": file_id},
                             ],
                         }
                     ],
-                    # Default propagation ("both"); confidence as "true" strings.
-                    metadata={"mask_encoding": "one_bit", "include_confidence": "true"},
+                    metadata=metadata,
                 )
 
             response = self._with_retries(_do_create)

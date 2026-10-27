@@ -310,3 +310,134 @@ def test_video_frame_count_without_timing_is_value_error(tmp_path, monkeypatch):
 
     with pytest.raises(ValueError, match="cannot count frames"):
         meta_client._video_frame_count(_clip(tmp_path))
+
+
+def _box_prompt(boxes, size):
+    from meta_sam_parser import FramePrompt, PromptBox, PromptObject, build_object_prompt
+
+    grouped: dict[int, list] = {}
+    for object_id, frame, edges in boxes:
+        grouped.setdefault(object_id, []).append(FramePrompt(frame=frame, box=PromptBox(*edges)))
+    return build_object_prompt(
+        size=size,
+        objects=[PromptObject(id=oid, prompts=grouped[oid]) for oid in grouped],
+    )
+
+
+def test_segment_video_boxes_request_text_matches_builder(tmp_path, monkeypatch):
+    _patch_frames(monkeypatch, 3)
+    boxes = [(1, 12, (10, 10, 40, 50)), (2, 15, (100, 100, 150, 180))]
+    size = (960, 540)
+    fake = FakeSamClient([_video_response(_three_frame_answer())])
+    client = _make_client(tmp_path, fake)
+
+    client.segment_video(_clip(tmp_path), boxes=boxes, size=size)
+
+    assert fake.responses.calls == 1
+    kwargs = fake.responses.kwargs[0]
+    assert kwargs["metadata"] == {"include_confidence": "true"}
+    content = kwargs["input"][0]["content"]
+    assert content[0] == {"type": "input_text", "text": _box_prompt(boxes, size)}
+    assert content[1] == {"type": "input_video", "file_id": "file-1"}
+
+
+def test_segment_video_boxes_keep_ids_and_bill_minimum(tmp_path, monkeypatch):
+    _patch_frames(monkeypatch, 3)
+    rec_a = _video_record(1, 10, 20, 13, 22, 960, 540, confidence=0.9)
+    rec_b = _video_record(2, 50, 50, 59, 59, 960, 540, confidence=0.7)
+    fake = FakeSamClient([_video_response(f"<12f>{rec_a},{rec_b}")])
+    client = _make_client(tmp_path, fake)
+
+    tracks = client.segment_video(
+        _clip(tmp_path),
+        boxes=[(1, 12, (10, 20, 14, 23)), (2, 12, (50, 50, 60, 60))],
+        size=(960, 540),
+    )
+
+    assert fake.files.create_calls == 1
+    assert fake.files.deleted == ["file-1"]
+    assert [(t.frame, [o.object_id for o in t.objects]) for t in tracks] == [(12, [1, 2])]
+    data = _spend_total(tmp_path)
+    assert data["total_usd"] == pytest.approx(sam_cost(video_frames=50))
+
+
+def test_segment_video_concept_and_boxes_rejected(tmp_path, monkeypatch):
+    _patch_frames(monkeypatch, 3)
+    fake = FakeSamClient([_video_response("")])
+    client = _make_client(tmp_path, fake)
+
+    with pytest.raises(ValueError, match="exactly one"):
+        client.segment_video(
+            _clip(tmp_path), "screw", boxes=[(1, 0, (10, 10, 20, 20))], size=(960, 540)
+        )
+    with pytest.raises(ValueError, match="exactly one"):
+        client.segment_video(_clip(tmp_path))
+    assert fake.files.create_calls == 0
+    assert fake.responses.calls == 0
+
+
+def test_segment_video_boxes_need_size(tmp_path, monkeypatch):
+    _patch_frames(monkeypatch, 3)
+    fake = FakeSamClient([_video_response("")])
+    client = _make_client(tmp_path, fake)
+
+    with pytest.raises(ValueError, match="size"):
+        client.segment_video(_clip(tmp_path), boxes=[(1, 0, (10, 10, 20, 20))])
+    assert fake.files.create_calls == 0
+    assert fake.responses.calls == 0
+
+
+def test_segment_video_rejects_17_box_objects(tmp_path, monkeypatch):
+    _patch_frames(monkeypatch, 3)
+    boxes = [(i, 0, (10 * i, 10, 10 * i + 5, 20)) for i in range(17)]
+    fake = FakeSamClient([_video_response("")])
+    client = _make_client(tmp_path, fake)
+
+    with pytest.raises(ValueError, match="at most 16"):
+        client.segment_video(_clip(tmp_path), boxes=boxes, size=(960, 540))
+    assert fake.files.create_calls == 0
+    assert fake.responses.calls == 0
+
+
+def test_segment_video_boxes_clamped_inside_clip(tmp_path, monkeypatch):
+    _patch_frames(monkeypatch, 3)
+    fake = FakeSamClient([_video_response(_three_frame_answer())])
+    client = _make_client(tmp_path, fake)
+
+    client.segment_video(_clip(tmp_path), boxes=[(1, 0, (-50, -20, 2000, 1000))], size=(960, 540))
+
+    content = fake.responses.kwargs[0]["input"][0]["content"]
+    assert content[0]["text"] == _box_prompt([(1, 0, (0, 0, 960, 540))], (960, 540))
+
+
+def test_segment_video_boxes_float_edges_are_ints(tmp_path, monkeypatch):
+    _patch_frames(monkeypatch, 3)
+    fake = FakeSamClient([_video_response(_three_frame_answer())])
+    client = _make_client(tmp_path, fake)
+
+    client.segment_video(
+        _clip(tmp_path),
+        boxes=[(1, 4, (10.9, 20.7, 40.2, 50.8))],
+        size=(960, 540),
+    )
+
+    content = fake.responses.kwargs[0]["input"][0]["content"]
+    assert content[0]["text"] == _box_prompt([(1, 4, (10, 20, 40, 50))], (960, 540))
+
+
+def test_segment_video_boxes_skip_empty_and_reject_all_empty(tmp_path, monkeypatch):
+    _patch_frames(monkeypatch, 3)
+    fake = FakeSamClient([_video_response(_three_frame_answer())])
+    client = _make_client(tmp_path, fake)
+
+    client.segment_video(
+        _clip(tmp_path),
+        boxes=[(1, 0, (10, 10, 5, 5)), (2, 3, (20, 20, 40, 40))],
+        size=(960, 540),
+    )
+
+    content = fake.responses.kwargs[0]["input"][0]["content"]
+    assert content[0]["text"] == _box_prompt([(2, 3, (20, 20, 40, 40))], (960, 540))
+
+    with pytest.raises(ValueError, match="no usable box"):
+        client.segment_video(_clip(tmp_path), boxes=[(1, 0, (5, 5, 5, 5))], size=(960, 540))
