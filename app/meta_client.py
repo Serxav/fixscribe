@@ -218,6 +218,15 @@ class Detection:
 
 
 @dataclass(frozen=True)
+class GroundBox:
+    """One grounded object: label and box on the 0..1000 grid of the sent image."""
+
+    label: str
+    box: tuple[int, int, int, int]
+    why: str
+
+
+@dataclass(frozen=True)
 class TrackedObject:
     """One SAM-tracked object in a single video frame, in source pixels."""
 
@@ -421,6 +430,141 @@ def _build_box_prompt_text(
         size=(width, height),
         objects=[PromptObject(id=oid, prompts=grouped[oid]) for oid in order],
     )
+
+
+GROUND_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "boxes": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "label": {"type": "string"},
+                    "x_min": {"type": "integer"},
+                    "y_min": {"type": "integer"},
+                    "x_max": {"type": "integer"},
+                    "y_max": {"type": "integer"},
+                    "why": {"type": "string"},
+                },
+                "required": ["label", "x_min", "y_min", "x_max", "y_max", "why"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["boxes"],
+    "additionalProperties": False,
+}
+
+_GROUND_PROMPT_PATH = Path(__file__).resolve().parents[1] / "prompts" / "ground_v1.md"
+
+_GRID_MAX = 1000
+_MIN_GROUND_SIZE = 4
+
+
+def _clamp_grid(value: float) -> int:
+    """Clamp a grounding coordinate to the 0..1000 grid."""
+    return min(max(int(round(value)), 0), _GRID_MAX)
+
+
+def to_pixels(box: tuple[int, int, int, int], width: int, height: int) -> tuple[int, int, int, int]:
+    """Map a 0..1000 grid box to pixel edges, x2/y2 inclusive inside the image."""
+    try:
+        x_min, y_min, x_max, y_max = box
+    except (TypeError, ValueError):
+        raise ValueError(f"box must be a (x_min, y_min, x_max, y_max) tuple: {box!r}") from None
+    for value in (x_min, y_min, x_max, y_max):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"box edges must be numbers: {box!r}")
+        if isinstance(value, float) and not math.isfinite(value):
+            raise ValueError(f"box edges must be finite numbers: {box!r}")
+    for size in (width, height):
+        if isinstance(size, bool) or not isinstance(size, int) or size <= 0:
+            raise ValueError(f"size must be positive integers: {(width, height)!r}")
+    xs = sorted(round(_clamp_grid(v) * (width - 1) / _GRID_MAX) for v in (x_min, x_max))
+    ys = sorted(round(_clamp_grid(v) * (height - 1) / _GRID_MAX) for v in (y_min, y_max))
+    return (xs[0], ys[0], xs[1], ys[1])
+
+
+def _parse_ground_box(item: Any) -> GroundBox | None:
+    """Normalize one grounding answer box; None when malformed or too small."""
+    if not isinstance(item, dict):
+        return None
+    try:
+        raw = [item[key] for key in ("x_min", "y_min", "x_max", "y_max")]
+    except KeyError:
+        return None
+    edges: list[int] = []
+    for value in raw:
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+        if isinstance(value, float) and not math.isfinite(value):
+            return None
+        edges.append(_clamp_grid(value))
+    x_min, y_min, x_max, y_max = edges
+    if x_min > x_max:
+        x_min, x_max = x_max, x_min
+    if y_min > y_max:
+        y_min, y_max = y_max, y_min
+    if x_max - x_min < _MIN_GROUND_SIZE or y_max - y_min < _MIN_GROUND_SIZE:
+        return None
+    return GroundBox(
+        label=str(item.get("label") or ""),
+        box=(x_min, y_min, x_max, y_max),
+        why=str(item.get("why") or ""),
+    )
+
+
+def _parse_image_segmentation(text: str) -> list[Detection]:
+    """Parse a SAM 3.1 image answer into detections in sent-image pixels."""
+    parser = image_segmentation_format().create_parser()
+    parser.push(text)
+    result = parser.finish(CompletedOutcome()).result
+    if result.diagnostics:
+        logger.warning("sam parser diagnostics: %d", len(result.diagnostics))
+    mask_by_id: dict[str, Any] = {}
+    for record in result.records:
+        if getattr(record, "kind", None) == "mask":
+            mask_by_id.setdefault(str(record.object_id), record)
+    detections: list[Detection] = []
+    for record in result.records:
+        if getattr(record, "kind", None) != "box":
+            continue
+        mask_record = mask_by_id.get(str(record.object_id))
+        mask: bytes | None = None
+        mask_size: tuple[int, int] | None = None
+        mask_bounds: tuple[float, float, float, float] | None = None
+        if mask_record is not None:
+            try:
+                mask = decode_mask_to_raster(mask_record.mask)
+            except Exception:
+                mask = None
+            if mask is not None:
+                mask_size = (int(mask_record.mask.width), int(mask_record.mask.height))
+                bounds = mask_record.bounds
+                mask_bounds = (
+                    float(bounds.left),
+                    float(bounds.top),
+                    float(bounds.right),
+                    float(bounds.bottom),
+                )
+        confidence = getattr(record, "confidence", None)
+        detections.append(
+            Detection(
+                object_id=str(record.object_id),
+                box=(
+                    float(record.left),
+                    float(record.top),
+                    float(record.right),
+                    float(record.bottom),
+                ),
+                confidence=float(confidence) if _is_number(confidence) else None,
+                mask=mask,
+                mask_size=mask_size,
+                mask_bounds=mask_bounds,
+            )
+        )
+    return detections
 
 
 class _InvalidAsrAnswer(Exception):
@@ -826,18 +970,12 @@ class MetaClient:
         self._add_spend("muse-image-1.0", PRICES["muse-image-1.0"]["per_image"])
         return result
 
-    def segment(
-        self, image_path: Path, concept: str, max_side: int = 1280
-    ) -> tuple[list[Detection], tuple[int, int]]:
-        """Segment one concept in an image with SAM 3.1.
+    def _jpeg_data_url(self, image_path: Path, max_side: int) -> tuple[str, int, int]:
+        """Read, downscale and JPEG-encode an image for the Meta API.
 
-        Returns the detections and the ``(width, height)`` of the image
-        actually sent, so callers can normalize boxes.
+        Returns the data URL and the ``(width, height)`` of the image
+        actually sent, so callers can map boxes back and forth.
         """
-        if not concept or not concept.strip():
-            raise ValueError("concept must not be empty")
-        if any(char in concept for char in (",", ";", "+")):
-            raise ValueError("concept must be one short noun phrase")
         if max_side <= 0:
             raise ValueError("max_side must be positive")
         image = cv2.imread(str(image_path))
@@ -855,6 +993,12 @@ class MetaClient:
         if not ok:
             raise ValueError(f"cannot encode image: {image_path}")
         data_url = "data:image/jpeg;base64," + base64.b64encode(buffer.tobytes()).decode("ascii")
+        return data_url, int(width), int(height)
+
+    def _sam_image_request(
+        self, data_url: str, prompt_text: str, metadata: dict[str, str]
+    ) -> list[Detection]:
+        """Send one SAM 3.1 image request and parse the answer into detections."""
         self._check_budget()
 
         def _do_create() -> Any:
@@ -865,12 +1009,12 @@ class MetaClient:
                         "type": "message",
                         "role": "user",
                         "content": [
-                            {"type": "input_text", "text": concept},
+                            {"type": "input_text", "text": prompt_text},
                             {"type": "input_image", "image_url": data_url},
                         ],
                     }
                 ],
-                metadata={"mask_encoding": "one_bit", "include_confidence": "true"},
+                metadata=metadata,
             )
 
         response = self._with_retries(_do_create)
@@ -879,54 +1023,117 @@ class MetaClient:
         images = raw_images if _is_number(raw_images) else 1
         self._add_spend(self._settings.sam_model, sam_cost(images=images))
         text = getattr(response, "output_text", "") or ""
-        parser = image_segmentation_format().create_parser()
-        parser.push(text)
-        result = parser.finish(CompletedOutcome()).result
-        if result.diagnostics:
-            logger.warning("sam parser diagnostics: %d", len(result.diagnostics))
-        mask_by_id: dict[str, Any] = {}
-        for record in result.records:
-            if getattr(record, "kind", None) == "mask":
-                mask_by_id.setdefault(str(record.object_id), record)
-        detections: list[Detection] = []
-        for record in result.records:
-            if getattr(record, "kind", None) != "box":
-                continue
-            mask_record = mask_by_id.get(str(record.object_id))
-            mask: bytes | None = None
-            mask_size: tuple[int, int] | None = None
-            mask_bounds: tuple[float, float, float, float] | None = None
-            if mask_record is not None:
-                try:
-                    mask = decode_mask_to_raster(mask_record.mask)
-                except Exception:
-                    mask = None
-                if mask is not None:
-                    mask_size = (int(mask_record.mask.width), int(mask_record.mask.height))
-                    bounds = mask_record.bounds
-                    mask_bounds = (
-                        float(bounds.left),
-                        float(bounds.top),
-                        float(bounds.right),
-                        float(bounds.bottom),
-                    )
-            confidence = getattr(record, "confidence", None)
-            detections.append(
-                Detection(
-                    object_id=str(record.object_id),
-                    box=(
-                        float(record.left),
-                        float(record.top),
-                        float(record.right),
-                        float(record.bottom),
-                    ),
-                    confidence=float(confidence) if _is_number(confidence) else None,
-                    mask=mask,
-                    mask_size=mask_size,
-                    mask_bounds=mask_bounds,
-                )
+        return _parse_image_segmentation(text)
+
+    def segment(
+        self, image_path: Path, concept: str, max_side: int = 1280
+    ) -> tuple[list[Detection], tuple[int, int]]:
+        """Segment one concept in an image with SAM 3.1.
+
+        Returns the detections and the ``(width, height)`` of the image
+        actually sent, so callers can normalize boxes.
+        """
+        if not concept or not concept.strip():
+            raise ValueError("concept must not be empty")
+        if any(char in concept for char in (",", ";", "+")):
+            raise ValueError("concept must be one short noun phrase")
+        data_url, width, height = self._jpeg_data_url(image_path, max_side)
+        detections = self._sam_image_request(
+            data_url, concept, {"mask_encoding": "one_bit", "include_confidence": "true"}
+        )
+        return detections, (width, height)
+
+    def ground(
+        self,
+        image_path: Path,
+        query: str,
+        *,
+        context: str = "",
+        max_boxes: int = 8,
+        max_side: int = 1280,
+    ) -> list[GroundBox]:
+        """Point at ``query`` objects in a still with Muse Spark grounding.
+
+        Returns up to ``max_boxes`` boxes on the 0..1000 grid of the image
+        actually sent, so SAM can segment exactly those boxes afterwards.
+        See https://dev.meta.ai/docs/image-understanding
+        """
+        if not query or not query.strip():
+            raise ValueError("query must not be empty")
+        if max_boxes < 1:
+            raise ValueError("max_boxes must be at least 1")
+        data_url, _width, _height = self._jpeg_data_url(image_path, max_side)
+        template = _GROUND_PROMPT_PATH.read_text(encoding="utf-8")
+        prompt = (
+            template.replace("<<CONTEXT>>", context.strip() or "none")
+            .replace("<<QUERY>>", query)
+            .replace("<<MAX_BOXES>>", str(max_boxes))
+        )
+        response = self.respond(
+            model=self._settings.spark_model,
+            input=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "input_text", "text": prompt},
+                        {"type": "input_image", "image_url": data_url},
+                    ],
+                }
+            ],
+            text={
+                "format": {
+                    "type": "json_schema",
+                    "name": "grounding",
+                    "schema": GROUND_SCHEMA,
+                    "strict": True,
+                }
+            },
+            reasoning={"effort": "medium"},
+            max_output_tokens=4000,
+        )
+        text = getattr(response, "output_text", "") or ""
+        try:
+            data = json.loads(text)
+        except (ValueError, TypeError):
+            raise MetaError("grounding returned invalid JSON") from None
+        if not isinstance(data, dict) or not isinstance(data.get("boxes"), list):
+            raise MetaError("grounding returned invalid JSON")
+        found: list[GroundBox] = []
+        for item in data["boxes"]:
+            parsed = _parse_ground_box(item)
+            if parsed is not None:
+                found.append(parsed)
+            if len(found) >= max_boxes:
+                break
+        return found
+
+    def segment_boxes(
+        self,
+        image_path: Path,
+        boxes: Sequence[tuple[int, int, int, int]],
+        max_side: int = 1280,
+    ) -> tuple[list[Detection], tuple[int, int]]:
+        """Segment grounded boxes (0..1000 grid) in a still with SAM 3.1.
+
+        Returns the detections and the ``(width, height)`` of the image
+        actually sent. Box prompts use the ``<0f>`` frame marker with
+        inclusive pixel edges; see https://dev.meta.ai/docs/sam/segmenting
+        """
+        box_list = list(boxes)
+        if not 1 <= len(box_list) <= _MAX_BOX_OBJECTS:
+            raise ValueError(
+                f"segment_boxes needs 1..{_MAX_BOX_OBJECTS} boxes, got {len(box_list)}"
             )
-        return detections, (int(width), int(height))
+        data_url, width, height = self._jpeg_data_url(image_path, max_side)
+        prompt_text = _build_box_prompt_text(
+            [
+                (str(index + 1), 0, to_pixels(box, width, height))
+                for index, box in enumerate(box_list)
+            ],
+            (width, height),
+        )
+        detections = self._sam_image_request(data_url, prompt_text, {"include_confidence": "true"})
+        return detections, (width, height)
 
     def segment_video(
         self,
