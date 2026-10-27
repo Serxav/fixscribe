@@ -18,26 +18,53 @@
     return mode === "apart" ? data.steps : data.steps.slice().reverse();
   }
 
+  // The best voice the device has for the film language. Neural voices first ("Premium",
+  // "Enhanced", "Natural", "Neural"), robotic ones last ("Compact", eSpeak, novelty voices).
+  var GOOD = [/premium/i, /enhanced|mejorada|améliorée|optimierte/i, /natural/i, /neural/i, /siri/i, /google/i];
+  var BAD = [/compact/i, /espeak/i, /albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|ralph|kathy/i];
+  var chosen = null;
+  function score(v) {
+    var s = 0;
+    GOOD.forEach(function (re, i) { if (re.test(v.name)) s += 60 - i * 8; });
+    BAD.forEach(function (re) { if (re.test(v.name)) s -= 100; });
+    if (v.localService) s += 3;
+    return s;
+  }
   function pickVoice() {
     if (!synth) return null;
-    var lang = (data.language || "en").toLowerCase();
-    var voices = synth.getVoices();
-    return voices.filter(function (v) { return v.lang.toLowerCase().indexOf(lang) === 0; })
-      .sort(function (a, b) { return (b.localService ? 1 : 0) - (a.localService ? 1 : 0); })[0] || null;
+    if (chosen) return chosen;
+    var lang = (data.language || "en").toLowerCase().split("-")[0];
+    var voices = synth.getVoices().filter(function (v) { return v.lang.toLowerCase().indexOf(lang) === 0; });
+    if (!voices.length) return null;
+    chosen = voices.sort(function (a, b) { return score(b) - score(a); })[0];
+    var label = $("film-voice-name");
+    if (label) {
+      label.textContent = "Voice: " + chosen.name + (score(chosen) < 20 ? " — for a more natural voice, install a Premium/Enhanced voice in your system settings (Spoken Content)." : "");
+    }
+    return chosen;
   }
 
+  // Speak sentence by sentence with a short breath in between: it sounds far less robotic.
   function speak(text, done) {
-    if (!synth || !voiceOn || !text) { setTimeout(done, Math.max(MIN_STEP_MS, text.split(" ").length * 380)); return; }
+    if (!synth || !voiceOn || !text) { setTimeout(done, Math.max(MIN_STEP_MS, (text || "").split(" ").length * 380)); return; }
     synth.cancel();
-    var utterance = new SpeechSynthesisUtterance(text);
+    var sentences = text.match(/[^.!?…]+[.!?…]*/g) || [text];
     var voice = pickVoice();
-    if (voice) utterance.voice = voice;
-    utterance.lang = voice ? voice.lang : data.language || "en";
-    utterance.rate = 0.98;
-    utterance.onend = done;
-    utterance.onerror = done;
-    synth.speak(utterance);
+    var mine = ++speechToken;
+    (function next(i) {
+      if (mine !== speechToken) return;
+      if (i >= sentences.length) { done(); return; }
+      var utterance = new SpeechSynthesisUtterance(sentences[i].trim());
+      if (voice) utterance.voice = voice;
+      utterance.lang = voice ? voice.lang : data.language || "en";
+      utterance.rate = 0.94;
+      utterance.pitch = 1.0;
+      utterance.onend = function () { setTimeout(function () { next(i + 1); }, 260); };
+      utterance.onerror = function () { next(i + 1); };
+      synth.speak(utterance);
+    })(0);
   }
+  var speechToken = 0;
 
   function drawRail() {
     var steps = order();
@@ -171,7 +198,8 @@
     if (e.key === "ArrowRight") go(index + 1);
     if (e.key === "ArrowLeft") go(index - 1);
   });
-  if (synth) synth.onvoiceschanged = function () {};
+  if (synth) synth.onvoiceschanged = function () { chosen = null; pickVoice(); };
+  pickVoice();
   var first = data.steps[0];
   if (first && first.poster) video.poster = first.poster;
   if (new URLSearchParams(location.search).get("mode") === "back") setMode("back");
