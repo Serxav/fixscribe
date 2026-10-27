@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
-from app import artifacts
+from app import artifacts, meta_client
 from app.config import Settings
 from app.jobs import create_job
 from app.main import app
@@ -306,7 +306,7 @@ def jobs_tmp(tmp_path, monkeypatch):
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     fake = FakeClient(count=0)
-    monkeypatch.setattr(stepcheck, "MetaClient", lambda *args, **kwargs: fake)
+    monkeypatch.setattr(meta_client, "_factory", lambda *args, **kwargs: fake)
     monkeypatch.setattr(stepcheck, "align_after_to_before", lambda *args: IDENTITY)
     app.dependency_overrides[settings_dep] = lambda: Settings(model_api_key="", data_dir=data_dir)
     yield (data_dir / "jobs", fake)

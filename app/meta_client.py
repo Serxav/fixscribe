@@ -591,3 +591,25 @@ class MetaClient:
             f"meta api failed with status {status} after {MAX_ATTEMPTS} attempts",
             status_code=status,
         ) from last_exc
+
+
+# --- The one switch between the real Meta API and a fake ---------------------------------------
+
+ClientFactory = Callable[..., Any]
+_factory: ClientFactory | None = None
+
+
+def make_client(settings: Settings, job_dir: Path | None = None) -> Any:
+    """The only way pipeline code gets a Meta client.
+
+    Normally a real `MetaClient`. Tests and the offline demo call `set_client_factory(Fake)` once,
+    so no stage can reach the real API by accident (a test fails if a stage builds MetaClient).
+    """
+    factory = _factory or MetaClient
+    return factory(settings, job_dir=job_dir)
+
+
+def set_client_factory(factory: ClientFactory | None) -> None:
+    """Use `factory(settings, job_dir=...)` instead of MetaClient; None restores the real one."""
+    global _factory
+    _factory = factory

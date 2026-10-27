@@ -18,7 +18,7 @@ from PIL import Image, ImageOps
 from app import artifacts
 from app.artifacts import ArtifactError
 from app.config import Settings
-from app.meta_client import BudgetExceeded, MetaClient
+from app.meta_client import BudgetExceeded, make_client
 from app.pipeline.ingest import IngestError, find_original
 from app.pipeline.media import extract_still
 from app.pipeline.perception import (
@@ -141,7 +141,7 @@ def check_step(
         )
     region = roi_of(step_perception.part if step_perception else None)
     if client is None:
-        client = MetaClient(settings, job_dir=job_dir)
+        client = make_client(settings, job_dir=job_dir)
     photo_path = checks_dir / f"step_{step.index:02d}_photo_{number}.png"
     photo_path.parent.mkdir(parents=True, exist_ok=True)
     if not cv2.imwrite(str(photo_path), photo_img):

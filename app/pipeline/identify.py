@@ -11,7 +11,7 @@ from pathlib import Path
 
 from app import artifacts
 from app.config import Settings
-from app.meta_client import MetaClient
+from app.meta_client import MetaClient, make_client
 from app.pipeline import media
 from app.pipeline.ingest import find_original
 from app.schemas import IDENTITY_JSON_SCHEMA, Identity, IngestInfo, Transcript
@@ -81,7 +81,7 @@ def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> 
     ingest = artifacts.load(job_dir, IngestInfo)
     transcript = artifacts.load_optional(job_dir, Transcript)
     if client is None:
-        client = MetaClient(settings, job_dir=job_dir)
+        client = make_client(settings, job_dir=job_dir)
     stills_dir = job_dir / "identify"
     try:
         if ingest.source is None:
