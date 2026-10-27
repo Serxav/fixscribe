@@ -1,68 +1,39 @@
-# FixScribe design v2 — "Workbench"
+# FixScribe design v4 — "Civic editorial"
 
-FixScribe is a tool used **during** a repair, phone propped next to the device, hands busy. It must
-feel like a precision instrument: calm, exact, legible from 50 cm, distinctive. Not a template.
+Reference: the 2025-26 sites of the US National Design Studio (ndstudio.gov, trumprx.gov).
+FixScribe must look like a serious public tool, not like an AI demo: plain words, one typeface,
+a strict grid, lots of space, and the real media doing the talking.
 
-## Identity
-- **Motif:** the technician's magnetic screw mat. A faint 8 px grid behind media, numbered round
-  screw markers (S1, S2…) in a monospaced face, a **screw tray** that fills and empties.
-- **Dark first** (workshops, OLED phones), with a full light theme.
-- **Signal color:** lime `#D4FF3A` on graphite. Used only for the primary action, progress and
-  "verified". Nothing else is lime.
+## Rules (check every page against them)
+1. **One family, regular weight.** Inter Tight 400 everywhere; 500 only for small headings
+   (`.h3`). Hierarchy comes from size and space, never from bold. Tracking `-0.02em`.
+2. **Mono for data.** JetBrains Mono for times, counts, ids, model names, tool calls (`.mono`, `.chip`).
+3. **12-column grid.** `.grid12`; labels in the left half (`.col-l`, columns 1-5), content in the
+   right half (`.col-r`, 7-12; `.col-r-wide` 7-12 wider). Outer margin 20 px phone / 32 px desktop.
+   On a phone everything is one column.
+4. **Hairlines, not boxes.** Sections start with `.sect` (roman numeral + name on a 1 px rule).
+   Lists are rows on rules (`.rows`). Use `.glass` (a flat paper block, no radius, no shadow) only
+   when a block must stand apart (a form, a code trace).
+5. **Square media.** Images and video have no radius and sit on `--media` (#0e0e0e). Full-bleed
+   media uses `.bleed`.
+6. **Color is rare.** Ink `#010101` on surface `#f2f2f2`. Accent `#3760f2` only for links and the
+   one thing that needs attention. Status: ok `#1d7a3a`, warn `#a35a00`, bad `#bf000f`.
+7. **Buttons are rectangles.** Primary = black block (`.btn-primary`), secondary = hairline
+   (`.btn-glass`), tertiary = text with an arrow (`.btn-text.arrow`). Radius 2 px max.
+8. **No decoration.** No gradients, glows, blobs, emoji, glass blur on content, rounded pills,
+   drop shadows or icons that only decorate. A line icon is allowed only when it carries meaning.
+9. **Copy:** short, literal, honest. Never claim a feature that does not run today.
+10. **Motion:** opacity and small translate only, 200-350 ms, and none with reduced motion.
 
-## Tokens
-| Token | Dark | Light |
-|---|---|---|
-| `--bg` | `#0E0F11` | `#F6F6F3` |
-| `--surface` | `#16171A` | `#FFFFFF` |
-| `--raised` | `#1F2125` | `#EFEFEB` |
-| `--line` | `rgba(255,255,255,.08)` | `rgba(0,0,0,.08)` |
-| `--text` | `#F2F3F5` | `#111214` |
-| `--muted` | `#9A9DA4` | `#5F6268` |
-| `--signal` | `#D4FF3A` (text on it `#0E0F11`) | `#5B7A00` (text on it `#FFFFFF`) |
-| `--warn` | `#FFB020` | `#9A5B00` |
-| `--danger` | `#FF5A4E` | `#C2261B` |
+## Tokens (web/static/app.css)
+`--surface #f2f2f2`, `--paper #fafafa`, `--ink #010101`, `--ink-2 #3a3a3a`, `--ink-3 #6b6b6b`,
+`--rule rgba(0,0,0,.14)`, `--accent #3760f2`, `--media #0e0e0e`, `--font`, `--mono`,
+`--margin`, `--gutter`. Older names (`--glass`, `--hair`, `--r-*`) are kept as aliases.
 
-- **Type:** UI `-apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif`;
-  numbers, timecodes and screw ids `ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace`
-  with tabular figures. Scale: 40/44 display, 28/32 title, 20/26 step title, 17/24 body,
-  15/20 secondary, 12/16 label (uppercase, +0.06em tracking).
-- **Space:** 4 px base; 16 px phone gutters; sections 32 px apart. Radius 16 px (cards), 12 px
-  (media), 999 px (pills, buttons).
-- **Elevation:** no drop shadows in dark; 1 px `--line` borders. Light: one soft shadow for sheets only.
-- **Motion:** 160–240 ms, ease-out, only to explain change (step slide, tray fill, progress). Respect
-  `prefers-reduced-motion`.
-- **Touch:** primary actions in the bottom thumb zone, ≥ 56 px high; everything ≥ 48 px.
-- **Icons:** own inline SVG, 1.75 px stroke, 24 px grid. No emoji. No brand logos except
-  "by Meta" in plain text where we credit the models.
+## Type scale
+`.display` 34-60 px · `.title` 28-44 px · `.prose` 20-26 px · `.h2` 26 px · `.h3` 19 px ·
+body 17 px · `.small` 14 px · `.mono` 0.86 em.
 
-## Screens
-1. **Home** — one job: start a repair. Big round **Record** button (camera shutter metaphor,
-   lime ring) that opens the camera (`capture="environment"`), a quiet "Upload a video" link
-   (custom styled, never the native file control), and an **example guide** card (keyframe
-   thumbnails + "5 steps · 5 screws") that opens a sample. Three one-line promises with icons:
-   *Watches the video · Hears your narration · Counts every screw*.
-2. **Processing** — a live **workbench**: the video timeline as a bar; as stages finish, real
-   artifacts appear on it: duration and resolution, transcript snippets at their times, cut markers
-   (voice = lime, visual = gray), step titles, then keyframe thumbnails. Human stage labels, an
-   honest time estimate, never the raw job id or "done".
-3. **Guide overview** — first screen: a contact sheet of keyframes (portrait), title, one meta
-   line (`5 steps · ~25 min · 5 screws · Medium`), tools as a row with an edge fade, and one primary
-   button **Start repair**. Then the **step timeline** (segments per step, voice-cut markers), the
-   compact step list, safety notes as a calm inline note (icon + text, warn color only on the
-   icon and title), and **Put back** with the screw check.
-4. **Repair mode** — one step per screen, full-bleed portrait media (loop clip, numbered screw
-   markers and the part highlight drawn over it), step `03 / 05` in monospace, a short instruction,
-   warnings inline, evidence chips (`0:12 · heard "step three"`, `verified by SAM`). Bottom bar:
-   Back · **Done** · Next, swipe left/right, arrow keys. **Done** moves the step's screws into the
-   screw tray at the bottom. In Put back mode the tray empties step by step; when it is empty:
-   "Every screw is back."
-
-## Copy
-Short, concrete, sentence case. Verbs first ("Remove the 2 screws"). Numbers as digits.
-Never raw states, ids or stack traces in the UI.
-
-## Quality bar (check before saying done)
-Screenshot every screen at 390×844 (and 1280 wide). No horizontal overflow, no orphan words in
-pills, no native form controls showing, no element touching the screen edge, contrast AA, every
-tap target ≥ 48 px, dark and light both correct.
+## Full-screen pages
+Film, live coach and repair mode are dark, full screen, media first. Same rules: one family,
+mono for data, square corners, white text, no glows.
