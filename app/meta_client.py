@@ -7,6 +7,8 @@ import logging
 import math
 import os
 import random
+import re
+import subprocess
 import tempfile
 import time
 import wave
@@ -18,8 +20,15 @@ from typing import Any, TypeVar
 
 import cv2
 import httpx
+import numpy as np
 import openai
-from meta_sam_parser import CompletedOutcome, decode_mask_to_raster, image_segmentation_format
+from meta_sam_parser import (
+    CompletedOutcome,
+    decode_mask_to_raster,
+    decode_mask_to_svg_path,
+    image_segmentation_format,
+    video_segmentation_format,
+)
 
 from app.config import Settings
 
@@ -107,6 +116,69 @@ def _wav_duration_s(wav_path: Path) -> float:
         return handle.getnframes() / rate
 
 
+def _parse_frame_rate(value: object) -> float:
+    """Parse an ffprobe frame rate such as ``30000/1001`` into frames per second."""
+    try:
+        num, _, den = str(value).partition("/")
+        return float(num) / float(den) if den else float(num)
+    except (TypeError, ValueError, ZeroDivisionError):
+        return 0.0
+
+
+def _video_frame_count(path: Path) -> int:
+    """Exact frame count of a clip: ffprobe `nb_read_frames`, else duration x fps."""
+    try:
+        proc = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-count_frames",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=nb_read_frames,avg_frame_rate,r_frame_rate,duration",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "json",
+                str(path),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        raise ValueError(f"cannot read video: {path}") from None
+    if proc.returncode != 0:
+        raise ValueError(f"cannot read video: {path}")
+    try:
+        data = json.loads(proc.stdout)
+    except ValueError:
+        raise ValueError(f"cannot read video: {path}") from None
+    if not isinstance(data, dict):
+        raise ValueError(f"cannot read video: {path}")
+    streams = data.get("streams") or []
+    stream = streams[0] if streams else {}
+    if not isinstance(stream, dict):
+        stream = {}
+    try:
+        return int(stream.get("nb_read_frames"))
+    except (TypeError, ValueError):
+        pass
+    try:
+        raw_duration = stream.get("duration") or (data.get("format") or {}).get("duration")
+        duration = float(raw_duration)
+    except (TypeError, ValueError, AttributeError):
+        raise ValueError(f"cannot count frames in video: {path}") from None
+    fps = _parse_frame_rate(stream.get("avg_frame_rate")) or _parse_frame_rate(
+        stream.get("r_frame_rate")
+    )
+    if not duration or not fps:
+        raise ValueError(f"cannot count frames in video: {path}")
+    return int(round(duration * fps))
+
+
 def _is_number(value: Any) -> bool:
     """True for a real JSON number (bools are not numbers here)."""
     return isinstance(value, (int, float)) and not isinstance(value, bool)
@@ -122,6 +194,128 @@ class Detection:
     mask: bytes | None
     mask_size: tuple[int, int] | None
     mask_bounds: tuple[float, float, float, float] | None
+
+
+@dataclass(frozen=True)
+class TrackedObject:
+    """One SAM-tracked object in a single video frame, in source pixels."""
+
+    object_id: int
+    box: tuple[float, float, float, float]
+    confidence: float | None
+    mask: np.ndarray | None
+    svg_path: str | None
+
+
+@dataclass(frozen=True)
+class FrameTrack:
+    """All tracked objects in one video frame (`frame` is the `<Nf>` index)."""
+
+    frame: int
+    width: int
+    height: int
+    objects: list[TrackedObject]
+
+
+_FRAME_HEADER_RE = re.compile(r"^<(\d+)f")
+_BOX_TOKEN_RE = re.compile(r"<\|box;([^|]*)\|>")
+_FRAME_WIDTH_RE = re.compile(r"(?:^|;)\s*w\s*=\s*(\d+)")
+_FRAME_HEIGHT_RE = re.compile(r"(?:^|;)\s*h\s*=\s*(\d+)")
+
+
+def _frame_sizes(text: str) -> dict[int, tuple[int, int]]:
+    """Frame size per `<Nf>` index, read from the `w=`/`h=` fields of box tokens.
+
+    The parser records keep box coordinates but drop the frame size, so it is
+    re-extracted here from the raw answer with a narrow regex.
+    """
+    sizes: dict[int, tuple[int, int]] = {}
+    for raw_line in text.splitlines():
+        header = _FRAME_HEADER_RE.match(raw_line.strip())
+        if header is None:
+            continue
+        frame = int(header.group(1))
+        if frame in sizes:
+            continue
+        for token in _BOX_TOKEN_RE.finditer(raw_line):
+            body = token.group(1)
+            width = _FRAME_WIDTH_RE.search(body)
+            height = _FRAME_HEIGHT_RE.search(body)
+            if width and height:
+                sizes[frame] = (int(width.group(1)), int(height.group(1)))
+                break
+    return sizes
+
+
+def _parse_video_tracks(text: str) -> list[FrameTrack]:
+    """Parse a SAM video answer into per-frame tracks sorted by frame index.
+
+    Frames with no line in the answer are simply absent. Objects keep the wire
+    order within their frame.
+    """
+    parser = video_segmentation_format().create_parser()
+    parser.push(text)
+    result = parser.finish(CompletedOutcome()).result
+    if result.diagnostics:
+        logger.warning("sam video parser diagnostics: %d", len(result.diagnostics))
+    sizes = _frame_sizes(text)
+    boxes: dict[int, list[Any]] = {}
+    masks: dict[tuple[int, str], Any] = {}
+    for record in result.records:
+        frame_ref = getattr(record, "frame", None)
+        if frame_ref is None:
+            continue
+        index = int(frame_ref.frame_index)
+        if getattr(record, "kind", None) == "box":
+            boxes.setdefault(index, []).append(record)
+        elif getattr(record, "kind", None) == "mask":
+            masks[(index, str(record.object_id))] = record
+    tracks: list[FrameTrack] = []
+    for index in sorted(boxes):
+        size = sizes.get(index)
+        if size is None:
+            raise MetaError(f"sam video answer has no frame size for frame {index}")
+        width, height = size
+        objects: list[TrackedObject] = []
+        for box_record in boxes[index]:
+            mask_record = masks.get((index, str(box_record.object_id)))
+            mask_array: np.ndarray | None = None
+            svg_path: str | None = None
+            mask_confidence: float | None = None
+            if mask_record is not None:
+                mask_confidence = mask_record.confidence
+                try:
+                    raw = decode_mask_to_raster(mask_record.mask)
+                    mask_array = (
+                        np.frombuffer(raw, dtype=np.uint8)
+                        .reshape(int(mask_record.mask.height), int(mask_record.mask.width))
+                        .astype(bool)
+                    )
+                except Exception:
+                    mask_array = None
+                try:
+                    svg_path = decode_mask_to_svg_path(mask_record.mask)
+                except Exception:
+                    svg_path = None
+            confidence = box_record.confidence
+            if confidence is None:
+                confidence = mask_confidence
+            objects.append(
+                TrackedObject(
+                    object_id=int(box_record.object_id),
+                    box=(
+                        float(box_record.left),
+                        float(box_record.top),
+                        float(box_record.right),
+                        float(box_record.bottom),
+                    ),
+                    confidence=confidence,
+                    mask=mask_array,
+                    svg_path=svg_path,
+                )
+            )
+        tracks.append(FrameTrack(frame=index, width=width, height=height, objects=objects))
+    return tracks
 
 
 class _InvalidAsrAnswer(Exception):
@@ -554,6 +748,54 @@ class MetaClient:
                 )
             )
         return detections, (int(width), int(height))
+
+    def segment_video(
+        self, video_path: Path, concept: str, *, max_frames: int = 600
+    ) -> list[FrameTrack]:
+        """Track one concept through a short clip with SAM 3.1 video segmentation.
+
+        Counts the clip frames with ffprobe, bills `max(50, frames)` video
+        frames, and returns one track per answered frame sorted by frame
+        index. Uses a plain (non-streaming) Responses call; the client has no
+        streaming support.
+        """
+        if not concept or not concept.strip():
+            raise ValueError("concept must not be empty")
+        if any(char in concept for char in (",", ";", "+")):
+            raise ValueError("concept must be one short noun phrase")
+        if max_frames <= 0:
+            raise ValueError("max_frames must be positive")
+        frames = _video_frame_count(video_path)
+        if frames > max_frames:
+            raise ValueError(f"clip has {frames} frames, over max_frames={max_frames}")
+        cost = sam_cost(video_frames=max(50, frames))
+        self._check_budget()
+        file_id = self.upload_file(video_path)
+        try:
+
+            def _do_create() -> Any:
+                return self._client.responses.create(
+                    model=self._settings.sam_model,
+                    input=[
+                        {
+                            "type": "message",
+                            "role": "user",
+                            "content": [
+                                {"type": "input_text", "text": concept},
+                                {"type": "input_video", "file_id": file_id},
+                            ],
+                        }
+                    ],
+                    # Default propagation ("both"); confidence as "true" strings.
+                    metadata={"mask_encoding": "one_bit", "include_confidence": "true"},
+                )
+
+            response = self._with_retries(_do_create)
+        finally:
+            self.delete_file(file_id)
+        self._add_spend(self._settings.sam_model, cost)
+        text = getattr(response, "output_text", "") or ""
+        return _parse_video_tracks(text)
 
     def _with_retries(self, fn: Callable[[], T], retry_timeouts: bool = True) -> T:
         last_exc: BaseException | None = None
