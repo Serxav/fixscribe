@@ -195,3 +195,10 @@ def test_list_prints_counts(tmp_path, capsys):
     assert "appliance" in out
     assert "drain pump" in out and "2 job(s)" in out
     assert "widget" in out and "1 job(s)" in out
+
+
+def test_tool_names_are_not_singularized():
+    from app.pipeline.learn import normalize_term
+
+    assert normalize_term("Pliers", singular=False) == "pliers"
+    assert normalize_term("The Drain Pumps ") == "drain pump"

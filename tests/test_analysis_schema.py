@@ -21,7 +21,8 @@ def test_schema_is_strict_everywhere():
 def test_schema_keys_match_the_models():
     assert set(ANALYSIS_JSON_SCHEMA["properties"]) == set(Analysis.model_fields)
     step_schema = ANALYSIS_JSON_SCHEMA["properties"]["steps"]["items"]
-    assert set(step_schema["properties"]) == set(DraftStep.model_fields)
+    # source_index is set by the plan stage, never asked from Spark.
+    assert set(step_schema["properties"]) == set(DraftStep.model_fields) - {"source_index"}
 
 
 def test_a_schema_shaped_answer_validates():

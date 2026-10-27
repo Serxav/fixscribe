@@ -184,3 +184,22 @@ def test_run_reads_refine_json(tmp_path):
     )
     artifacts.save(tmp_path, Refine(steps=[refined]))
     assert run(tmp_path, settings=None).steps[0].instruction == "Refined."
+
+
+def test_source_index_survives_a_dropped_step():
+    from app.pipeline.plan import build_plan
+    from app.schemas import Analysis
+
+    analysis = Analysis.model_validate(
+        {
+            "title": "t",
+            "device": "d",
+            "steps": [
+                {"title": "gone", "instruction": "x", "start_s": 50, "end_s": 60},  # after the end
+                {"title": "a", "instruction": "x", "start_s": 1, "end_s": 5},
+                {"title": "b", "instruction": "x", "start_s": 5, "end_s": 9},
+            ],
+        }
+    )
+    plan = build_plan(analysis, None, duration_s=10, mode="silent")
+    assert [(s.title, s.index, s.source_index) for s in plan.steps] == [("a", 1, 1), ("b", 2, 2)]

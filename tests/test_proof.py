@@ -274,3 +274,18 @@ def test_run_writes_a_loadable_proof_json(tmp_path):
     assert loaded.steps[0].index == 1
     sources = [source for claim in loaded.steps[0].claims for source in claim.sources]
     assert any("timecode re-check" in source for source in sources)
+
+
+def test_proof_pairs_refine_by_source_index_not_plan_index():
+    from app.pipeline.proof import build_proof
+    from app.schemas import Plan, Refine, RefinedStep, Step
+
+    step = Step(index=1, title="t", instruction="i", start_s=0, end_s=2, source_index=2)
+    plan = Plan.model_validate(
+        {"title": "t", "device": "d", "mode": "silent", "duration_s": 10, "steps": [step]}
+    )
+    refined = RefinedStep(
+        index=2, start_s=0, end_s=2, instruction="i", action="other", confidence=0.9
+    )
+    proof = build_proof(plan, refine=Refine(steps=[refined]))
+    assert proof.steps[0].claims[0].status == "supported"  # the refine of draft 2 was used
