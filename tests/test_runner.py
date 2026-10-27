@@ -292,3 +292,28 @@ def test_cli_resume_flag(tmp_path, monkeypatch, capsys):
     assert runner.main([job_id, str(tmp_path), "--resume"]) == 1  # job is still "queued"
     assert seen == {"job_id": job_id, "jobs_dir": tmp_path, "resume": True}
     assert runner.main([]) == 2
+
+
+def test_a_stage_that_writes_an_invalid_file_counts_as_failed(tmp_path):
+    from app.config import Settings
+    from app.pipeline.runner import Stage
+
+    def bad_identify(folder, settings):
+        (folder / "identity.json").write_text('{"object_name": 3}')  # not a valid Identity
+
+    def silent(folder, settings):
+        pass  # claims success but writes nothing
+
+    settings = Settings(data_dir=tmp_path)
+    job_id = create_job(settings.jobs_dir).job_id
+    stages = [
+        Stage("identify", bad_identify, optional=True, output="identity.json"),
+        Stage("lazy", silent, optional=True, output="lazy.json"),
+    ]
+    status = run_job(job_id, settings, stages)
+    assert status.state == "done"
+    assert status.warnings[0].startswith(
+        "identify failed: invalid output: broken identity.json: object_name"
+    )
+    assert status.warnings[1] == "lazy failed: invalid output: did not write lazy.json"
+    assert not (settings.jobs_dir / job_id / "identity.json").exists()  # later stages see "missing"
