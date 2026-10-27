@@ -42,7 +42,7 @@ def fake(monkeypatch):
 def test_every_stage_is_classified():
     assert set(OPTIONAL) == {
         "transcribe", "identify", "signals", "fusion", "refine", "frames", "perception",
-        "proof", "learn",
+        "motion", "proof", "learn",
     }  # fmt: skip
     assert REQUIRED == ["ingest", "scenes", "analyze", "plan", "safety", "publish"]
 

@@ -35,7 +35,7 @@ def test_status_lists_every_stage_with_its_state(jobs_dir):
     update_status(job_id, jobs, state="failed", stage="identify", error="identify failed: x")
     data = TestClient(app).get(f"/api/jobs/{job_id}").json()
     by_name = {stage["name"]: stage for stage in data["stages"]}
-    assert data["stages"][0]["name"] == "ingest" and len(data["stages"]) == 15
+    assert data["stages"][0]["name"] == "ingest" and len(data["stages"]) == 16
     assert by_name["ingest"]["status"] == "done" and by_name["ingest"]["seconds"] == 1.5
     assert by_name["transcribe"]["status"] == "skipped"
     assert by_name["publish"]["status"] == "waiting"
