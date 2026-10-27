@@ -16,7 +16,7 @@ behind them (`proof.json`).
 | Web app | `app/main.py`, `app/routes/` | upload, progress API, guide page, media files, tray page, step checks |
 | Job store | `app/jobs.py` | one folder per job under `Settings.jobs_dir` (`data/jobs/<id>/`), `status.json` (locked, atomic), stale-job detection |
 | Runner | `app/pipeline/runner.py` | one process per job, stages in order, `manifest.json` (version, seconds, dollars per stage), `--resume` restarts at the failed stage |
-| Artifacts | `app/schemas.py`, `app/artifacts.py` (`atomic_path`) | one Pydantic model per file; every write goes through `atomic_path` (temp file in the same folder, then rename) |
+| Artifacts | `app/schemas.py`, `app/artifacts.py` (`atomic_path`) | one Pydantic model per file; artifact and media files are written atomically (`write_json_atomic`, `atomic_path`: temp file in the same folder, then rename) |
 | Spark JSON | `app/spark.py` (`ask_json`) | the one strict-JSON Spark call shared by analyze, identify and refine (prompt plus images or an uploaded video; raw answer saved; `SparkAnswerError` on bad JSON) |
 | Text | `app/text.py` (`plural`, `drop_article`) | small English helpers shared by the stages, kept in one place |
 | Route helpers | `app/routes/common.py` (`job_folder`, `load_guide`) | URL id → job folder and guide, in one place |
