@@ -83,5 +83,6 @@ button:disabled { opacity: 0.5; cursor: default; }
 .done-banner { margin: 12px 0; }
 .done-banner a { color: #0071e3; font-weight: 600; }
 .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: grid; place-items: center; z-index: 50; }
+.overlay[hidden] { display: none; }
 .overlay img { max-width: 92vw; max-height: 92vh; border-radius: 8px; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
