@@ -16,7 +16,10 @@ from app.text import plural
 
 router = APIRouter()
 
-_MEDIA_RE = re.compile(r"^(video\.mp4|steps/\d{2}(_overlay)?\.jpg|steps/\d{2}\.mp4)$")
+_MEDIA_RE = re.compile(
+    r"^(video\.mp4|steps/\d{2}(_overlay)?\.jpg|steps/\d{2}(_motion|_motion_rev)?\.mp4"
+    r"|steps/\d{2}_cutout\.png)$"
+)
 
 
 def _not_ready(request: Request, job_id: str, *, valid_id: bool):

@@ -116,6 +116,10 @@ class FakeMeta:
         FakeMeta.calls.append(("segment", concept))
         return [], (100, 100)  # SAM finds nothing: the guide must say screws are unverified
 
+    def segment_video(self, video_path, concept, max_frames=600):
+        FakeMeta.calls.append(("segment_video", concept))
+        return []  # SAM tracks nothing: the motion clip is still rendered, without highlights
+
     def delete_file(self, file_id):
         FakeMeta.calls.append(("delete", file_id))
 
@@ -170,7 +174,7 @@ def test_full_pipeline_builds_a_guide(tmp_path, fake_meta):
     manifest = artifacts.load(folder, Manifest)
     assert list(manifest.stages) == [
         "ingest", "transcribe", "identify", "signals", "scenes", "analyze", "fusion", "refine",
-        "plan", "safety", "frames", "perception", "proof", "publish", "learn",
+        "plan", "safety", "frames", "perception", "motion", "proof", "publish", "learn",
     ]  # fmt: skip
     assert all(record.status == "done" for record in manifest.stages.values())
     assert artifacts.load(folder, Identity).category == "electronics"

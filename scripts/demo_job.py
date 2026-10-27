@@ -165,7 +165,6 @@ def scene_filter() -> str:
 def find_colored(image_path, concept, max_side=1280):
     """Offline stand-in for SAM: boxes of the pixels that have the concept's color."""
     import cv2
-    import numpy as np
 
     from app.meta_client import Detection
 
@@ -174,21 +173,10 @@ def find_colored(image_path, concept, max_side=1280):
     scale = min(1.0, max_side / max(height, width))
     if scale < 1.0:
         image = cv2.resize(image, (int(width * scale), int(height * scale)))
-    concept = concept.lower()
-    if "screw" in concept and "bracket" not in concept:
-        color = SCREW_COLOR
-    else:
-        # Exact part name first, then the longest part name inside the concept, then the reverse.
-        names = sorted({name for name, *_ in PARTS}, key=len, reverse=True)
-        name = next((n for n in names if n == concept), None)
-        name = name or next((n for n in names if n in concept), None)
-        name = name or next((n for n in names if concept in n), None)
-        if name is None:
-            return [], (image.shape[1], image.shape[0])
-        color = next(c for n, c, *_ in PARTS if n == name)
-    rgb = [int(color[i : i + 2], 16) for i in (0, 2, 4)]
-    target = np.array(rgb[::-1], dtype=np.int16)  # BGR
-    mask = (np.abs(image.astype(np.int16) - target).max(axis=2) < 28).astype(np.uint8)
+    color = color_of(concept)
+    if color is None:
+        return [], (image.shape[1], image.shape[0])
+    mask = color_mask(image, color)
     count, _, stats, _ = cv2.connectedComponentsWithStats(mask)
     min_area = 0.00004 * image.shape[0] * image.shape[1]
     found = [
@@ -197,6 +185,73 @@ def find_colored(image_path, concept, max_side=1280):
         if area >= max(min_area, 12)
     ]
     return found, (image.shape[1], image.shape[0])
+
+
+def color_of(concept):
+    """The flat color the synthetic scene uses for a concept, or None."""
+    concept = concept.lower()
+    if "screw" in concept and "bracket" not in concept:
+        return SCREW_COLOR
+    # Exact part name first, then the longest part name inside the concept, then the reverse.
+    names = sorted({name for name, *_ in PARTS}, key=len, reverse=True)
+    name = next((n for n in names if n == concept), None)
+    name = name or next((n for n in names if n in concept), None)
+    name = name or next((n for n in names if concept in n), None)
+    return next(c for n, c, *_ in PARTS if n == name) if name else None
+
+
+def color_mask(image, color):
+    import numpy as np
+
+    rgb = [int(color[i : i + 2], 16) for i in (0, 2, 4)]
+    target = np.array(rgb[::-1], dtype=np.int16)  # BGR
+    return (np.abs(image.astype(np.int16) - target).max(axis=2) < 28).astype(np.uint8)
+
+
+def track_colored(video_path, concept):
+    """Offline stand-in for SAM video tracking: per-frame color masks with stable ids."""
+    import cv2
+
+    color = color_of(concept)
+    capture = cv2.VideoCapture(str(video_path))
+    tracks, previous, next_id, index = [], {}, 1, 0
+    while True:
+        ok, image = capture.read()
+        if not ok:
+            break
+        height, width = image.shape[:2]
+        if color is not None:
+            mask = color_mask(image, color)
+            count, labels, stats, centroids = cv2.connectedComponentsWithStats(mask)
+            objects, current = [], {}
+            for label in range(1, count):
+                x, y, w, h, area = stats[label]
+                if area < max(12, 0.00004 * width * height):
+                    continue
+                cx, cy = centroids[label]
+                near = [
+                    oid for oid, (px, py) in previous.items() if abs(px - cx) + abs(py - cy) < 40
+                ]
+                object_id = near[0] if near else next_id
+                next_id += 0 if near else 1
+                current[object_id] = (cx, cy)
+                objects.append(
+                    SimpleNamespace(
+                        object_id=object_id,
+                        box=(float(x), float(y), float(x + w), float(y + h)),
+                        confidence=0.9,
+                        mask=labels == label,
+                        svg_path=None,
+                    )
+                )
+            previous = current
+            if objects:
+                tracks.append(
+                    SimpleNamespace(frame=index, width=width, height=height, objects=objects)
+                )
+        index += 1
+    capture.release()
+    return tracks
 
 
 class FakeMeta:
@@ -238,6 +293,9 @@ class FakeMeta:
 
     def segment(self, image_path, concept, max_side=1280):
         return find_colored(image_path, concept, max_side)
+
+    def segment_video(self, video_path, concept, max_frames=600):
+        return track_colored(video_path, concept)
 
 
 def main() -> int:

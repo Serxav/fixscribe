@@ -15,6 +15,7 @@ from app.schemas import (
     Frames,
     Guide,
     Identity,
+    Motion,
     Perception,
     Plan,
     Proof,
@@ -91,6 +92,15 @@ def screws_verified(steps: list[Step]) -> bool:
     return bool(with_screws) and all(step.screws.boxes for step in with_screws)
 
 
+def with_motion(steps: list[Step], motion: Motion | None) -> list[Step]:
+    """Attach each step's SAM motion clip and part cut-out (from motion.json)."""
+    found = {item.index: item for item in motion.steps} if motion else {}
+    return [
+        step.model_copy(update={"motion": found[step.index]}) if step.index in found else step
+        for step in steps
+    ]
+
+
 def with_kind(steps: list[Step], kind: str) -> list[Step]:
     """Label every screw map with the domain fastener kind (screws, bolts, ...)."""
     return [
@@ -118,8 +128,10 @@ def build_guide(
     identity: Identity | None = None,
     safety: Safety | None = None,
     proof: Proof | None = None,
+    motion: Motion | None = None,
 ) -> Guide:
     steps, perception_notes = with_perception(with_media(plan.steps, frames), perception)
+    steps = with_motion(steps, motion)
     kind = profile_for(identity.category).fastener_kind if identity else "screw"
     steps = with_kind(steps, kind)
     level = safety.level if safety else "normal"
@@ -166,6 +178,7 @@ def run(job_dir: Path, settings: Any) -> Guide:
         artifacts.load_optional(job_dir, Identity),
         artifacts.load_optional(job_dir, Safety),
         artifacts.load_optional(job_dir, Proof),
+        artifacts.load_optional(job_dir, Motion),
     )
     artifacts.save(job_dir, guide)
     return guide

@@ -65,6 +65,7 @@ class Step(Strict):
     overlay: str | None = None
     warnings: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
+    motion: "StepMotion | None" = None  # SAM-tracked cinematic clip and part cut-out (motion stage)
     evidence: list[Evidence] = Field(default_factory=list)
     confidence: float = Field(default=0.0, ge=0, le=1)
     review: Literal["auto", "needs_review", "edited"] = "auto"
@@ -720,4 +721,29 @@ ATTEMPT_JSON_SCHEMA: dict[str, Any] = _object(
 )
 
 
-Guide.model_rebuild()  # Identity, Safety and Proof are defined after Guide
+# --- SAM Motion: the step clip with the part and fasteners tracked by SAM 3.1 -------------------
+
+
+class StepMotion(Strict):
+    """What the motion stage made for one step (paths are relative to the job folder)."""
+
+    index: int = Field(ge=1)
+    clip: str  # cinematic clip: part lit and outlined, fasteners ringed and numbered
+    clip_reverse: str | None = None  # the same clip played backwards, for the assembly film
+    cutout: str | None = None  # PNG with transparency: the part alone, cut along its SAM mask
+    cutout_box: NormBox | None = None  # where the cut-out sits on the step frame
+    outline: str = ""  # SVG path of the part outline in a 0..1000 x 0..1000 box of the frame
+    part: str = ""  # the concept SAM tracked ("back cover")
+    fasteners_tracked: int = Field(default=0, ge=0)  # distinct fastener ids SAM followed
+    frames: int = Field(default=0, ge=0)  # frames sent to SAM (billing)
+
+
+class Motion(Strict):
+    FILENAME: ClassVar[str] = "motion.json"
+
+    steps: list[StepMotion] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
+Guide.model_rebuild()  # Identity, Safety, Proof and StepMotion are defined after Guide
+Step.model_rebuild()
