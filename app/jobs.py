@@ -24,6 +24,8 @@ class JobStatus(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     created_at: str
     updated_at: str
+    kind: Literal["guide", "attempt"] = "guide"  # attempt: a user's own repair video
+    reference_job: str | None = None  # attempt only: the job whose guide it is compared with
 
 
 def now_iso() -> str:
@@ -37,12 +39,23 @@ def job_dir(job_id: str, jobs_dir: Path = JOBS_DIR) -> Path:
     return jobs_dir / job_id
 
 
-def create_job(jobs_dir: Path = JOBS_DIR) -> JobStatus:
+def create_job(jobs_dir: Path = JOBS_DIR, reference_job: str | None = None) -> JobStatus:
+    """A new job folder. With `reference_job`, an attempt to compare against that guide."""
+    if reference_job is not None:
+        job_dir(reference_job, jobs_dir)  # validates the id
+        if not (jobs_dir / reference_job / "guide.json").is_file():
+            raise FileNotFoundError(f"no guide to compare with: {reference_job}")
     job_id = uuid.uuid4().hex[:12]
     folder = job_dir(job_id, jobs_dir)
     folder.mkdir(parents=True)
     stamp = now_iso()
-    status = JobStatus(job_id=job_id, created_at=stamp, updated_at=stamp)
+    status = JobStatus(
+        job_id=job_id,
+        created_at=stamp,
+        updated_at=stamp,
+        kind="attempt" if reference_job else "guide",
+        reference_job=reference_job,
+    )
     write_json_atomic(folder / "status.json", status.model_dump())
     return status
 

@@ -100,6 +100,21 @@ def default_stages() -> list[Stage]:
     ]
 
 
+def attempt_stages() -> list[Stage]:
+    """Stages for an attempt job: a user's own repair video compared with a reference guide."""
+    from app.pipeline import attempt, ingest, transcribe
+
+    return [
+        stage_of("ingest", ingest, "ingest.json", weight=1.0),
+        stage_of("transcribe", transcribe, "transcript.json", weight=1.0, optional=True),
+        stage_of("attempt", attempt, "attempt_review.json", weight=6.0),
+    ]
+
+
+def stages_for(status: JobStatus) -> list[Stage]:
+    return attempt_stages() if status.kind == "attempt" else default_stages()
+
+
 class JobAlreadyRunning(Exception):
     pass
 
@@ -156,8 +171,8 @@ def run_job(
     stages: list[Stage] | None = None,
     jobs_dir: Path = JOBS_DIR,
 ) -> JobStatus:
-    stages = default_stages() if stages is None else stages
     folder = job_dir(job_id, jobs_dir)
+    stages = stages_for(read_status(job_id, jobs_dir)) if stages is None else stages
     total = sum(stage.weight for stage in stages) or 1.0
     with job_lock(folder):
         update_status(job_id, jobs_dir, state="running", error=None, warnings=[], progress=0.0)

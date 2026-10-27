@@ -82,3 +82,19 @@ def test_broken_status_does_not_block_daily_count(tmp_path):
     broken = create_job(tmp_path).job_id
     (tmp_path / broken / "status.json").write_text("{")
     assert jobs_created_today(tmp_path) == 1
+
+
+def test_attempt_job_needs_a_reference_guide(tmp_path):
+    import pytest
+
+    from app.jobs import create_job
+
+    guide_job = create_job(tmp_path).job_id
+    with pytest.raises(FileNotFoundError):
+        create_job(tmp_path, reference_job=guide_job)  # no guide.json yet
+    with pytest.raises(ValueError):
+        create_job(tmp_path, reference_job="../etc")
+    (tmp_path / guide_job / "guide.json").write_text("{}")
+    attempt = create_job(tmp_path, reference_job=guide_job)
+    assert attempt.kind == "attempt" and attempt.reference_job == guide_job
+    assert create_job(tmp_path).kind == "guide"
