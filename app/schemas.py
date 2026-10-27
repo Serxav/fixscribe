@@ -512,10 +512,6 @@ REFINE_JSON_SCHEMA: dict[str, Any] = _object(
 )
 
 
-# The same model under the name the universal pipeline uses. `screws` stays for compatibility.
-FastenerMap = ScrewMap
-
-
 # --- Universal repair: what is it, and is it safe? ---------------------------------------------
 
 CATEGORIES = [
