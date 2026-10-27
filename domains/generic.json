@@ -1,0 +1,32 @@
+{
+  "category": "generic",
+  "label": "General repair",
+  "fasteners": ["screw", "bolt", "nut", "clip"],
+  "fastener_kind": "screw",
+  "parts": [
+    "cover",
+    "housing",
+    "panel",
+    "cable",
+    "connector",
+    "bracket",
+    "seal",
+    "handle",
+    "base",
+    "fastener set"
+  ],
+  "tools": [
+    "screwdriver set",
+    "pliers",
+    "wrench set",
+    "tweezers",
+    "towels"
+  ],
+  "prechecks": [
+    "Switch off and unplug any power source.",
+    "Clear the work area before starting.",
+    "Keep small parts in a tray as you remove them."
+  ],
+  "default_hazards": [],
+  "prompt_hint": "This is a general repair of an unknown device. Describe each part and fastener as it is removed, and note any power source or sharp edge before touching it."
+}

@@ -1,0 +1,33 @@
+{
+  "category": "plumbing",
+  "label": "Plumbing",
+  "fasteners": ["compression nut", "hose clamp", "screw", "bolt"],
+  "fastener_kind": "compression nut",
+  "parts": [
+    "faucet cartridge",
+    "supply hose",
+    "shutoff valve",
+    "sink trap",
+    "washer",
+    "o-ring",
+    "shower head",
+    "pipe joint",
+    "drain cover",
+    "sealant ring"
+  ],
+  "tools": [
+    "adjustable wrench",
+    "basin wrench",
+    "pliers",
+    "plumber tape",
+    "bucket",
+    "towels"
+  ],
+  "prechecks": [
+    "Close the water supply before starting.",
+    "Open a tap to release the pressure.",
+    "Put a bucket under the work area."
+  ],
+  "default_hazards": ["pressurized_water"],
+  "prompt_hint": "This is plumbing work with water under pressure. Confirm the supply is closed and pressure released first, and name each valve, hose and seal removed."
+}
