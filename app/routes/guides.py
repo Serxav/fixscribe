@@ -69,6 +69,57 @@ def _part_boxes(folder: Path) -> dict[int, dict]:
     }
 
 
+def _cutout_part(step, media: str) -> dict | None:
+    """The real shape of the part (SAM mask cut-out) for the 3D view, when motion made one."""
+    motion = step.motion
+    if motion is None or motion.cutout is None or motion.cutout_box is None:
+        return None
+    box = motion.cutout_box
+    return {
+        "label": motion.part,
+        "x": _pct(box.x),
+        "y": _pct(box.y),
+        "w": _pct(box.w),
+        "h": _pct(box.h),
+        "cutout": media + motion.cutout,
+    }
+
+
+def film_playlist(guide: Guide, job_id: str) -> dict:
+    """Everything the film player needs: clips in both directions and the spoken lines."""
+    media = f"/media/{job_id}/"
+    narration = guide.narration
+    lines = {line.index: line for line in narration.steps} if narration else {}
+    reassembly = {item.source_step: item.instruction for item in guide.reassembly}
+    steps = []
+    for step in guide.steps:
+        motion = step.motion
+        clip = media + (motion.clip if motion else step.clip) if (motion or step.clip) else None
+        reverse = media + motion.clip_reverse if motion and motion.clip_reverse else clip
+        line = lines.get(step.index)
+        steps.append(
+            {
+                "index": step.index,
+                "title": step.title,
+                "clip": clip,
+                "reverse": reverse,
+                "poster": media + step.image if step.image else None,
+                "say": line.disassemble if line else step.instruction,
+                "say_back": line.assemble if line else reassembly.get(step.index, step.instruction),
+                "warnings": step.warnings,
+            }
+        )
+    return {
+        "title": guide.title,
+        "language": narration.language if narration else (guide.language or "en"),
+        "intro": narration.intro if narration else guide.summary or guide.title,
+        "outro": narration.outro_disassemble if narration else "That's it. Well done.",
+        "outro_back": narration.outro_assemble if narration else "Back together. Well done.",
+        "blocked": bool(guide.safety and guide.safety.level == "professional_only"),
+        "steps": steps,
+    }
+
+
 def step_views(guide: Guide, job_id: str, parts: dict[int, dict]) -> list[dict]:
     """Everything the page shows for each step, computed here so the template stays simple."""
     proof = {item.index: item for item in guide.proof.steps} if guide.proof else {}
@@ -91,7 +142,9 @@ def step_views(guide: Guide, job_id: str, parts: dict[int, dict]) -> list[dict]:
                     {"n": box.number, "x": _pct(box.x + box.w / 2), "y": _pct(box.y + box.h / 2)}
                     for box in (screws.boxes if screws else [])
                 ],
-                "part": parts.get(step.index),
+                "part": _cutout_part(step, media) or parts.get(step.index),
+                "motion": media + step.motion.clip if step.motion else None,
+                "outline": step.motion.outline if step.motion else "",
                 "claims": [
                     {
                         "label": FIELD_LABELS.get(claim.field, claim.field),
@@ -130,6 +183,22 @@ def guide_page(
             "proof_percent": round(guide.proof.score * 100) if guide.proof else None,
             "level": guide.safety.level if guide.safety else "normal",
         },
+    )
+
+
+@router.get("/guides/{job_id}/film", response_class=HTMLResponse)
+def film_page(
+    request: Request,
+    job_id: str,
+    settings: Settings = Depends(settings_dep),  # noqa: B008
+):
+    folder, guide = load_guide(job_id, settings)
+    if guide is None:
+        return _not_ready(request, job_id, valid_id=folder is not None)
+    return templates.TemplateResponse(
+        request,
+        "film.html",
+        {"guide": guide, "job_id": job_id, "film": film_playlist(guide, job_id)},
     )
 
 

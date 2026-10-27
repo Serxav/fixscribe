@@ -51,7 +51,9 @@
 
     // The lifted part shows the same photo, cropped to the part box.
     var part = scene.querySelector("[data-part]");
-    if (part) {
+    if (part && part.hasAttribute("data-cutout")) {
+      part.style.backgroundSize = "100% 100%"; // the PNG is already the part alone
+    } else if (part) {
       var x = +part.dataset.x, y = +part.dataset.y, w = +part.dataset.w, h = +part.dataset.h;
       part.style.backgroundSize = (10000 / w) + "% " + (10000 / h) + "%";
       part.style.backgroundPosition = (w < 100 ? (x / (100 - w)) * 100 : 0) + "% " + (h < 100 ? (y / (100 - h)) * 100 : 0) + "%";

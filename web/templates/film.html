@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="{{ film.language }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>{{ guide.title }} · Repair film · FixScribe</title>
+<link rel="stylesheet" href="/static/app.css">
+<link rel="stylesheet" href="/static/film.css">
+</head>
+<body class="film-body">
+<div class="film" id="film" data-job-id="{{ job_id }}">
+  <video id="film-video" class="film-video" muted playsinline preload="auto"></video>
+  <div class="film-shade" aria-hidden="true"></div>
+
+  <header class="film-top">
+    <a class="film-back" href="/guides/{{ job_id }}" aria-label="Back to the guide">‹</a>
+    <div class="film-title"><span class="kicker" id="film-mode-label">Take apart</span><b>{{ guide.title }}</b></div>
+    <div class="seg film-seg" role="group" aria-label="Direction">
+      <button type="button" data-mode="apart" aria-pressed="true">Take apart</button>
+      <button type="button" data-mode="back" aria-pressed="false">Put back</button>
+    </div>
+  </header>
+
+  <section class="film-card" id="film-card" aria-live="polite">
+    <span class="kicker" id="film-kicker">FixScribe film</span>
+    <h1 class="film-card-title" id="film-card-title">{{ guide.title }}</h1>
+    <p class="film-card-text" id="film-card-text">{{ film.intro }}</p>
+    <button class="btn btn-primary btn-lg" type="button" id="film-start">▶ Play with voice</button>
+    <p class="small film-note">The voice is your device's own speech voice. The script is written by Muse Spark; the highlights are SAM 3.1 tracking the parts.</p>
+  </section>
+
+  <div class="film-caption hidden" id="film-caption"><span class="film-step" id="film-step"></span><p id="film-line"></p><p class="film-warn hidden" id="film-warn"></p></div>
+
+  <footer class="film-controls">
+    <div class="film-rail" id="film-rail"></div>
+    <div class="film-buttons">
+      <button class="film-btn" type="button" id="film-prev" aria-label="Previous step">⏮</button>
+      <button class="film-btn film-play" type="button" id="film-toggle" aria-label="Play">▶</button>
+      <button class="film-btn" type="button" id="film-next" aria-label="Next step">⏭</button>
+      <button class="film-btn" type="button" id="film-voice" aria-pressed="true" aria-label="Voice on">🔊</button>
+    </div>
+  </footer>
+</div>
+<script type="application/json" id="film-data">{{ film|tojson }}</script>
+<script src="/static/film.js"></script>
+</body>
+</html>
