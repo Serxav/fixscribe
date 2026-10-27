@@ -16,6 +16,7 @@ from app.schemas import (
     Guide,
     Identity,
     Motion,
+    Narration,
     Perception,
     Plan,
     Proof,
@@ -129,6 +130,7 @@ def build_guide(
     safety: Safety | None = None,
     proof: Proof | None = None,
     motion: Motion | None = None,
+    narration: Narration | None = None,
 ) -> Guide:
     steps, perception_notes = with_perception(with_media(plan.steps, frames), perception)
     steps = with_motion(steps, motion)
@@ -167,6 +169,7 @@ def build_guide(
         identity=identity,
         safety=safety,
         proof=proof,
+        narration=narration,
     )
 
 
@@ -179,6 +182,7 @@ def run(job_dir: Path, settings: Any) -> Guide:
         artifacts.load_optional(job_dir, Safety),
         artifacts.load_optional(job_dir, Proof),
         artifacts.load_optional(job_dir, Motion),
+        artifacts.load_optional(job_dir, Narration),
     )
     artifacts.save(job_dir, guide)
     return guide

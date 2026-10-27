@@ -174,7 +174,8 @@ def test_full_pipeline_builds_a_guide(tmp_path, fake_meta):
     manifest = artifacts.load(folder, Manifest)
     assert list(manifest.stages) == [
         "ingest", "transcribe", "identify", "signals", "scenes", "analyze", "fusion", "refine",
-        "plan", "safety", "frames", "perception", "motion", "proof", "publish", "learn",
+        "plan", "safety", "frames", "perception", "motion", "proof", "narrate", "publish",
+        "learn",
     ]  # fmt: skip
     assert all(record.status == "done" for record in manifest.stages.values())
     assert artifacts.load(folder, Identity).category == "electronics"
