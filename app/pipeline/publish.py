@@ -8,13 +8,29 @@ from pathlib import Path
 from typing import Any
 
 from app import artifacts
+from app.domains import profile_for
 from app.pipeline.assembly import build_reassembly
-from app.schemas import Box, Frames, Guide, Perception, Plan, ScrewMap, Step, StepPerception
+from app.schemas import (
+    Box,
+    Frames,
+    Guide,
+    Identity,
+    Perception,
+    Plan,
+    Safety,
+    ScrewMap,
+    Step,
+    StepPerception,
+)
 
-VERSION = "2"
+VERSION = "3"
 UNVERIFIED_SCREWS = (
     "Screw counts come from the video analysis only; they have not been verified on the images yet."
 )
+PRO_ONLY_STEP = (
+    "A qualified professional must do this step. FixScribe does not give instructions for it."
+)
+PRO_ONLY_CHECK = "Professional-only job:"
 
 
 def with_media(steps: list[Step], frames: Frames | None) -> list[Step]:
@@ -65,10 +81,63 @@ def screws_verified(steps: list[Step]) -> bool:
     return bool(with_screws) and all(step.screws.boxes for step in with_screws)
 
 
-def build_guide(plan: Plan, frames: Frames | None, perception: Perception | None = None) -> Guide:
+def with_kind(steps: list[Step], kind: str) -> list[Step]:
+    """Label every screw map with the domain fastener kind (screws, bolts, ...)."""
+    return [
+        step.model_copy(update={"screws": step.screws.model_copy(update={"kind": kind})})
+        if step.screws
+        else step
+        for step in steps
+    ]
+
+
+def with_prechecks(warnings: list[str], prechecks: list[str]) -> list[str]:
+    """The safety prechecks first, then the plan warnings, without duplicates."""
+    return list(dict.fromkeys([*prechecks, *warnings]))
+
+
+def blocked_steps(steps: list[Step]) -> list[Step]:
+    """The same steps without instructions: a pro must do them, we only point at them."""
+    return [step.model_copy(update={"instruction": PRO_ONLY_STEP}) for step in steps]
+
+
+def build_guide(
+    plan: Plan,
+    frames: Frames | None,
+    perception: Perception | None = None,
+    identity: Identity | None = None,
+    safety: Safety | None = None,
+) -> Guide:
     steps, perception_notes = with_perception(with_media(plan.steps, frames), perception)
+    kind = profile_for(identity.category).fastener_kind if identity else "screw"
+    steps = with_kind(steps, kind)
+    if safety is not None and safety.level == "professional_only":
+        checks = list(plan.checks) + perception_notes
+        checks.append(PRO_ONLY_CHECK + " " + " ".join(safety.reasons))
+        return Guide(
+            title=plan.title,
+            device=plan.device,
+            summary=plan.summary,
+            difficulty=plan.difficulty,
+            estimated_minutes=plan.estimated_minutes,
+            mode=plan.mode,
+            language=identity.language if identity else "en",
+            duration_s=plan.duration_s,
+            tools=plan.tools,
+            parts=plan.parts,
+            warnings=with_prechecks(plan.warnings, safety.prechecks),
+            steps=blocked_steps(steps),
+            reassembly=[],
+            checks=checks,
+            identity=identity,
+            safety=safety,
+        )
     reassembly = build_reassembly(steps)
     checks = list(plan.checks) + perception_notes + reassembly.warnings
+    if safety is None or safety.level == "normal":
+        warnings = list(plan.warnings)
+    else:
+        warnings = with_prechecks(plan.warnings, safety.prechecks)
     if any(step.screws and step.screws.count for step in steps) and not screws_verified(steps):
         checks.append(UNVERIFIED_SCREWS)
     return Guide(
@@ -78,13 +147,16 @@ def build_guide(plan: Plan, frames: Frames | None, perception: Perception | None
         difficulty=plan.difficulty,
         estimated_minutes=plan.estimated_minutes,
         mode=plan.mode,
+        language=identity.language if identity else "en",
         duration_s=plan.duration_s,
         tools=plan.tools,
         parts=plan.parts,
-        warnings=plan.warnings,
+        warnings=warnings,
         steps=steps,
         reassembly=reassembly.steps,
         checks=checks,
+        identity=identity,
+        safety=safety,
     )
 
 
@@ -93,6 +165,8 @@ def run(job_dir: Path, settings: Any) -> Guide:
         artifacts.load(job_dir, Plan),
         artifacts.load_optional(job_dir, Frames),
         artifacts.load_optional(job_dir, Perception),
+        artifacts.load_optional(job_dir, Identity),
+        artifacts.load_optional(job_dir, Safety),
     )
     artifacts.save(job_dir, guide)
     return guide
