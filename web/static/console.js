@@ -164,7 +164,7 @@
     var opts = $("question-options");
     opts.textContent = "";
     (rec.question.options || []).forEach(function (opt) {
-      var b = el("button", null, opt);
+      var b = el("button", "btn btn-glass", opt);
       b.type = "button";
       b.addEventListener("click", function () { $("answer-input").value = opt; });
       opts.appendChild(b);

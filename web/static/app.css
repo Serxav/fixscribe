@@ -346,3 +346,16 @@ details.proof[open] summary::after { content: "–"; }
 .footer .cols a:hover { color: var(--ink); }
 @media (min-width: 900px) { .footer .mark { grid-column: 1 / span 7; } .footer .cols { grid-column: 8 / -1; grid-template-columns: repeat(3, 1fr); } }
 .footer .cols div { display: grid; gap: 4px; align-content: start; }
+
+/* Pages (task 049) */
+.guide-head { padding: 40px 0 8px; row-gap: 40px; }
+.guide-head .display { margin-top: 16px; }
+.guide-head .stats { margin-top: 32px; }
+.guide-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+.guide-sect { margin-top: 24px; }
+#guide > section, #guide > .sect { margin-top: 72px; }
+#guide > .guide-head { margin-top: 0; }
+.proof-row { display: flex; gap: 20px; align-items: center; }
+#job { padding: 24px 0 40px; row-gap: 40px; }
+#job .progress-ring { margin: 6px 0 24px; }
+.repair-top .close { width: auto; height: 44px; padding: 0 16px; font-size: 15px; border-radius: 2px; }

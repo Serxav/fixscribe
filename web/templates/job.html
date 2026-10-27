@@ -1,14 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Working on your guide · FixScribe{% endblock %}
+{% block title %}Making your guide · FixScribe{% endblock %}
 {% block content %}
-<section id="job" data-job-id="{{ job_id }}" class="grid-2" style="margin-top:20px">
-  <div class="glass card" style="text-align:center">
-    <span class="kicker">Job {{ job_id }}</span>
-    <h1 class="title" style="margin-top:6px" id="headline">Turning your video into a guide</h1>
-    <div class="progress-ring" id="ring" style="--p: {{ (status.progress * 100)|round|int }}"><b id="percent">{{ (status.progress * 100)|round|int }}%</b></div>
-    <p class="lede" id="stage-label">{{ status.stage or "Starting" }}</p>
+<section id="job" data-job-id="{{ job_id }}" class="grid12" style="margin-top:20px">
+  <div class="col-l">
+    <p class="kicker mono">Job {{ job_id }}</p>
+    <h1 class="title" style="margin-top:8px" id="headline">Making your guide</h1>
+    <p class="lede" style="margin-top:16px" id="stage-label">{{ status.stage or "Starting" }}</p>
     <p class="muted small" id="state-label">{{ status.state }}</p>
-    <div id="error" class="warn {% if not status.error %}hidden{% endif %}" style="text-align:left">{{ status.error or "" }}</div>
+    <div id="error" class="warn {% if not status.error %}hidden{% endif %}" style="margin-top:12px">{{ status.error or "" }}</div>
     <div class="stack" style="margin-top:18px">
       <a id="guide-link" href="/guides/{{ job_id }}" class="btn btn-primary btn-lg btn-block hidden">Open the guide</a>
       <a id="console-link" href="/jobs/{{ job_id }}/console" class="btn btn-glass btn-lg btn-block">Agent console</a>
@@ -16,9 +15,9 @@
       <a id="retry-link" href="/" class="btn btn-glass btn-lg btn-block hidden">Try another video</a>
     </div>
   </div>
-  <div class="glass card">
-    <h2 class="h3">What FixScribe is doing</h2>
-    <p class="muted small" style="margin:4px 0 12px">Optional steps can fail without stopping your guide.</p>
+  <div class="col-r">
+    <div class="progress-ring" id="ring" style="--p: {{ (status.progress * 100)|round|int }}"><b id="percent">{{ (status.progress * 100)|round|int }}%</b></div>
+    <p class="muted small" style="margin:0 0 12px">Optional steps can fail without stopping your guide.</p>
     <ul class="stages" id="stage-list"><li class="waiting"><i class="dot waiting"></i><span>Loading…</span><span></span></li></ul>
   </div>
 </section>
