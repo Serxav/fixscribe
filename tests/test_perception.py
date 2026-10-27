@@ -1,5 +1,7 @@
 """Perception tests with a fake SAM client and synthetic stills."""
 
+import json
+
 import cv2
 import numpy as np
 import pytest
@@ -59,7 +61,7 @@ class FakeClient:
         if self.meta_fail_on_call is not None and len(self.calls) == self.meta_fail_on_call:
             raise MetaError("sam failed")
         name = image_path.name
-        if concept == "screw":
+        if concept in ("screw", "bolt"):
             prefix = name[:2]
             source = self.before if "_before" in name else self.after
             boxes = source.get(prefix, [])
@@ -374,3 +376,57 @@ def test_alignment_failure_notes_and_caps_confidence(tmp_path):
 )
 def test_part_concept(target, removes, expected):
     assert part_concept(target, removes) == expected
+
+
+def _write_identity(job_dir, category="automotive", **fields):
+    data = {"object_name": "sedan", "category": category, "task": "repair"}
+    data.update(fields)
+    (job_dir / "identity.json").write_text(json.dumps(data), encoding="utf-8")
+
+
+def _ledger_concepts(client):
+    return {concept for name, concept, _ in client.calls if "before" in name or "after" in name}
+
+
+def test_automotive_identity_ledger_uses_bolt(tmp_path):
+    settings = _job(tmp_path, [_step(1, 0.0, 5.0, screws=1)])
+    _write_identity(tmp_path, problem="brakes squeak")
+    client = FakeClient(part=PART, before={"01": [FOUR[0]]}, after={"01": []})
+
+    result = perception.run(tmp_path, settings, client=client)
+
+    assert perception.fastener_concept(tmp_path) == "bolt"
+    assert _ledger_concepts(client) == {"bolt"}
+    assert len(result.steps[0].removed) == 1
+
+
+def test_no_identity_ledger_uses_screw(tmp_path):
+    settings = _job(tmp_path, [_step(1, 0.0, 5.0, screws=1)])
+    client = FakeClient(part=PART, before={"01": [FOUR[0]]}, after={"01": []})
+
+    result = perception.run(tmp_path, settings, client=client)
+
+    assert perception.fastener_concept(tmp_path) == "screw"
+    assert _ledger_concepts(client) == {"screw"}
+    assert len(result.steps[0].removed) == 1
+
+
+def test_automotive_notes_use_bolts(tmp_path):
+    settings = _job(tmp_path, [_step(1, 0.0, 5.0, screws=2)])
+    _write_identity(tmp_path)
+    client = FakeClient(part=PART, before={"01": [FOUR[0]]}, after={"01": []})
+
+    result = perception.run(tmp_path, settings, client=client)
+
+    assert "SAM found 1 bolts removed, the analysis counted 2." in result.steps[0].notes
+
+
+def test_automotive_alignment_failure_note_uses_bolts(tmp_path, monkeypatch):
+    settings = _job(tmp_path, [_step(1, 0.0, 5.0, screws=1)])
+    _write_identity(tmp_path)
+    client = FakeClient(part=PART, before={"01": [FOUR[0]]}, after={"01": []})
+    monkeypatch.setattr(perception, "align_after_to_before", lambda *_args: None)
+
+    result = perception.run(tmp_path, settings, client=client)
+
+    assert "Camera moved too much to verify the bolts." in result.steps[0].notes

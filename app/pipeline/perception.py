@@ -20,12 +20,14 @@ import numpy as np
 
 from app import artifacts
 from app.config import Settings
+from app.domains import profile_for
 from app.meta_client import BudgetExceeded, Detection, MetaClient
 from app.pipeline.ingest import find_original
 from app.pipeline.media import extract_still
 from app.pipeline.overlay import draw_part, draw_screws, save_jpeg
 from app.schemas import (
     Frames,
+    Identity,
     IngestInfo,
     NormBox,
     PartHighlight,
@@ -47,6 +49,18 @@ SAME_SCREW = 0.04
 
 _ARTICLES = {"a", "an", "the"}
 _BUDGET_NOTE = "SAM budget reached."
+
+
+def fastener_concept(job_dir: Path) -> str:
+    """The SAM fastener word for this job: the profile kind, or "screw"."""
+    identity = artifacts.load_optional(job_dir, Identity)
+    if identity is None:
+        return "screw"
+    return profile_for(identity.category).fastener_kind
+
+
+def _plural(concept: str) -> str:
+    return concept + "s"
 
 
 def _clean_phrase(text: str | None) -> str | None:
@@ -146,6 +160,12 @@ def _read_image(path: Path) -> Any:
 _ALIGN_MAX_SIDE = 1280
 _MIN_INLIERS = 15
 _ALIGN_FAILED_NOTE = "Camera moved too much to verify the screws."
+
+
+def _align_failed_note(fastener: str) -> str:
+    if fastener == "screw":
+        return _ALIGN_FAILED_NOTE
+    return f"Camera moved too much to verify the {_plural(fastener)}."
 
 
 def _gray_small(image: Any) -> tuple[Any, float]:
@@ -257,13 +277,14 @@ def _screws_on_still(
     still_path: Path,
     roi: tuple[float, float, float, float],
     image: Any = None,
+    fastener: str = "screw",
 ) -> list[tuple[NormBox, float | None]]:
     if image is None:
         image = _read_image(still_path)
     crop = _crop_upscaled(image, roi)
     crop_path = still_path.with_name(f"{still_path.stem}_crop.png")
     _write_png_atomic(crop, crop_path)
-    detections, sent_size = _segment(client, sp, crop_path, "screw")
+    detections, sent_size = _segment(client, sp, crop_path, fastener)
     kept = _nms([item for item in detections if _confidence_ok(item)])
     found: list[tuple[NormBox, float | None]] = []
     for detection in kept:
@@ -380,6 +401,7 @@ def _process_step(
     step: Step,
     sp: StepPerception,
     next_number: int,
+    fastener: str = "screw",
 ) -> int:
     del settings
     keyframe_path = _keyframe_still(job_dir, ingest, frames, step, plan.duration_s)
@@ -421,10 +443,14 @@ def _process_step(
             after_for_screws = cv2.warpAffine(after_image, alignment, (before_w, before_h))
         else:
             after_for_screws = after_image
-            sp.notes.append(_ALIGN_FAILED_NOTE)
-        before = _screws_on_still(client, sp, before_path, roi, image=before_image)
+            sp.notes.append(_align_failed_note(fastener))
+        before = _screws_on_still(
+            client, sp, before_path, roi, image=before_image, fastener=fastener
+        )
         sp.screws_before = len(before)
-        after = _screws_on_still(client, sp, after_path, roi, image=after_for_screws)
+        after = _screws_on_still(
+            client, sp, after_path, roi, image=after_for_screws, fastener=fastener
+        )
         sp.screws_after = len(after)
         diagonal = math.hypot(key_w, key_h)
         limit = SAME_SCREW * diagonal
@@ -457,7 +483,7 @@ def _process_step(
         sp.removed = records
         if len(records) != _screw_count(step):
             sp.notes.append(
-                f"SAM found {len(records)} screws removed, "
+                f"SAM found {len(records)} {_plural(fastener)} removed, "
                 f"the analysis counted {_screw_count(step)}."
             )
     sp.overlay = _make_overlay(job_dir, step, keyframe_path, sp)
@@ -471,6 +497,7 @@ def run(job_dir: Path, settings: Settings, client: Any = None) -> Perception:
     ingest = artifacts.load_optional(job_dir, IngestInfo)
     if client is None:
         client = MetaClient(settings, job_dir=job_dir)
+    fastener = fastener_concept(job_dir)
     eligible = [
         step
         for step in plan.steps
@@ -485,7 +512,7 @@ def run(job_dir: Path, settings: Settings, client: Any = None) -> Perception:
         sp = StepPerception(index=step.index)
         try:
             next_number = _process_step(
-                job_dir, settings, client, plan, frames, ingest, step, sp, next_number
+                job_dir, settings, client, plan, frames, ingest, step, sp, next_number, fastener
             )
         except BudgetExceeded:
             sp.notes.append(_BUDGET_NOTE)

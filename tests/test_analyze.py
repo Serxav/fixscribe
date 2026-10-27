@@ -10,6 +10,7 @@ import pytest
 
 from app.artifacts import ArtifactError
 from app.config import Settings
+from app.domains import profile_for
 from app.meta_client import MetaClient, MetaError
 from app.pipeline.analyze import (
     ANALYZE_TIMEOUT_S,
@@ -18,6 +19,7 @@ from app.pipeline.analyze import (
     AnalyzeError,
     build_input,
     build_prompt,
+    domain_context,
     parse_analysis,
     run,
 )
@@ -325,3 +327,90 @@ def test_missing_ingest_names_it(tmp_path):
 
     assert fake.files.created == 0
     assert fake.responses.calls == 0
+
+
+APPLIANCE_IDENTITY = {
+    "object_name": "front-loading washing machine",
+    "category": "appliance",
+    "brand": "Bosch",
+    "model": "WAN28281GB",
+    "task": "repair",
+    "problem": "drum does not spin",
+}
+
+
+def test_domain_block_with_appliance_identity(tmp_path):
+    job_dir = tmp_path / "job"
+    make_job(job_dir)
+    (job_dir / "identity.json").write_text(json.dumps(APPLIANCE_IDENTITY), encoding="utf-8")
+    client, fake = make_client(tmp_path, [fake_answer()])
+
+    run(job_dir, Settings(model_api_key="", data_dir=tmp_path), client)
+
+    prompt = prompt_text(fake)
+    assert "Object: front-loading washing machine (appliance)" in prompt
+    assert "task: repair, problem: drum does not spin" in prompt
+    assert "Brand/model: Bosch WAN28281GB" in prompt
+    assert "Typical parts:" in prompt
+    assert "drum" in prompt
+    assert "Fasteners in this domain:" in prompt
+    assert "hose clamp" in prompt
+    assert "count them as `screw_count`" in prompt
+    assert "- [1.2–3.4 s] Step one, remove the screws" in prompt
+    assert "- step 1:" in prompt
+
+
+def test_no_identity_uses_generic_profile(tmp_path):
+    job_dir = tmp_path / "job"
+    make_job(job_dir)
+    client, fake = make_client(tmp_path, [fake_answer()])
+
+    run(job_dir, Settings(model_api_key="", data_dir=tmp_path), client)
+
+    prompt = prompt_text(fake)
+    assert "Object:" not in prompt
+    assert "general repair of an unknown device" in prompt
+    assert "Fasteners in this domain: screw, bolt, nut, clip" in prompt
+    assert "- [1.2–3.4 s] Step one, remove the screws" in prompt
+    assert "- step 1:" in prompt
+
+
+def test_phone_identity_prompt_talks_about_screws(tmp_path):
+    job_dir = tmp_path / "job"
+    make_job(job_dir)
+    (job_dir / "identity.json").write_text(
+        json.dumps({"object_name": "Phone X", "category": "electronics", "task": "repair"}),
+        encoding="utf-8",
+    )
+    client, fake = make_client(tmp_path, [fake_answer()])
+
+    run(job_dir, Settings(model_api_key="", data_dir=tmp_path), client)
+
+    prompt = prompt_text(fake)
+    assert "Object: Phone X (electronics)" in prompt
+    assert "problem: not stated" in prompt
+    assert "Brand/model: unknown" in prompt
+    assert "Fasteners in this domain: screw," in prompt
+
+
+def test_domain_context_without_identity_is_generic_tail():
+    profile = profile_for(None)
+    block = domain_context(None, profile)
+    lines = block.splitlines()
+    assert len(lines) == 3
+    assert "Object:" not in block
+    assert lines[0] == profile.prompt_hint
+    assert lines[1] == f"Typical parts: {', '.join(profile.parts)}"
+    assert "count them as `screw_count`" in lines[2]
+
+
+def test_build_prompt_replaces_domain():
+    prompt = build_prompt(
+        42.0,
+        "narrated",
+        [{"start_s": 1.2, "end_s": 3.4, "text": "Step one"}],
+        [{"start_s": 1.2, "end_s": 15.0}],
+        "Object: Phone X (electronics)",
+    )
+    assert "Object: Phone X (electronics)" in prompt
+    assert "<<" not in prompt
