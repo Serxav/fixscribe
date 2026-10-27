@@ -356,3 +356,12 @@ def test_helpers():
     assert valid_box([-5, 10, 1200, 500]) == (0, 10, 1000, 500)
     assert valid_box([1, 2, 3]) is None
     assert normalize("¡Ahora, METEMOS el tornillo!") == "ahora metemos el tornillo"
+
+
+def test_fresh_start_never_discards_a_run_waiting_for_the_person(tmp_path, monkeypatch):
+    job = make_job(tmp_path)
+    rec.save_record(job, rec.AgentRecord(status="needs_input"))
+    started = []
+    monkeypatch.setattr(loop.subprocess, "Popen", lambda *a, **k: started.append(a))
+    assert loop.launch(job) is False
+    assert started == []

@@ -321,6 +321,8 @@ def launch(job_dir: Path, *, resume: bool = False) -> bool:
     job_dir = Path(job_dir)
     if is_running(job_dir):
         return False
+    if not resume and rec.load_record(job_dir).status in ("needs_input", "awaiting_signoff"):
+        return False  # a fresh start would throw away a run that waits for the person
     rec.agent_dir(job_dir).mkdir(parents=True, exist_ok=True)
     command = [sys.executable, "-m", "app.agent.loop", str(job_dir)] + (
         ["--resume"] if resume else []
