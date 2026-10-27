@@ -136,7 +136,7 @@ def _nms(detections: list[Detection]) -> list[Detection]:
     return kept
 
 
-def _roi_norm(part: PartHighlight | None) -> tuple[float, float, float, float]:
+def roi_of(part: PartHighlight | None) -> tuple[float, float, float, float]:
     """The part box grown by ``ROI_GROW`` as ``(x, y, w, h)``, or the whole frame."""
     if part is None:
         return (0.0, 0.0, 1.0, 1.0)
@@ -271,7 +271,7 @@ def _map_to_still(
     return NormBox(x=x, y=y, w=x2 - x, h=y2 - y)
 
 
-def _screws_on_still(
+def fasteners_on_still(
     client: Any,
     sp: StepPerception,
     still_path: Path,
@@ -418,7 +418,7 @@ def _process_step(
         else:
             sp.notes.append(f"No part found for '{concept}'.")
     if _screw_count(step) > 0:
-        roi = _roi_norm(sp.part)
+        roi = roi_of(sp.part)
         name = f"{step.index:02d}"
         before_path = _still_at(
             job_dir,
@@ -444,11 +444,11 @@ def _process_step(
         else:
             after_for_screws = after_image
             sp.notes.append(_align_failed_note(fastener))
-        before = _screws_on_still(
+        before = fasteners_on_still(
             client, sp, before_path, roi, image=before_image, fastener=fastener
         )
         sp.screws_before = len(before)
-        after = _screws_on_still(
+        after = fasteners_on_still(
             client, sp, after_path, roi, image=after_for_screws, fastener=fastener
         )
         sp.screws_after = len(after)
