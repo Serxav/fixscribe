@@ -10,6 +10,7 @@ from typing import Any
 from app import artifacts
 from app.domains import profile_for
 from app.pipeline.assembly import build_reassembly
+from app.text import plural
 from app.schemas import (
     Box,
     Frames,
@@ -25,9 +26,17 @@ from app.schemas import (
 )
 
 VERSION = "3"
-UNVERIFIED_SCREWS = (
-    "Screw counts come from the video analysis only; they have not been verified on the images yet."
-)
+
+
+def unverified_note(kind: str) -> str:
+    """Honest note when the fastener count is not verified on the images yet."""
+    return (
+        f"The {plural(kind)} count comes from the video analysis only;"
+        " it has not been verified on the images yet."
+    )
+
+
+UNVERIFIED_SCREWS = unverified_note("screw")
 PRO_ONLY_STEP = (
     "A qualified professional must do this step. FixScribe does not give instructions for it."
 )
@@ -126,7 +135,15 @@ def build_guide(
         reassembly = assembled.steps
         checks += assembled.warnings
         if any(step.screws and step.screws.count for step in steps) and not screws_verified(steps):
-            checks.append(UNVERIFIED_SCREWS)
+            kind = next(
+                (
+                    step.screws.kind
+                    for step in steps
+                    if step.screws and step.screws.count and step.screws.kind
+                ),
+                "screw",
+            )
+            checks.append(unverified_note(kind))
     return Guide(
         title=plan.title,
         device=plan.device,
