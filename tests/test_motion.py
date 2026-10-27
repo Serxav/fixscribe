@@ -82,13 +82,27 @@ def test_outline_and_cutout(tmp_path):
 
 
 class FakeSam:
-    """Tracks a bright square (the part) and two small dots (one of them is removed)."""
+    """A bright square (the part) and two small dots (fastener 2 is removed at frame 10).
+
+    `segment` finds them on a still; `segment_video` follows what it is pointed at.
+    """
 
     def __init__(self):
-        self.concepts = []
+        self.calls = []
 
-    def segment_video(self, path, concept, max_frames=600):
-        self.concepts.append(concept)
+    def segment(self, path, concept, max_side=1280):
+        self.calls.append(("find", concept))
+        image = cv2.imread(str(path))
+        h, w = image.shape[:2]
+        if concept == "screw":  # on the zoomed crop: two dots, in crop pixels
+            return [
+                _det((0.1 * w, 0.1 * h, 0.2 * w, 0.2 * h)),
+                _det((0.5 * w, 0.1 * h, 0.6 * w, 0.2 * h)),
+            ], (w, h)
+        return [_det((w // 4, h // 4, w // 2, h // 2))], (w, h)
+
+    def segment_video(self, path, concept=None, boxes=(), size=None, max_frames=600):
+        self.calls.append(("follow", concept or [b[0] for b in boxes]))
         capture = cv2.VideoCapture(str(path))
         frames, index = [], 0
         while True:
@@ -96,18 +110,21 @@ class FakeSam:
             if not ok:
                 break
             h, w = image.shape[:2]
-            if concept == "screw":
-                objects = [_obj(1, (10, 10, 18, 18))]
-                if index < 10:
-                    objects.append(_obj(2, (40, 10, 48, 18)))
-            else:
+            objects = []
+            for object_id, _, box in boxes:
+                if object_id == 2 and concept is None and len(boxes) == 2 and index >= 10:
+                    continue  # the second fastener comes out
                 mask = np.zeros((h, w), dtype=bool)
-                mask[h // 4 : h // 2, w // 4 : w // 2] = True
-                objects = [_obj(1, (w // 4, h // 4, w // 2, h // 2), mask)]
+                mask[box[1] : box[3], box[0] : box[2]] = True
+                objects.append(_obj(object_id, box, mask))
             frames.append(_frame(index, objects, (w, h)))
             index += 1
         capture.release()
         return frames
+
+
+def _det(box, confidence=0.9):
+    return SimpleNamespace(box=box, confidence=confidence)
 
 
 @pytest.fixture
@@ -129,7 +146,11 @@ def job(tmp_path):
 def test_run_renders_clips_cutout_and_counts_the_removed_fastener(job):
     sam = FakeSam()
     result = motion.run(job, Settings(), client=sam)
-    assert sam.concepts == ["back cover", "screw"]  # step 2 has no part: skipped
+    # Find the part, follow that box; find the fasteners around it, follow those boxes.
+    # Step 2 has no part: skipped.
+    assert sam.calls == [
+        ("find", "back cover"), ("follow", [1]), ("find", "screw"), ("follow", [1, 2])
+    ]  # fmt: skip
     step = result.steps[0]
     assert step.fasteners_tracked == 1  # only the one that came out
     for path in (step.clip, step.clip_reverse, step.cutout):
@@ -141,7 +162,7 @@ def test_run_renders_clips_cutout_and_counts_the_removed_fastener(job):
 
 def test_one_failing_step_does_not_stop_the_others(job):
     class Broken(FakeSam):
-        def segment_video(self, path, concept, max_frames=600):
+        def segment_video(self, path, concept=None, boxes=(), size=None, max_frames=600):
             raise RuntimeError("SAM down")
 
     result = motion.run(job, Settings(), client=Broken())
@@ -154,3 +175,27 @@ def test_box_local_masks_are_placed_inside_their_box():
     track = motion.to_track([_frame(0, [_obj(1, (20, 10, 30, 15), local)], (40, 30))], (40, 30))
     ys, xs = np.nonzero(track.masks[0])
     assert (xs.min(), xs.max(), ys.min(), ys.max()) == (20, 29, 10, 14)
+
+
+def test_seed_part_takes_the_most_confident_then_largest():
+    class Finder:
+        def segment(self, path, concept, max_side=1280):
+            return [
+                _det((0, 0, 10, 10), 0.9),
+                _det((0, 0, 30, 30), 0.9),
+                _det((0, 0, 50, 50), 0.2),
+            ], (100, 100)
+
+    frame = np.zeros((100, 100, 3), dtype=np.uint8)
+    import tempfile
+    from pathlib import Path
+
+    with tempfile.TemporaryDirectory() as work:
+        assert motion.seed_part(Finder(), frame, "lid", Path(work)) == (0, 0, 30, 30)
+
+
+def test_smoothing_removes_one_frame_flicker():
+    on = np.ones((4, 4), dtype=bool)
+    track = motion.Track(masks={0: on, 1: on, 2: np.zeros((4, 4), dtype=bool), 3: on}, objects={})
+    masks = motion.smoothed(track, 4, (4, 4))
+    assert all(mask.all() for mask, _ in masks)  # frame 2 is held, not dropped

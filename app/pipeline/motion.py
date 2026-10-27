@@ -1,7 +1,12 @@
 """Motion stage: SAM 3.1 tracks the part and the fasteners through each step clip.
 
-For every step with a target part, a short clip of the step goes to SAM 3.1 video tracking twice
-(the part, then the fastener kind of the domain). From the per-frame masks we render a
+SAM is used the way it works best: first FIND, then FOLLOW. On the sharpest frame of the step,
+SAM image segmentation finds the part (text concept) and, on a zoomed crop around it, the
+fasteners. Those boxes are then sent as prompts to SAM video tracking, so it follows exactly
+those objects (one id each) instead of everything that looks alike. If finding fails we fall
+back to tracking the text concept. Masks are smoothed over time so the outline does not shake.
+
+From the per-frame masks we render a
 "cinematic" clip: the scene dims and loses colour, the part stays in full colour with a soft glow
 and a crisp outline that follows it, and every fastener gets a numbered ring that moves with it.
 We also cut the part out along its mask (transparent PNG) and keep its outline as an SVG path, so
@@ -26,12 +31,16 @@ from app.schemas import Motion, NormBox, Plan, StepMotion
 
 logger = logging.getLogger(__name__)
 
-VERSION = "1"
+VERSION = "2"
 MAX_STEPS = 6
 FPS = 15
 MAX_SECONDS = 8.0  # longer steps: the middle 8 s (SAM bills per frame)
 WIDTH = 720  # long side of the working clip
 HOLD_FRAMES = 4  # a mask SAM skipped on a frame is kept this many frames, then fades
+SMOOTH = 0.6  # weight of this frame's mask against the previous one (removes jitter)
+SEED_MIN_CONFIDENCE = 0.3
+MAX_FASTENERS = 15  # SAM video follows at most 16 prompted objects; 1 is the part
+ZOOM_SIDE = 900  # fasteners are small: the crop around the part is upscaled to this side
 
 ACCENT = (255, 132, 10)  # BGR of #0a84ff
 OUTLINE = (255, 214, 120)  # light cyan-blue, BGR
@@ -292,6 +301,109 @@ def outline_path(mask: np.ndarray) -> str:
     return " ".join(parts)
 
 
+def sharpest_frame(frames: list[np.ndarray], first: int, last: int) -> int:
+    """The least blurry frame in [first, last) (variance of the Laplacian on a small copy)."""
+    best, best_score = first, -1.0
+    for index in range(first, max(first + 1, last)):
+        gray = cv2.cvtColor(frames[index], cv2.COLOR_BGR2GRAY)
+        small = cv2.resize(gray, (gray.shape[1] // 2, gray.shape[0] // 2))
+        score = float(cv2.Laplacian(small, cv2.CV_64F).var())
+        if score > best_score:
+            best, best_score = index, score
+    return best
+
+
+def _write_png(image: np.ndarray, path: Path) -> Path:
+    with artifacts.atomic_path(path) as tmp:
+        if not cv2.imwrite(str(tmp), image):
+            raise MotionError(f"cannot write {path.name}")
+    return path
+
+
+def _found(client: Any, image: np.ndarray, path: Path, concept: str) -> list[tuple]:
+    """SAM image segmentation: [(confidence, (l, t, r, b) in `image` pixels), ...]."""
+    detections, sent = client.segment(_write_png(image, path), concept)
+    height, width = image.shape[:2]
+    sx, sy = width / max(1, sent[0]), height / max(1, sent[1])
+    found = []
+    for item in detections:
+        confidence = item.confidence if item.confidence is not None else 0.5
+        if confidence < SEED_MIN_CONFIDENCE:
+            continue
+        x1, y1, x2, y2 = item.box
+        box = (int(x1 * sx), int(y1 * sy), int(round(x2 * sx)), int(round(y2 * sy)))
+        if box[2] > box[0] and box[3] > box[1]:
+            found.append((confidence, box))
+    return found
+
+
+def seed_part(client: Any, frame: np.ndarray, concept: str, work: Path) -> tuple | None:
+    """The single best box of the part on the seed frame (most confident, then largest)."""
+    found = _found(client, frame, work / "seed.png", concept)
+    if not found:
+        return None
+    area = lambda b: (b[2] - b[0]) * (b[3] - b[1])  # noqa: E731
+    return max(found, key=lambda item: (round(item[0], 2), area(item[1])))[1]
+
+
+def seed_fasteners(
+    client: Any, frame: np.ndarray, around: tuple | None, fastener: str, work: Path
+) -> list[tuple]:
+    """Fastener boxes on a zoomed crop around the part (whole frame if no part)."""
+    height, width = frame.shape[:2]
+    if around is None:
+        x1, y1, x2, y2 = 0, 0, width, height
+    else:
+        cx, cy = (around[0] + around[2]) / 2, (around[1] + around[3]) / 2
+        half_w, half_h = (around[2] - around[0]) * 0.65, (around[3] - around[1]) * 0.65
+        x1, y1 = int(max(0, cx - half_w)), int(max(0, cy - half_h))
+        x2, y2 = int(min(width, cx + half_w)), int(min(height, cy + half_h))
+    crop = frame[y1:y2, x1:x2]
+    scale = max(1.0, ZOOM_SIDE / max(crop.shape[:2]))
+    zoomed = cv2.resize(crop, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+    found = _found(client, zoomed, work / "seed_fasteners.png", fastener)
+    boxes = []
+    for _, (left, top, right, bottom) in sorted(found, key=lambda item: -item[0]):
+        box = (
+            x1 + int(left / scale),
+            y1 + int(top / scale),
+            x1 + int(right / scale),
+            y1 + int(bottom / scale),
+        )
+        if all(_overlap(box, other) < 0.5 for other in boxes):
+            boxes.append(box)
+    return boxes[:MAX_FASTENERS]
+
+
+def _overlap(a: tuple, b: tuple) -> float:
+    ix = max(0, min(a[2], b[2]) - max(a[0], b[0]))
+    iy = max(0, min(a[3], b[3]) - max(a[1], b[1]))
+    inter = ix * iy
+    union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
+    return inter / union if union else 0.0
+
+
+def follow(client: Any, clip: Path, size: tuple[int, int], boxes: list, frame: int, concept: str):
+    """SAM video: follow the given boxes from `frame` (one id each), or the concept if none."""
+    if boxes:
+        prompts = [(object_id, frame, box) for object_id, box in enumerate(boxes, start=1)]
+        return client.segment_video(clip, boxes=prompts, size=size)
+    return client.segment_video(clip, concept)
+
+
+def smoothed(track: Track | None, count: int, shape: tuple[int, int]) -> list[tuple]:
+    """(mask, alpha) for every frame: held over skipped frames and smoothed over time."""
+    out, previous = [], None
+    for index in range(count):
+        mask, alpha = held_mask(track, index, shape)
+        current = mask.astype(np.float32)
+        if previous is not None and alpha > 0:
+            current = SMOOTH * current + (1 - SMOOTH) * previous
+        previous = current if alpha > 0 else None
+        out.append((current > 0.5, alpha))
+    return out
+
+
 def motion_for_step(
     job_dir: Path, client: Any, step, plan: Plan, fastener: str
 ) -> StepMotion | None:
@@ -305,18 +417,28 @@ def motion_for_step(
     frames = read_frames(source)
     height, width = frames[0].shape[:2]
 
-    part_track = to_track(client.segment_video(source, concept), (width, height))
+    size = (width, height)
+    work = steps_dir / f"{step.index:02d}_work"
+    seed = sharpest_frame(frames, 0, max(1, len(frames) // 2))
+    part_box = seed_part(client, frames[seed], concept, work)
+    part_track = to_track(
+        follow(client, source, size, [part_box] if part_box else [], seed, concept), size
+    )
     screw_track = None
     if step.screws and step.screws.count:
-        screw_track = to_track(client.segment_video(source, fastener), (width, height))
+        # Fasteners are seeded on the first frame: they are all still in place there.
+        around = part_box or _track_box(part_track)
+        screws = seed_fasteners(client, frames[0], around, fastener, work)
+        screw_track = to_track(follow(client, source, size, screws, 0, fastener), size)
     removed = removed_fasteners(screw_track, len(frames))
     numbers = fastener_numbers(screw_track, set(removed))
     seen_last = last_boxes(screw_track)
     pop_frames = 8
 
+    masks = smoothed(part_track, len(frames), (height, width))
     rendered = []
     for index, frame in enumerate(frames):
-        part, alpha = held_mask(part_track, index, (height, width))
+        part, alpha = masks[index]
         boxes = screw_track.objects.get(index, {}) if screw_track else {}
         pops = [
             (seen_last[oid], (index - gone) / pop_frames)
@@ -345,7 +467,20 @@ def motion_for_step(
         motion.cutout_box = cutout(frames[best], mask, job_dir / motion.cutout)
         motion.outline = outline_path(mask)
     source.unlink(missing_ok=True)
+    for leftover in work.glob("*") if work.is_dir() else []:
+        leftover.unlink(missing_ok=True)
+    if work.is_dir():
+        work.rmdir()
     return motion
+
+
+def _track_box(track: Track) -> tuple | None:
+    """The box around the part where SAM saw it largest (seed for the fastener search)."""
+    best = best_frame(track)
+    if best is None:
+        return None
+    ys, xs = np.nonzero(track.masks[best])
+    return (int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1)
 
 
 def run(job_dir: Path, settings: Settings, client: Any = None) -> Motion:
