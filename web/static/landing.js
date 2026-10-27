@@ -1,6 +1,3 @@
-// Page motion. Content rises in as it enters the screen; the mosaic unfolds as you scroll (one
-// object big with its labels, then twenty more around it); the phone in "What FixScribe does"
-// shows the screen of the feature you are reading. Everything is visible without this script.
 (function () {
   "use strict";
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -8,7 +5,6 @@
   var ease = function (t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
   var watch = "IntersectionObserver" in window;
 
-  // 1. Reveal on scroll
   var items = document.querySelectorAll("[data-reveal]");
   if (reduce || !watch) {
     items.forEach(function (el) { el.classList.add("in"); });
@@ -23,7 +19,6 @@
     items.forEach(function (el) { seen.observe(el); });
   }
 
-  // 2. What FixScribe does: the step in the middle of the screen picks the phone screen
   var steps = document.querySelectorAll(".story-step");
   var screens = document.querySelectorAll(".device-screen .screen");
   var dots = document.querySelectorAll(".story-dots span");
@@ -45,7 +40,6 @@
     }
   }
 
-  // 3. The mosaic
   var stage = document.querySelector("[data-mosaic-stage]");
   var grid = stage && stage.querySelector("[data-mosaic]");
   if (!grid || reduce) return;
@@ -57,7 +51,6 @@
   var startScale = 1;
   var queued = false;
 
-  // Where each tile sits relative to the center tile, in tiles (offsets ignore transforms).
   var measure = function () {
     var size = center.offsetWidth;
     var cx = center.offsetLeft + size / 2;
@@ -68,7 +61,6 @@
       tile.ring = Math.round(Math.max(Math.abs(tile.dx), Math.abs(tile.dy)) / size);
     });
     startScale = Math.max(1, Math.min(stick.clientWidth * 0.9 / size, (stick.clientHeight - 30) * 0.86 / size));
-    // Lay the drawing out at its biggest size, centred on its cell; draw() only scales it down.
     var big = size * startScale;
     center.classList.add("big");
     art.style.width = art.style.height = big.toFixed(1) + "px";

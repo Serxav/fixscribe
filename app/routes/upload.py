@@ -27,30 +27,8 @@ router = APIRouter()
 
 
 @router.get("/", response_class=HTMLResponse)
-def index(request: Request, settings: Settings = Depends(settings_dep)):  # noqa: B008
-    example = settings.data_dir / "example_job.txt"
-    example_job = example.read_text().strip() if example.is_file() else None
-    showcase = None
-    if example_job:
-        from app.routes.common import load_guide
-
-        _, guide = load_guide(example_job, settings)
-        if guide is not None:
-            media = f"/media/{example_job}/"
-            clips = [media + s.motion.clip for s in guide.steps if s.motion]
-            showcase = {
-                "title": guide.title,
-                "object": guide.identity.object_name if guide.identity else guide.device,
-                "steps": len(guide.steps),
-                "proof": round(guide.proof.score * 100) if guide.proof else None,
-                "clips": clips[:3],
-                "poster": media + guide.steps[0].image
-                if guide.steps and guide.steps[0].image
-                else None,
-            }
-    return templates.TemplateResponse(
-        request, "index.html", {"example_job": example_job, "showcase": showcase}
-    )
+def index(request: Request):
+    return templates.TemplateResponse(request, "index.html", {})
 
 
 @router.post("/upload")

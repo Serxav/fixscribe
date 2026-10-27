@@ -1,4 +1,3 @@
-/* Repair film v4: dark, full screen, media first. One family, mono data, square corners. */
 .film-body { background: #000; color: #fff; overflow: hidden; font-family: var(--font); letter-spacing: var(--track); }
 .film-body .ambient { display: none; }
 .film { position: fixed; inset: 0; display: grid; }

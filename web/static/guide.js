@@ -1,4 +1,3 @@
-// Guide page: 3D exploded views, view switcher, repair mode, step check and video jumps.
 (function () {
   "use strict";
   var root = document.getElementById("guide");
@@ -6,13 +5,11 @@
   var jobId = root.dataset.jobId;
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // --- Top bar shows the guide title once the header scrolls away ----------------------
   var crumb = document.getElementById("crumb");
   window.addEventListener("scroll", function () {
     if (crumb) crumb.classList.toggle("show", window.scrollY > 260);
   }, { passive: true });
 
-  // --- View switcher: 3D / Photo / Clip ----------------------------------------------------
   function showView(stage, name) {
     stage.querySelectorAll("[data-view]").forEach(function (b) {
       b.setAttribute("aria-pressed", String(b.dataset.view === name));
@@ -32,11 +29,9 @@
     if (first) first.play().catch(function () {});
   });
 
-  // --- 3D exploded scene ---------------------------------------------------------------------
   function setupScene(scene) {
     var rig = scene.querySelector(".rig");
     var img = new Image();
-    // Fit the photo plane inside the stage whatever its shape (portrait or landscape).
     function fit() {
       if (!img.naturalWidth) return;
       var ratio = img.naturalWidth / img.naturalHeight;
@@ -49,10 +44,9 @@
     window.addEventListener("resize", fit);
     img.src = scene.dataset.image;
 
-    // The lifted part shows the same photo, cropped to the part box.
     var part = scene.querySelector("[data-part]");
     if (part && part.hasAttribute("data-cutout")) {
-      part.style.backgroundSize = "100% 100%"; // the PNG is already the part alone
+      part.style.backgroundSize = "100% 100%";
     } else if (part) {
       var x = +part.dataset.x, y = +part.dataset.y, w = +part.dataset.w, h = +part.dataset.h;
       part.style.backgroundSize = (10000 / w) + "% " + (10000 / h) + "%";
@@ -89,7 +83,6 @@
       start = null;
     });
 
-    // Take the step apart once, when it scrolls into view.
     if ("IntersectionObserver" in window) {
       var seen = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
@@ -107,7 +100,6 @@
   }
   document.querySelectorAll(".scene").forEach(setupScene);
 
-  // --- Jump to a moment of the full video ----------------------------------------------
   var mainVideo = document.getElementById("main-video");
   document.querySelectorAll("[data-seek]").forEach(function (button) {
     button.addEventListener("click", function () {
@@ -118,7 +110,6 @@
     });
   });
 
-  // --- Step check: a photo of your own object, answered by SAM -------------------------
   var toast = document.getElementById("toast");
   var hideTimer = null;
   function showToast(kind, title, text, badge) {
@@ -148,7 +139,6 @@
     });
   });
 
-  // --- Repair mode: one step at a time, full screen --------------------------------------
   var repair = document.getElementById("repair");
   var steps = Array.prototype.map.call(document.querySelectorAll("article.step"), function (article) {
     var photo = article.querySelector("[data-view-panel='photo'] img");

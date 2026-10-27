@@ -1,4 +1,3 @@
-/* Live coach v4: same family as the film. Mono data, square corners, white on dark. */
 .live-camera { object-fit: cover; }
 .live-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, 0.3); margin-left: auto; }
 .live-dot.on { background: #3ddc84; }

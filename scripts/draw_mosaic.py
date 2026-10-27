@@ -28,15 +28,23 @@ def tile(
     chip: str,
     chip_dark: bool = False,
     delay: float = 0.0,
+    floor: bool = False,
 ) -> str:
-    color = INK if chip_dark else WHITE
+    """One square tile: the drawing in the top band, its label centred in the bottom band."""
+    ink = INK if chip_dark else WHITE
+    pill = "rgba(255,255,255,.55)" if chip_dark else "rgba(0,0,0,.28)"
+    width = 26 + len(chip) * 8.4
+    shadow = (
+        '<ellipse cx="200" cy="338" rx="120" ry="9" fill="#000" opacity=".13"/>' if floor else ""
+    )
     chip_svg = (
-        f'<rect x="20" y="352" width="{14 + len(chip) * 9.0:.0f}" height="30" rx="15" fill="none" stroke="{color}" stroke-opacity=".55"/>'
-        f'<text x="34" y="372" font-family="{MONO}" font-size="14" fill="{color}">{chip}</text>'
+        f'<rect x="{200 - width / 2:.1f}" y="356" width="{width:.1f}" height="28" rx="14" fill="{pill}"/>'
+        f'<text x="200" y="375" text-anchor="middle" font-family="{MONO}" font-size="13" fill="{ink}">{chip}</text>'
     )
     return (
         f'<svg viewBox="0 0 {S} {S}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{label}" '
-        f'style="--mz-delay:{delay:.2f}s"><rect width="{S}" height="{S}" fill="{bg}"/>{body}{chip_svg}</svg>'
+        f'style="--mz-delay:{delay:.2f}s"><rect width="{S}" height="{S}" fill="{bg}"/>'
+        f'<g transform="translate(36 4) scale(.82)">{shadow}{body}</g>{chip_svg}</svg>'
     )
 
 
@@ -80,8 +88,8 @@ def screw(x, y, r=6) -> str:
 # --- the objects ------------------------------------------------------------------------------
 
 
-def phone() -> str:
-    """The center tile: a phone opened for a battery swap, drawn finer than the others."""
+def phone_parts(battery_class: str = "mz-lift") -> str:
+    """The opened phone without overlays: frame, cameras, logic board, battery, speaker."""
     thin = f'stroke="{INK}" stroke-width="1.8" stroke-linejoin="round"'
     b = f'<rect x="113" y="16" width="174" height="330" rx="30" fill="#f4f6fb" stroke="{INK}" stroke-width="2.4"/>'
     b += "".join(
@@ -89,7 +97,6 @@ def phone() -> str:
         for x, y, h in [(109, 80, 22), (109, 112, 36), (287, 104, 44)]
     )
     b += f'<rect x="124" y="27" width="152" height="308" rx="22" fill="#dfe4ee" {thin}/>'
-    # camera module and logic board
     b += f'<rect x="134" y="38" width="56" height="56" rx="12" fill="#f4f6fb" {thin}/>'
     b += "".join(
         f'<circle cx="{x}" cy="{y}" r="10" fill="#1b2233" {thin}/><circle cx="{x - 3}" cy="{y - 3}" r="3" fill="#8fa3c8"/>'
@@ -103,8 +110,7 @@ def phone() -> str:
     )
     b += f'<rect x="208" y="122" width="26" height="10" rx="2" fill="#d9b54a" {thin}/>'
     b += '<path d="M221 132 V150 H246 V158" fill="none" stroke="#d9b54a" stroke-width="6"/>'
-    # battery, pull tabs, speaker bracket
-    b += f'<g class="mz-lift"><rect x="136" y="158" width="128" height="138" rx="8" fill="#c7d1f6" stroke="{INK}" stroke-width="2"/>'
+    b += f'<g class="{battery_class}"><rect x="136" y="158" width="128" height="138" rx="8" fill="#c7d1f6" stroke="{INK}" stroke-width="2"/>'
     b += f'<text x="150" y="190" font-family="{MONO}" font-size="11" fill="{INK}" opacity=".7">Li-ion 3.85 V</text>'
     b += f'<path d="M150 204 h96 M150 216 h70" stroke="{INK}" stroke-width="1.6" opacity=".35"/>'
     b += (
@@ -117,13 +123,21 @@ def phone() -> str:
     b += "".join(
         f'<circle cx="{212 + i * 8}" cy="320" r="2" fill="{INK}" opacity=".6"/>' for i in range(7)
     )
-    for i, (x, y) in enumerate([(206, 142), (258, 142), (144, 320), (186, 320)], start=1):
+    return b
+
+
+SCREWS = [(206, 142), (258, 142), (144, 320), (186, 320)]
+
+
+def phone() -> str:
+    """The center tile: the phone with Spark's box, SAM's numbered screws and part labels."""
+    b = phone_parts()
+    for i, (x, y) in enumerate(SCREWS, start=1):
         b += (
             f'<circle cx="{x}" cy="{y}" r="4" fill="#d9dde3" stroke="{INK}" stroke-width="1.4"/>'
             + ring(x, y, i, r=8)
         )
     b += gbox(132, 154, 136, 146)
-    # labels, only readable while the tile is big (opacity from --detail, set by landing.js)
     labels = [
         ((266, 60), (300, 60), "logic board"),
         ((268, 228), (300, 228), "battery (Spark)"),
@@ -548,13 +562,24 @@ TILES = [
     ),
 ]
 CENTER = 10
+STANDING = {
+    "Office chair",
+    "Washing machine",
+    "Drill",
+    "Coffee machine",
+    "Desk lamp",
+    "Gas boiler",
+    "Side table",
+}
 
 
 def mosaic() -> str:
     figures = []
     for i, (name, bg, draw, label, chip, dark) in enumerate(TILES):
         center = ' data-center="1"' if i == CENTER else ""
-        svg = tile(name, bg, draw(), label, chip, dark, delay=-(i * 0.37) % 3)
+        svg = tile(
+            name, bg, draw(), label, chip, dark, delay=-(i * 0.37) % 3, floor=name in STANDING
+        )
         figures.append(f'<figure class="mz-tile"{center}>{svg}</figure>')
     return '<div class="mz-grid" data-mosaic>\n' + "\n".join(figures) + "\n</div>\n"
 
