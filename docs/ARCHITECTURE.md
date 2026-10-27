@@ -14,10 +14,13 @@ behind them (`proof.json`).
 | Piece | Code | Job |
 |---|---|---|
 | Web app | `app/main.py`, `app/routes/` | upload, progress API, guide page, media files, tray page, step checks |
-| Job store | `app/jobs.py` | one folder per job `data/jobs/<id>/`, `status.json` (locked, atomic), stale-job detection |
-| Runner | `app/pipeline/runner.py` | one process per job, stages in order, `manifest.json` (version, seconds, dollars per stage) |
-| Artifacts | `app/schemas.py`, `app/artifacts.py` | one Pydantic model per file, one atomic load/save |
-| Meta door | `app/meta_client.py` | the only code that talks to Meta: Spark, Voice, SAM; retries, global and per-job budget, spend log |
+| Job store | `app/jobs.py` | one folder per job under `Settings.jobs_dir` (`data/jobs/<id>/`), `status.json` (locked, atomic), stale-job detection |
+| Runner | `app/pipeline/runner.py` | one process per job, stages in order, `manifest.json` (version, seconds, dollars per stage), `--resume` restarts at the failed stage |
+| Artifacts | `app/schemas.py`, `app/artifacts.py` (`atomic_path`) | one Pydantic model per file; every write goes through `atomic_path` (temp file in the same folder, then rename) |
+| Spark JSON | `app/spark.py` (`ask_json`) | the one strict-JSON Spark call shared by analyze, identify and refine (prompt plus images or an uploaded video; raw answer saved; `SparkAnswerError` on bad JSON) |
+| Text | `app/text.py` (`plural`, `drop_article`) | small English helpers shared by the stages, kept in one place |
+| Route helpers | `app/routes/common.py` (`job_folder`, `load_guide`) | URL id → job folder and guide, in one place |
+| Meta door | `app/meta_client.py` (`make_client`, `set_client_factory`) | the only code that talks to Meta: Spark, Voice, SAM; retries, global and per-job budget, spend log; pipeline code gets its client only via `make_client`, and tests and the offline demo swap in a fake with `set_client_factory` |
 | Domains | `app/domains.py`, `domains/*.json` | one validated profile per category: fasteners, parts, tools, prechecks, hazards |
 | Safety rules | `app/safety.py` | fixed levels and regex rules; `evaluate`, `stricter` (models may only raise) |
 | Tray data | `app/tray.py` | printable fastener-tray cells + reassembly lines from a guide (pure data, no web) |
@@ -48,7 +51,7 @@ failure; required stages fail the job. A stage's owned artifact is deleted befor
 | 14 | publish | `guide.json` | no | none | plan + media + perception + reassembly; pro-only redaction |
 | 15 | learn | `profile_suggestions.json` | yes | none | new vocabulary the profile does not know yet |
 
-Attempt jobs (`attempt_stages()`: a user's own repair video vs a reference guide):
+Attempt jobs (`attempt_stages()` in `app/pipeline/runner.py`: a user's own repair video vs a reference guide):
 
 | # | Stage | Owns | Optional | Model | Job |
 |---|---|---|---|---|---|
@@ -110,6 +113,28 @@ Limits: `MAX_PHOTO_BYTES` 15 MB, `MAX_CHECKS_PER_JOB` 20 per job (further photos
 Tray page (`GET /guides/{job_id}/tray`): a print-ready A4 sheet with one cell per step that
 removes fasteners (step, title, kind, count, numbers, image) plus reassembly lines naming the
 tray cell each line draws its fasteners from.
+
+## Failure and recovery
+
+Required stages (ingest, scenes, analyze, plan, safety, publish) fail the job when they
+fail; optional stages (transcribe, identify, signals, fusion, refine, frames, perception,
+proof, learn) add a short warning to `status.json` and the job continues without them. A
+stage's owned artifact is deleted before it runs, so a retry never reads a stale result.
+
+What the user sees: the progress bar (stage weights in `default_stages()`), the current
+stage name, and on failure one human sentence (the stage name plus the error, capped at
+300 chars by `short_error`), never a traceback. A job stuck in `queued` or `running`
+whose runner died is marked failed by `check_stale` ("The job stopped unexpectedly.
+Please try again.").
+
+`manifest.json` records one `StageRecord` per stage that ran (`status` done, failed or
+skipped, plus `version`, `started_at`, `seconds`, `usd` and `error`) with `total_seconds`
+and `total_usd` sums, so every second and dollar is traced to its stage. Restart with
+`python -m app.pipeline.runner <job_id> --resume` (or `start_job(..., resume=True)`):
+finished stages with the same version and their artifact file still present are reused
+(`reusable()`; recorded as `skipped` with zero cost, so no Meta call is paid twice) and
+the job restarts at the stage that failed; every later stage reruns because its inputs
+may have changed.
 
 ## Rules that shape the design
 
