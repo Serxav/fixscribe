@@ -199,3 +199,25 @@ def test_smoothing_removes_one_frame_flicker():
     track = motion.Track(masks={0: on, 1: on, 2: np.zeros((4, 4), dtype=bool), 3: on}, objects={})
     masks = motion.smoothed(track, 4, (4, 4))
     assert all(mask.all() for mask, _ in masks)  # frame 2 is held, not dropped
+
+
+def test_add_voice_puts_the_real_sound_of_that_moment_on_the_clip(tmp_path):
+    video = tmp_path / "video.mp4"
+    subprocess.run(
+        ["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc=size=160x120:rate=15",
+         "-f", "lavfi", "-i", "sine=frequency=440", "-t", "3", "-pix_fmt", "yuv420p",
+         "-c:a", "aac", "-shortest", str(video)],
+        check=True,
+    )  # fmt: skip
+    clip = tmp_path / "clip.mp4"
+    subprocess.run(
+        ["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc=size=160x120:rate=15",
+         "-t", "1", "-pix_fmt", "yuv420p", str(clip)],
+        check=True,
+    )  # fmt: skip
+    assert not motion.has_audio(clip)
+    assert motion.add_voice(video, 1.0, 2.0, clip) is True
+    assert motion.has_audio(clip)
+    silent = tmp_path / "silent.mp4"
+    clip.rename(silent)
+    assert motion.add_voice(tmp_path / "nothing.mp4", 0, 1, silent) is False

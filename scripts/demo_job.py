@@ -371,22 +371,59 @@ class FakeMeta:
         return track_colored(video_path, concept, boxes, size)
 
 
+def narration_track(folder: Path) -> list[str]:
+    """ffmpeg input args for a spoken narration (macOS `say`, demo only), else a quiet tone.
+
+    Each turn of TURNS is spoken at its own second, so the demo sounds like a technician
+    narrating the repair. The product never uses this: it plays the real video's sound.
+    """
+    import shutil
+
+    if shutil.which("say") is None:
+        return ["-f", "lavfi", "-i", f"sine=frequency=330:duration={SECONDS}"]
+    parts, delays = [], []
+    for n, (t, text) in enumerate(TURNS):
+        voice = ["-v", "Monica"] if text.lower().startswith("paso") else []
+        aiff = folder / f".turn{n}.aiff"
+        subprocess.run(["say", *voice, "-r", "175", "-o", str(aiff), text], check=False)
+        if not aiff.is_file():
+            subprocess.run(["say", "-o", str(aiff), text], check=True)
+        parts.append(aiff)
+        delays.append(int(t * 1000))
+    track = folder / ".narration.wav"
+    inputs = [arg for path in parts for arg in ("-i", str(path))]
+    chains = [f"[{i}:a]adelay={d}|{d}[a{i}]" for i, d in enumerate(delays)]
+    mix = "".join(f"[a{i}]" for i in range(len(parts)))
+    graph = ";".join(chains) + f";{mix}amix=inputs={len(parts)}:normalize=0,apad"
+    subprocess.run(
+        ["ffmpeg", "-y", "-v", "error", *inputs, "-filter_complex", graph,
+         "-t", str(SECONDS), "-ar", "24000", "-ac", "1", str(track)],
+        check=True,
+    )  # fmt: skip
+    for path in parts:
+        path.unlink(missing_ok=True)
+    return ["-i", str(track)]
+
+
 def main() -> int:
     settings = get_settings()
     jobs_dir = settings.jobs_dir
     job_id = create_job(jobs_dir).job_id
     original = Path(jobs_dir / job_id / "original.mp4")
-    # A moving test pattern with a tone: portrait, like a phone video.
+    narration = narration_track(jobs_dir / job_id)
+    # The synthetic phone on a workbench, portrait like a phone video, with the narration.
     subprocess.run(
         [
             "ffmpeg", "-y", "-v", "error",
             "-f", "lavfi", "-i", f"color=c=0x{BENCH}:size=720x1280:rate=30:duration={SECONDS}",
-            "-f", "lavfi", "-i", f"sine=frequency=330:duration={SECONDS}",
+            *narration,
             "-vf", scene_filter(),
             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", str(original),
         ],
         check=True,
     )  # fmt: skip
+    for leftover in (jobs_dir / job_id).glob(".narration.*"):
+        leftover.unlink()
     set_client_factory(FakeMeta)  # one switch: no stage can reach the real Meta API
     status = run_job(job_id, settings, jobs_dir=jobs_dir)
     print(f"job {job_id}: {status.state} {status.error or ''}".rstrip())

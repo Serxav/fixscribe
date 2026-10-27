@@ -737,6 +737,9 @@ class StepMotion(Strict):
     part: str = ""  # the concept SAM tracked ("back cover")
     fasteners_tracked: int = Field(default=0, ge=0)  # distinct fastener ids SAM followed
     frames: int = Field(default=0, ge=0)  # frames sent to SAM (billing)
+    start_s: float = Field(default=0.0, ge=0)  # where the clip starts in the video
+    end_s: float = Field(default=0.0, ge=0)
+    voice: bool = False  # the clip carries the technician's own narration for this moment
 
 
 class Motion(Strict):

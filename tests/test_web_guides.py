@@ -218,3 +218,27 @@ def test_film_page_and_playlist(jobs_tmp):
     page = TestClient(app).get(f"/guides/{job_id}/film")
     assert page.status_code == 200 and "film-data" in page.text and "Put back" in page.text
     assert TestClient(app).get("/guides/nothere/film").status_code == 404
+
+
+def test_film_uses_the_technicians_own_voice_and_words():
+    from app.routes.guides import film_playlist, own_words
+    from app.schemas import StepMotion, Transcript, Turn
+
+    transcript = Transcript(
+        mode="narrated",
+        turns=[
+            Turn(start_s=0.5, end_s=2.0, text="Step one, two screws."),
+            Turn(start_s=9, end_s=10, text="later"),
+        ],
+    )
+    assert own_words(transcript, 0, 5) == "Step one, two screws."
+    guide = _guide()
+    guide.steps[0] = guide.steps[0].model_copy(
+        update={
+            "motion": StepMotion(
+                index=1, clip="steps/01_motion.mp4", start_s=0, end_s=5, voice=True
+            )
+        }
+    )
+    first = film_playlist(guide, "abc", transcript)["steps"][0]
+    assert first["voice"] is True and first["words"] == "Step one, two screws."
