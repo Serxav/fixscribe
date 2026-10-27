@@ -95,14 +95,19 @@ def to_track(frames: list[Any], size: tuple[int, int]) -> Track:
         boxes = {}
         for obj in frame.objects:
             boxes[obj.object_id] = _scale_box(obj.box, (frame.width, frame.height), size)
-            if obj.mask is not None:
-                mask = np.asarray(obj.mask).astype(np.uint8)
-                if mask.shape != (height, width):
-                    mask = cv2.resize(mask, (width, height), interpolation=cv2.INTER_NEAREST)
-                union |= mask.astype(bool)
-            else:  # no mask: use the box
-                x1, y1, x2, y2 = (int(round(v)) for v in boxes[obj.object_id])
-                union[max(0, y1) : max(0, y2), max(0, x1) : max(0, x2)] = True
+            x1, y1, x2, y2 = (int(round(v)) for v in boxes[obj.object_id])
+            x1, y1 = max(0, x1), max(0, y1)
+            x2, y2 = min(width, max(x2, x1 + 1)), min(height, max(y2, y1 + 1))
+            if obj.mask is None:  # no mask: use the box
+                union[y1:y2, x1:x2] = True
+                continue
+            mask = np.asarray(obj.mask).astype(np.uint8)
+            if mask.shape == (frame.height, frame.width):  # a full-frame mask
+                full = cv2.resize(mask, (width, height), interpolation=cv2.INTER_NEAREST)
+                union |= full.astype(bool)
+            else:  # SAM sends the mask of the box only: put it back where the box is
+                local = cv2.resize(mask, (x2 - x1, y2 - y1), interpolation=cv2.INTER_NEAREST)
+                union[y1:y2, x1:x2] |= local.astype(bool)
         masks[frame.frame] = union
         objects[frame.frame] = boxes
     return Track(masks=masks, objects=objects)

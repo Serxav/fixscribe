@@ -147,3 +147,10 @@ def test_one_failing_step_does_not_stop_the_others(job):
     result = motion.run(job, Settings(), client=Broken())
     assert result.steps == []
     assert result.notes == ["Step 1: no motion clip (SAM down)."]
+
+
+def test_box_local_masks_are_placed_inside_their_box():
+    local = np.ones((5, 10), dtype=bool)  # what SAM sends: the mask of the box only
+    track = motion.to_track([_frame(0, [_obj(1, (20, 10, 30, 15), local)], (40, 30))], (40, 30))
+    ys, xs = np.nonzero(track.masks[0])
+    assert (xs.min(), xs.max(), ys.min(), ys.max()) == (20, 29, 10, 14)
