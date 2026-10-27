@@ -177,3 +177,16 @@ def test_confidence_percentage_becomes_ratio():
     assert identify.MAX_OUTPUT_TOKENS >= 4000
     parsed = parse_identity(json.dumps({**ANSWER, "confidence": 85}))
     assert parsed.confidence == pytest.approx(0.85)
+
+
+def test_spoken_text_falls_back_to_turns():
+    from app.pipeline.identify import spoken_text
+    from app.schemas import Transcript
+
+    turns = [
+        {"start_s": 0, "end_s": 1, "text": "hola"},
+        {"start_s": 1, "end_s": 2, "text": "lavadora"},
+    ]
+    assert spoken_text(Transcript(mode="narrated", turns=turns)) == "hola lavadora"
+    assert spoken_text(Transcript(mode="narrated", transcript="full", turns=turns)) == "full"
+    assert spoken_text(None) == ""

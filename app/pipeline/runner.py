@@ -71,6 +71,7 @@ def default_stages() -> list[Stage]:
         analyze,
         frames,
         fusion,
+        identify,
         ingest,
         perception,
         plan,
@@ -84,6 +85,7 @@ def default_stages() -> list[Stage]:
     return [
         stage_of("ingest", ingest, "ingest.json", weight=1.0),
         stage_of("transcribe", transcribe, "transcript.json", weight=1.0, optional=True),
+        stage_of("identify", identify, "identity.json", weight=0.5, optional=True),
         stage_of("signals", signals, "signals.json", weight=0.5, optional=True),
         stage_of("scenes", scenes, "scenes.json", weight=0.2),
         stage_of("analyze", analyze, "analysis.json", weight=6.0),

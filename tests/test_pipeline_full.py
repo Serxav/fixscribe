@@ -10,10 +10,10 @@ import pytest
 from app import artifacts
 from app.config import Settings
 from app.jobs import create_job
-from app.pipeline import analyze, perception, refine, transcribe
+from app.pipeline import analyze, identify, perception, refine, transcribe
 from app.pipeline.publish import UNVERIFIED_SCREWS
 from app.pipeline.runner import default_stages, run_job
-from app.schemas import Guide, Manifest
+from app.schemas import Guide, Identity, Manifest
 
 pytestmark = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="needs ffmpeg")
 
@@ -74,6 +74,21 @@ REFINED = {
 }
 
 
+IDENTITY = {
+    "object_name": "Test phone",
+    "category": "electronics",
+    "brand": "",
+    "model": "",
+    "task": "repair",
+    "problem": "battery drains fast",
+    "hazards": ["lithium_battery"],
+    "skill": "intermediate",
+    "language": "en",
+    "evidence": ["phone on the mat in every frame"],
+    "confidence": 0.8,
+}
+
+
 class FakeMeta:
     """Stands in for MetaClient in every stage that talks to Meta."""
 
@@ -94,6 +109,8 @@ class FakeMeta:
         FakeMeta.calls.append(("respond", kwargs["input"][0]["content"][0]["text"]))
         if kwargs["text"]["format"]["name"] == "refined_step":  # Spark pass 2 on one step
             return SimpleNamespace(output_text=json.dumps(REFINED))
+        if kwargs["text"]["format"]["name"] == "repair_identity":  # what the video shows
+            return SimpleNamespace(output_text=json.dumps(IDENTITY))
         return SimpleNamespace(output_text=json.dumps(ANSWER))
 
     def segment(self, image_path, concept, max_side=1280):
@@ -109,6 +126,7 @@ def fake_meta(monkeypatch):
     FakeMeta.calls = []
     monkeypatch.setattr(transcribe, "MetaClient", FakeMeta)
     monkeypatch.setattr(analyze, "MetaClient", FakeMeta)
+    monkeypatch.setattr(identify, "MetaClient", FakeMeta)
     monkeypatch.setattr(refine, "MetaClient", FakeMeta)
     monkeypatch.setattr(perception, "MetaClient", FakeMeta)
     return FakeMeta
@@ -138,7 +156,8 @@ def test_full_pipeline_builds_a_guide(tmp_path, fake_meta):
     folder = jobs / job_id
     scenes = json.loads((folder / "scenes.json").read_text())
     assert scenes["source"] == "voice"
-    prompt = next(text for kind, text in fake_meta.calls if kind == "respond")
+    identify_prompt, prompt = [text for kind, text in fake_meta.calls if kind == "respond"][:2]
+    assert "Step one, remove the four screws" in identify_prompt  # identify heard the speech
     assert "Step one, remove the four screws" in prompt
     assert "- step 1: 0.5–5.0 s" in prompt
     assert ("delete", "file-test") in fake_meta.calls
@@ -155,10 +174,12 @@ def test_full_pipeline_builds_a_guide(tmp_path, fake_meta):
     # Every stage left a record: version, time and cost.
     manifest = artifacts.load(folder, Manifest)
     assert list(manifest.stages) == [
-        "ingest", "transcribe", "signals", "scenes", "analyze", "fusion", "refine", "plan",
-        "frames", "perception", "publish",
+        "ingest", "transcribe", "identify", "signals", "scenes", "analyze", "fusion", "refine",
+        "plan", "frames", "perception", "publish",
     ]  # fmt: skip
     assert all(record.status == "done" for record in manifest.stages.values())
+    assert artifacts.load(folder, Identity).category == "electronics"
+    assert not (folder / "identify").exists()  # stills only lived for the call
     # Pass 2 looked again at the screw step and its answer reached the guide.
     assert guide.steps[0].instruction == "Remove the four screws on the back cover."
     assert any(kind == "segment" and concept == "screw" for kind, concept in fake_meta.calls)

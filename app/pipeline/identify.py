@@ -41,6 +41,13 @@ def frame_times(duration_s: float, n: int = N_FRAMES) -> list[float]:
     return [duration_s * (0.1 + 0.8 * i / (n - 1)) for i in range(n)]
 
 
+def spoken_text(transcript: Transcript | None) -> str:
+    """The words spoken, from the full transcript or, if it is empty, from the turns."""
+    if transcript is None:
+        return ""
+    return transcript.transcript or " ".join(turn.text for turn in transcript.turns)
+
+
 def build_prompt(transcript_text: str) -> str:
     """Fill the identify prompt template with the first spoken words."""
     template = PROMPT_PATH.read_text(encoding="utf-8")
@@ -87,7 +94,7 @@ def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> 
             stills_dir,
             max_side=MAX_SIDE,
         )
-        transcript_text = transcript.transcript if transcript else ""
+        transcript_text = spoken_text(transcript)
         prompt = build_prompt(transcript_text)
         response = client.respond(
             model=settings.spark_model,
