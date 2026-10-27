@@ -242,3 +242,15 @@ def test_film_uses_the_technicians_own_voice_and_words():
     )
     first = film_playlist(guide, "abc", transcript)["steps"][0]
     assert first["voice"] is True and first["words"] == "Step one, two screws."
+
+
+def test_live_page(jobs_tmp):
+    job_id = _write_guide(jobs_tmp, _guide())
+    page = TestClient(app).get(f"/guides/{job_id}/live")
+    assert (
+        page.status_code == 200
+        and "/static/live.js" in page.text
+        and "Start the camera" in page.text
+    )
+    assert f"/guides/{job_id}/live" in TestClient(app).get(f"/guides/{job_id}").text
+    assert TestClient(app).get("/guides/nothere/live").status_code == 404
