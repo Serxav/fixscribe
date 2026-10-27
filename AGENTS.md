@@ -3,11 +3,18 @@
 Read this whole file before doing anything. If anything here is unclear, STOP and ask.
 
 ## 1. What we are building
-FixScribe turns a repair video recorded on a phone into a step-by-step repair guide.
+FixScribe turns a repair video recorded on a phone into a step-by-step repair guide, for almost
+any object: electronics, appliances, furniture, cars, plumbing, electrical, tools and more.
+It first identifies what it is looking at (object, category, task, hazards), then adapts:
+each category has a domain profile in `domains/<category>.json` (fasteners for SAM, parts,
+tools, safety pre-checks), so a new category is one JSON file, never new code.
 It always watches the video; if the technician narrates, it also listens.
 Each step has: instruction, safety warnings, the part highlighted with SAM 3.1, a numbered
-screw map, a short loop clip and a "watch in video" jump. It also generates the reverse
-reassembly guide and checks that every removed screw goes back (which screw goes where).
+fastener map (screws, bolts, clips...), a short loop clip and a "watch in video" jump. It also
+generates the reverse reassembly guide and checks that every removed fastener goes back.
+Safety is rules first (`app/safety.py`): professional-only jobs (gas, electrical panel, airbag,
+refrigerant, high-voltage battery, microwave high voltage) get no instructions. A model may only
+make the safety level stricter, never lower it.
 
 Hackathon: Meta Global AI Developer Hackathon, Indie track. Deadline: Nov 4, 2026, 9:00 PM ET.
 
@@ -79,9 +86,10 @@ tests/  eval/  demo/  docs/  tasks/
 
 ## 7. Scope
 - Mobile-first web app: record or upload a video, progress bar, guide view, edit or regenerate one step, export Markdown.
+- Identify stage first; domain profiles per category; rules-first safety gate.
 - Narrated and silent modes. Step cuts from the spoken keyword "step" / "paso".
 - Sharpest keyframe per step (±1 s), 6-second silent loop clip per step.
-- SAM 3.1 part highlight; numbered screw map; reassembly with screw count check and which screw goes where.
+- SAM 3.1 part highlight; numbered fastener map; reassembly with fastener count check and which fastener goes where.
 - Inspector agent (Muse Wonder with tools segment / set_keyframe / update_step): max 5 steps, max 6 tool calls per step.
 - "Ask FixScribe" by voice or text: next / back / repeat without AI; other questions answered by Spark with video seconds as proof.
 
