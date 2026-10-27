@@ -27,8 +27,10 @@ router = APIRouter()
 
 
 @router.get("/", response_class=HTMLResponse)
-def index(request: Request):
-    return templates.TemplateResponse(request, "index.html", {})
+def index(request: Request, settings: Settings = Depends(settings_dep)):  # noqa: B008
+    example = settings.data_dir / "example_job.txt"
+    example_job = example.read_text().strip() if example.is_file() else None
+    return templates.TemplateResponse(request, "index.html", {"example_job": example_job})
 
 
 @router.post("/upload")

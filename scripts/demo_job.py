@@ -26,13 +26,15 @@ TURNS = [
 ]
 
 
-def step(title, instruction, start, end, action, removes, screws=0, warnings=(), conf=0.9):
+def step(
+    title, instruction, start, end, action, removes, screws=0, warnings=(), conf=0.9, target=None
+):
     return {
         "title": title,
         "instruction": instruction,
         "start_s": start,
         "end_s": end,
-        "target_part": removes[0] if removes else "",
+        "target_part": target or (removes[0] if removes else ""),
         "action": action,
         "removes": list(removes),
         "screw_count": screws,
@@ -63,6 +65,7 @@ ANALYSIS = {
             "unscrew",
             ["bottom screws"],
             screws=2,
+            target="phone body",
         ),
         step(
             "Open the screen",
@@ -122,6 +125,80 @@ IDENTITY = {
 }
 
 
+# --- A synthetic phone on a workbench, so the offline demo looks like a repair ---------------
+# Each part has its own flat color; the fake SAM below finds parts and screws by that color,
+# so perception, the screw ledger and the 3D views work on real pixels, offline and for free.
+BENCH = "6e5a46"
+PARTS = [  # (name, color, x, y, w, h, visible-when)
+    ("body", "3b4048", 180, 200, 360, 800, "1"),
+    ("board", "1e6b48", 196, 216, 328, 300, "1"),
+    ("battery", "2a5fa8", 212, 540, 296, 380, "lt(t,32)"),
+    ("battery connector", "d8b02a", 390, 500, 60, 28, "lt(t,23)"),
+    ("battery connector", "d8b02a", 390, 450, 60, 28, "gte(t,23)"),
+    ("battery connector bracket", "c06a2b", 360, 470, 130, 80, "lt(t,18.5)"),
+    ("display", "101317", 196, 216, 328, 724, "lt(t,10)"),
+]
+SCREWS = [  # (x, y, visible-when): 2 at the bottom edge, 3 on the bracket
+    (300, 960, "lt(t,5)"),
+    (402, 960, "lt(t,5)"),
+    (366, 476, "lt(t,17)"),
+    (464, 476, "lt(t,17)"),
+    (415, 528, "lt(t,17)"),
+]
+SCREW_COLOR = "dfe3e8"
+SCREW_SIDE = 20
+
+
+def scene_filter() -> str:
+    boxes = [
+        f"drawbox=x={x}:y={y}:w={w}:h={h}:color=0x{color}:t=fill:enable='{when}'"
+        for _, color, x, y, w, h, when in PARTS
+    ]
+    boxes += [
+        f"drawbox=x={x}:y={y}:w={SCREW_SIDE}:h={SCREW_SIDE}:color=0x{SCREW_COLOR}:t=fill"
+        f":enable='{when}'"
+        for x, y, when in SCREWS
+    ]
+    return ",".join(boxes)
+
+
+def find_colored(image_path, concept, max_side=1280):
+    """Offline stand-in for SAM: boxes of the pixels that have the concept's color."""
+    import cv2
+    import numpy as np
+
+    from app.meta_client import Detection
+
+    image = cv2.imread(str(image_path))
+    height, width = image.shape[:2]
+    scale = min(1.0, max_side / max(height, width))
+    if scale < 1.0:
+        image = cv2.resize(image, (int(width * scale), int(height * scale)))
+    concept = concept.lower()
+    if "screw" in concept and "bracket" not in concept:
+        color = SCREW_COLOR
+    else:
+        # Exact part name first, then the longest part name inside the concept, then the reverse.
+        names = sorted({name for name, *_ in PARTS}, key=len, reverse=True)
+        name = next((n for n in names if n == concept), None)
+        name = name or next((n for n in names if n in concept), None)
+        name = name or next((n for n in names if concept in n), None)
+        if name is None:
+            return [], (image.shape[1], image.shape[0])
+        color = next(c for n, c, *_ in PARTS if n == name)
+    rgb = [int(color[i : i + 2], 16) for i in (0, 2, 4)]
+    target = np.array(rgb[::-1], dtype=np.int16)  # BGR
+    mask = (np.abs(image.astype(np.int16) - target).max(axis=2) < 28).astype(np.uint8)
+    count, _, stats, _ = cv2.connectedComponentsWithStats(mask)
+    min_area = 0.00004 * image.shape[0] * image.shape[1]
+    found = [
+        Detection(f"o{i}", (float(x), float(y), float(x + w), float(y + h)), 0.9, None, None, None)
+        for i, (x, y, w, h, area) in enumerate(stats[1:], start=1)
+        if area >= max(min_area, 12)
+    ]
+    return found, (image.shape[1], image.shape[0])
+
+
 class FakeMeta:
     def __init__(self, settings, **kwargs):
         pass
@@ -160,7 +237,7 @@ class FakeMeta:
         pass
 
     def segment(self, image_path, concept, max_side=1280):
-        return [], (100, 100)
+        return find_colored(image_path, concept, max_side)
 
 
 def main() -> int:
@@ -172,8 +249,9 @@ def main() -> int:
     subprocess.run(
         [
             "ffmpeg", "-y", "-v", "error",
-            "-f", "lavfi", "-i", f"testsrc2=size=1080x1920:rate=30:duration={SECONDS}",
+            "-f", "lavfi", "-i", f"color=c=0x{BENCH}:size=720x1280:rate=30:duration={SECONDS}",
             "-f", "lavfi", "-i", f"sine=frequency=330:duration={SECONDS}",
+            "-vf", scene_filter(),
             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", str(original),
         ],
         check=True,

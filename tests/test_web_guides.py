@@ -152,3 +152,38 @@ def test_overlay_images_match_the_media_rule():
     assert _MEDIA_RE.fullmatch("steps/03.mp4") and _MEDIA_RE.fullmatch("video.mp4")
     assert not _MEDIA_RE.fullmatch("steps/03_overlay.mp4")
     assert not _MEDIA_RE.fullmatch("../guide.json")
+
+
+def test_guide_page_has_3d_views_proof_and_repair_mode(tmp_path):
+    from app.routes.guides import step_views
+    from app.schemas import Box, Claim, Proof, ScrewMap, StepProof
+
+    guide = _guide()
+    step = guide.steps[0]
+    guide.steps[0] = step.model_copy(
+        update={
+            "image": "steps/01.jpg",
+            "screws": ScrewMap(
+                count=2, kind="bolt", boxes=[Box(number=1, x=0.1, y=0.2, w=0.1, h=0.1)]
+            ),
+        }
+    )
+    guide.proof = Proof(
+        steps=[StepProof(index=1, claims=[Claim(field="part", status="verified", sources=["SAM"])])]
+    )
+    parts = {1: {"label": "back cover", "x": 10.0, "y": 20.0, "w": 50.0, "h": 40.0}}
+    view = step_views(guide, "abc", parts)[0]
+    assert view["fasteners"] == "2 bolts"
+    assert view["pins"] == [{"n": 1, "x": 15.0, "y": 25.0}]
+    assert view["part"]["label"] == "back cover"
+    assert view["claims"][0] == {"label": "Which part", "status": "verified", "sources": ["SAM"]}
+    assert view["checkable"] is True
+    assert view["image"] == "/media/abc/steps/01.jpg"
+
+
+def test_guide_page_renders_repair_mode_and_export(jobs_tmp):
+    job_id = _write_guide(jobs_tmp, _guide())
+    text = TestClient(app).get(f"/guides/{job_id}").text
+    assert 'id="repair"' in text and "Start repair" in text
+    assert f"/guides/{job_id}/export.md" in text
+    assert f"/guides/{job_id}/tray" in text
