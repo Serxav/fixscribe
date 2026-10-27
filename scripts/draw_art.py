@@ -230,29 +230,56 @@ def tile_point() -> str:
 
 def tile_cutout() -> str:
     w, h = 800, 1000
-    body = phone_at(120, 150, 1.45, battery_class="")
-    bx, by = 120 + (136 - 109) * 1.45, 150 + (158 - 16) * 1.45
-    bw, bh = 128 * 1.45, 138 * 1.45
-    body += '<defs><pattern id="hatch" width="12" height="12" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="5" height="12" fill="#fff" opacity=".85"/></pattern></defs>'
-    body += f'<rect x="{bx:.0f}" y="{by:.0f}" width="{bw:.0f}" height="{bh:.0f}" rx="10" fill="url(#hatch)" stroke="#fff" stroke-width="4"/>'
-    body += f'<path d="M{bx + bw + 10:.0f} {by + 40:.0f} C 520 300, 560 260, 590 250" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="9 8"/>'
-    cut = (
-        '<g class="mz-lift" transform="translate(470 250) rotate(-7)">'
-        '<ellipse cx="100" cy="300" rx="110" ry="16" fill="#000" opacity=".18"/>'
-        f'<rect x="0" y="0" width="{bw:.0f}" height="{bh:.0f}" rx="12" fill="#c7d1f6" stroke="{INK}" stroke-width="3"/>'
-        + text(24, 48, "Li-ion 3.85 V", 18, INK, mono=True, opacity=0.7)
-        + f'<path d="M24 74 h130 M24 94 h90" stroke="{INK}" stroke-width="2.5" opacity=".3"/>'
-        + "".join(
-            f'<rect x="{x}" y="{bh - 6:.0f}" width="22" height="34" rx="4" fill="#222"/>'
-            for x in (26, 136)
-        )
-        + "</g>"
+    k = 1.55
+    px, py = 64, 70
+    body = phone_at(px, py, k, battery_class="")
+    bx, by = px + (136 - 109) * k, py + (158 - 16) * k
+    bw, bh = 128 * k, 138 * k
+    # SAM's mask over the battery: a solid light layer with a crisp outline
+    body += f'<rect x="{bx:.0f}" y="{by:.0f}" width="{bw:.0f}" height="{bh:.0f}" rx="12" fill="#ffffff" fill-opacity=".82" stroke="#ffffff" stroke-width="5"/>'
+    body += f'<rect x="{bx - 10:.0f}" y="{by - 10:.0f}" width="{bw + 20:.0f}" height="{bh + 20:.0f}" fill="none" stroke="{INK}" stroke-width="2.5" stroke-dasharray="10 8" opacity=".55"/>'
+    body += text(
+        round(bx + bw / 2),
+        round(by + bh / 2 + 8),
+        "mask",
+        24,
+        "#ff5a1f",
+        mono=True,
+        anchor="middle",
     )
-    body += cut
-    body += text(70, 880, "SAM 3.1 cut-out fills 92% of the box", 22, WHITE, mono=True)
-    body += text(70, 920, "below 10%, the part is refused", 18, WHITE, mono=True, opacity=0.75)
+    # the cut-out, lifted to the right like a sticker
+    cw, ch = 210, 226
+    body += (
+        '<g transform="translate(452 260) rotate(-6)"><g class="mz-lift">'
+        f'<ellipse cx="{cw / 2:.0f}" cy="{ch + 52}" rx="{cw / 2 + 6:.0f}" ry="14" fill="#000" opacity=".16"/>'
+        f'<rect x="-10" y="-10" width="{cw + 20}" height="{ch + 20}" rx="20" fill="#ffffff"/>'
+        f'<rect x="0" y="0" width="{cw}" height="{ch}" rx="12" fill="#c7d1f6" stroke="{INK}" stroke-width="3"/>'
+        + text(22, 46, "Li-ion 3.85 V", 19, INK, mono=True, opacity=0.75)
+        + f'<path d="M22 72 h150 M22 94 h100" stroke="{INK}" stroke-width="3" opacity=".3"/>'
+        + "".join(
+            f'<rect x="{x}" y="{ch - 4}" width="24" height="34" rx="5" fill="#222"/>'
+            for x in (34, 152)
+        )
+        + "</g></g>"
+    )
+    body += '<path d="M360 470 C 400 470, 405 430, 432 410" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/><path d="M418 404 l16 5 l-9 14" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>'
+    # the measure that decides: share of the box the mask fills
+    body += '<rect x="64" y="720" width="672" height="210" rx="22" fill="#000" fill-opacity=".16"/>'
+    body += text(96, 772, "SAM 3.1", 24, WHITE, weight=500) + text(
+        704, 772, "92%", 40, WHITE, weight=500, anchor="end"
+    )
+    body += text(96, 804, "mask fills the box", 18, WHITE, opacity=0.8)
+    body += '<rect x="96" y="840" width="608" height="14" rx="7" fill="#fff" fill-opacity=".28"/><rect class="mz-grow" x="96" y="840" width="559" height="14" rx="7" fill="#fff"/>'
+    body += '<rect x="155" y="832" width="3" height="30" fill="#161616"/>'
+    body += text(
+        158, 896, "10%: below this, the part is refused", 16, WHITE, mono=True, opacity=0.85
+    )
     return svg(
-        w, h, body, "SAM 3.1 cuts the battery out inside the box Spark pointed at", "#ff5a1f"
+        w,
+        h,
+        body,
+        "SAM 3.1 cuts the battery out inside the box; its mask fills 92% of it",
+        "#ff5a1f",
     )
 
 
@@ -271,7 +298,7 @@ def tile_check() -> str:
     for i, (ok, label) in enumerate(rows):
         y = 290 + i * 108
         color = "#1d7a3a" if ok else "#bf000f"
-        body += f'<g class="mz-slide" style="--i:{i}"><circle cx="112" cy="{y - 8}" r="20" fill="{color}" opacity=".12"/>'
+        body += f'<g class="mz-in" style="--i:{i}"><circle cx="112" cy="{y - 8}" r="20" fill="{color}" opacity=".12"/>'
         if ok:
             body += f'<path d="M102 {y - 8} l7 7 l14 -16" fill="none" stroke="{color}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>'
         else:

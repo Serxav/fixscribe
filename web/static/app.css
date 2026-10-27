@@ -342,6 +342,9 @@ details.proof[open] summary::after { content: "–"; }
 @keyframes mzLift { 0%, 36% { transform: translateY(0); } 58%, 82% { transform: translateY(-24px); } 100% { transform: translateY(0); } }
 .mz-slide { animation: mzSlide var(--cycle) var(--ease) infinite; animation-delay: calc(var(--mz-delay, 0s) + var(--i, 0) * .2s); }
 @keyframes mzSlide { 0% { transform: translateX(-40px); opacity: 0; } 25%, 85% { transform: none; opacity: 1; } 100% { opacity: 0; } }
+.mz-in { opacity: 1; }
+.in .mz-in, .screen.on .mz-in { animation: mzIn .7s var(--ease) both; animation-delay: calc(.25s + var(--i, 0) * .16s); }
+@keyframes mzIn { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
 .mz-spin { transform-box: fill-box; transform-origin: center; animation: mzSpin 5s linear infinite; }
 @keyframes mzSpin { to { transform: rotate(360deg); } }
 .mz-drip { animation: mzDrip 1.6s ease-in infinite; }
@@ -361,7 +364,7 @@ details.proof[open] summary::after { content: "–"; }
 .mz-detail { opacity: var(--detail, 0); }
 @media (prefers-reduced-motion: reduce) {
   .mosaic { height: auto; padding-block: 40px; } .mosaic-stick { position: static; height: auto; }
-  .mz-tile *, .screen * { animation: none !important; } .js .mosaic-caption { opacity: 1; }
+  .mz-tile *, .screen *, .tile * { animation: none !important; } .js .mosaic-caption { opacity: 1; }
 }
 
 .statement { padding: 120px 0 40px; }
