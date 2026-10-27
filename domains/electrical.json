@@ -1,0 +1,33 @@
+{
+  "category": "electrical",
+  "label": "Electrical",
+  "fasteners": ["terminal screw", "screw", "wire connector"],
+  "fastener_kind": "terminal screw",
+  "parts": [
+    "circuit breaker",
+    "wall switch",
+    "outlet",
+    "wire nut",
+    "junction box",
+    "light fixture",
+    "dimmer",
+    "faceplate",
+    "ground wire",
+    "cable clamp"
+  ],
+  "tools": [
+    "voltage tester",
+    "insulated screwdriver set",
+    "wire stripper",
+    "pliers",
+    "electrical tape",
+    "headlamp"
+  ],
+  "prechecks": [
+    "Switch off the circuit breaker for this circuit.",
+    "Test with a voltage tester before touching wires.",
+    "Keep water away from the work area."
+  ],
+  "default_hazards": ["mains_voltage"],
+  "prompt_hint": "This is mains electrical work where a mistake can be fatal. Confirm the breaker is off and wires test dead before touching anything, and name each wire and terminal."
+}

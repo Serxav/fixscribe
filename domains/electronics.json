@@ -1,0 +1,34 @@
+{
+  "category": "electronics",
+  "label": "Phones and computers",
+  "fasteners": ["screw", "pentalobe screw", "plastic clip", "ribbon connector latch", "adhesive strip"],
+  "fastener_kind": "screw",
+  "parts": [
+    "display",
+    "back cover",
+    "battery",
+    "logic board",
+    "charging port",
+    "speaker",
+    "camera module",
+    "flex cable",
+    "SIM tray",
+    "heat shield"
+  ],
+  "tools": [
+    "phillips screwdriver",
+    "pentalobe screwdriver",
+    "plastic spudger",
+    "tweezers",
+    "suction cup",
+    "heat gun",
+    "antistatic mat"
+  ],
+  "prechecks": [
+    "Power off the device completely.",
+    "Disconnect the battery connector first.",
+    "Discharge below 25 percent before opening a battery device."
+  ],
+  "default_hazards": ["lithium_battery", "sharp_edges"],
+  "prompt_hint": "This is a small electronics repair with tiny screws and fragile flex cables. Name every connector latch and adhesive strip before pulling, and keep screws sorted by size."
+}

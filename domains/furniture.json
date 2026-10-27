@@ -1,0 +1,32 @@
+{
+  "category": "furniture",
+  "label": "Furniture",
+  "fasteners": ["screw", "cam lock", "wooden dowel", "bolt", "hinge"],
+  "fastener_kind": "screw",
+  "parts": [
+    "side panel",
+    "shelf",
+    "drawer front",
+    "hinge",
+    "cam lock",
+    "dowel",
+    "back panel",
+    "leg",
+    "drawer runner",
+    "door handle"
+  ],
+  "tools": [
+    "phillips screwdriver",
+    "hex key set",
+    "rubber mallet",
+    "drill",
+    "tape measure"
+  ],
+  "prechecks": [
+    "Clear the work area before starting.",
+    "Get help before lifting heavy panels.",
+    "Keep small fasteners away from children."
+  ],
+  "default_hazards": ["heavy_part"],
+  "prompt_hint": "This is flat-pack style furniture with cam locks, dowels and screws. Name each panel and fastener as it comes off so reassembly matches exactly."
+}

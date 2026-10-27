@@ -1,0 +1,32 @@
+{
+  "category": "tools",
+  "label": "Power and hand tools",
+  "fasteners": ["screw", "bolt", "torx screw", "nut", "plastic clip"],
+  "fastener_kind": "screw",
+  "parts": [
+    "blade",
+    "chuck",
+    "battery pack",
+    "carbon brush",
+    "power cord",
+    "trigger switch",
+    "handle",
+    "guard",
+    "vent cover",
+    "gear housing"
+  ],
+  "tools": [
+    "screwdriver set",
+    "hex key set",
+    "multimeter",
+    "pliers",
+    "cleaning brush"
+  ],
+  "prechecks": [
+    "Remove the battery or unplug the tool.",
+    "Wait until moving parts stop completely.",
+    "Wear eye protection during the repair."
+  ],
+  "default_hazards": ["mains_voltage", "sharp_edges"],
+  "prompt_hint": "This is a repair of a power or hand tool with blades, motors or batteries. Confirm it is unplugged or the battery is out before opening, and name each housing part and fastener."
+}

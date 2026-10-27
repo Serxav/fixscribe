@@ -1,0 +1,33 @@
+{
+  "category": "appliance",
+  "label": "Home appliances",
+  "fasteners": ["screw", "bolt", "hose clamp", "plastic clip", "nut"],
+  "fastener_kind": "screw",
+  "parts": [
+    "door gasket",
+    "drum",
+    "pump filter",
+    "heating element",
+    "control board",
+    "water inlet valve",
+    "door latch",
+    "drain hose",
+    "thermostat",
+    "motor belt"
+  ],
+  "tools": [
+    "phillips screwdriver",
+    "nut driver set",
+    "pliers",
+    "multimeter",
+    "torx bit set",
+    "towels"
+  ],
+  "prechecks": [
+    "Unplug the machine from the wall.",
+    "Close the water tap before disconnecting hoses.",
+    "Never open the high-voltage section of a microwave."
+  ],
+  "default_hazards": ["mains_voltage", "pressurized_water", "heavy_part", "sharp_edges"],
+  "prompt_hint": "This is a home appliance with mains power and possibly water connections. Call out unplugging and water shutoff before any disassembly, and name each hose and panel removed."
+}

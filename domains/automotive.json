@@ -1,0 +1,35 @@
+{
+  "category": "automotive",
+  "label": "Cars and motorcycles",
+  "fasteners": ["bolt", "nut", "hose clamp", "plastic clip", "screw"],
+  "fastener_kind": "bolt",
+  "parts": [
+    "air filter",
+    "battery terminal",
+    "hose",
+    "engine cover",
+    "fuse box",
+    "dipstick tube",
+    "radiator cap",
+    "wiper arm",
+    "wheel lug",
+    "oil filter"
+  ],
+  "tools": [
+    "socket set",
+    "wrench set",
+    "screwdriver set",
+    "jack stands",
+    "wheel chocks",
+    "torque wrench",
+    "gloves"
+  ],
+  "prechecks": [
+    "Switch the engine off and let it cool.",
+    "Set the parking brake and chock the wheels.",
+    "Never work under a car held only by a jack.",
+    "Disconnect the 12 V battery negative terminal for electrical work."
+  ],
+  "default_hazards": ["raised_vehicle", "hot_surface", "heavy_part", "chemicals"],
+  "prompt_hint": "This is automotive work around hot parts, fluids and heavy components. Confirm the engine is cool and the vehicle is secured before any removal, and name each bolt and hose."
+}
