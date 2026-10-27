@@ -117,6 +117,7 @@ class Guide(Strict):
     inspector_log: list[InspectorEntry] = Field(default_factory=list)
     identity: "Identity | None" = None  # what the video shows (identify stage)
     safety: "Safety | None" = None  # rules-first safety decision (safety stage)
+    proof: "Proof | None" = None  # where every claim of the guide comes from (proof stage)
 
     @model_validator(mode="after")
     def check_steps(self) -> "Guide":
@@ -602,4 +603,120 @@ class Safety(Strict):
     blocked: list[str] = Field(default_factory=list)  # operations we never give instructions for
 
 
-Guide.model_rebuild()  # Identity and Safety are defined after Guide
+# --- Proof mode: every claim of the guide with the evidence behind it --------------------------
+
+CLAIM_STATUS = ["verified", "supported", "unverified"]
+
+
+class Claim(Strict):
+    """One thing a step says, and how sure we are of it.
+
+    verified: two independent sources agree, or a measurement confirms it (SAM, timecode).
+    supported: one source says it (Spark saw it, or the technician said it).
+    unverified: nothing backs it; the guide shows it with a warning.
+    """
+
+    field: Literal["boundaries", "instruction", "fastener_count", "part"]
+    status: Literal["verified", "supported", "unverified"]
+    sources: list[str] = Field(default_factory=list)  # "voice 12.4 s: 'quita los tornillos'"
+
+
+class StepProof(Strict):
+    index: int = Field(ge=1)
+    claims: list[Claim] = Field(default_factory=list)
+    score: float = Field(default=0.0, ge=0, le=1)  # verified = 1, supported = 0.5, unverified = 0
+
+
+class Proof(Strict):
+    FILENAME: ClassVar[str] = "proof.json"
+
+    steps: list[StepProof] = Field(default_factory=list)
+    score: float = Field(default=0.0, ge=0, le=1)  # mean of the step scores
+
+
+# --- Self-growing domain profiles ---------------------------------------------------------------
+
+
+class ProfileSuggestion(Strict):
+    field: Literal["parts", "fasteners", "tools"]
+    value: str  # lower case, as it would go in domains/<category>.json
+    seen_in: str  # where it came from: "step 3: Remove the drain pump"
+
+
+class ProfileSuggestions(Strict):
+    """New vocabulary this job found that its domain profile does not have yet (human review)."""
+
+    FILENAME: ClassVar[str] = "profile_suggestions.json"
+
+    category: str  # profile the suggestions are for ("generic" when the category is unknown)
+    object_name: str = ""
+    suggestions: list[ProfileSuggestion] = Field(default_factory=list)
+
+
+# --- Ghost camera: is this step done on the user's own object? ---------------------------------
+
+
+class StepCheck(Strict):
+    """The answer to a photo the user takes after doing one step of a guide."""
+
+    step: int = Field(ge=1)
+    verdict: Literal["done", "not_yet", "unclear"]
+    message: str  # shown to the user: "2 bolts are still in place (top left)."
+    fastener_kind: str = "screw"
+    expected_left: int | None = Field(default=None, ge=0)  # fasteners still there after the step
+    found: int | None = Field(default=None, ge=0)  # fasteners SAM found on the photo
+    boxes: list[NormBox] = Field(default_factory=list)  # where, on the user's photo
+    aligned: bool = False  # the photo was matched to the guide's still
+    sam_calls: int = Field(default=0, ge=0)
+
+
+# --- Compare my attempt: a user's own repair video against a guide -----------------------------
+
+ATTEMPT_STATUS = ["done", "skipped", "different", "unclear"]
+
+
+class AttemptStep(Strict):
+    ref_step: int = Field(ge=1)  # step index in the reference guide
+    status: Literal["done", "skipped", "different", "unclear"]
+    t_s: float | None = Field(default=None, ge=0)  # where it happens in the attempt video
+    fasteners_seen: int | None = Field(default=None, ge=0)
+    note: str = ""  # "Removed 3 bolts; the guide removes 4."
+
+    @field_validator("t_s", "fasteners_seen", mode="before")
+    @classmethod
+    def negative_means_unknown(cls, value: Any) -> Any:
+        return None if isinstance(value, int | float) and value < 0 else value
+
+
+class AttemptReview(Strict):
+    FILENAME: ClassVar[str] = "attempt_review.json"
+
+    guide_job: str  # job id of the reference guide
+    steps: list[AttemptStep] = Field(default_factory=list)
+    order_ok: bool = True  # computed by rules, not by the model
+    safety_issues: list[str] = Field(default_factory=list)  # computed by rules from skipped steps
+    summary: str = ""
+    score: float = Field(default=0.0, ge=0, le=1)  # share of steps "done"
+
+
+# Sent to Muse Spark as text.format json_schema "attempt_review". Rules fill the other fields.
+ATTEMPT_JSON_SCHEMA: dict[str, Any] = _object(
+    {
+        "steps": {
+            "type": "array",
+            "items": _object(
+                {
+                    "ref_step": {"type": "integer"},
+                    "status": {"type": "string", "enum": ATTEMPT_STATUS},
+                    "t_s": {"type": "number"},  # -1 when not seen
+                    "fasteners_seen": {"type": "integer"},  # -1 when not counted
+                    "note": {"type": "string"},
+                }
+            ),
+        },
+        "summary": {"type": "string"},
+    }
+)
+
+
+Guide.model_rebuild()  # Identity, Safety and Proof are defined after Guide

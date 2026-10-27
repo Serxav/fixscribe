@@ -98,3 +98,14 @@ def test_guide_steps_out_of_order_fail():
 def test_guide_bad_indexes_fail():
     with pytest.raises(ValidationError, match="indexes"):
         Guide(title="t", device="d", mode="silent", steps=[make_step(index=2)])
+
+
+def test_magic_contracts_round_trip():
+    from app.schemas import AttemptStep, Guide, Proof, StepCheck
+
+    assert AttemptStep(ref_step=1, status="skipped", t_s=-1, fasteners_seen=-1).t_s is None
+    assert AttemptStep(ref_step=1, status="done", t_s=3.5, fasteners_seen=4).fasteners_seen == 4
+    check = StepCheck(step=2, verdict="not_yet", message="2 bolts left.", fastener_kind="bolt")
+    assert StepCheck.model_validate_json(check.model_dump_json()) == check
+    guide = Guide(title="t", device="d", mode="silent", proof=Proof(score=0.5))
+    assert Guide.model_validate_json(guide.model_dump_json()).proof.score == 0.5
