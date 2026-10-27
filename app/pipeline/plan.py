@@ -112,6 +112,7 @@ def to_step(index: int, draft: DraftStep) -> Step:
         start_s=draft.start_s,
         end_s=draft.end_s,
         target_part=draft.target_part or None,
+        sam_concept=draft.sam_concept or None,
         action=draft.action,
         removes=draft.removes,
         screws=ScrewMap(count=draft.screw_count) if draft.screw_count else None,

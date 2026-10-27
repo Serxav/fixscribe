@@ -125,3 +125,17 @@ def test_empty_guide():
     result = build_reassembly([])
     assert result.steps == []
     assert result.warnings == []
+
+
+def test_the_reverse_of_an_assembly_takes_it_apart():
+    from app.pipeline.assembly import build_reassembly
+    from app.schemas import ScrewMap, Step
+
+    steps = [
+        Step(index=1, title="Join", instruction="i", start_s=0, end_s=5, action="attach",
+             removes=["side rail"], screws=ScrewMap(count=4)),
+        Step(index=2, title="Legs", instruction="i", start_s=5, end_s=9, action="insert",
+             removes=["leg"]),
+    ]  # fmt: skip
+    result = build_reassembly(steps, "assemble")
+    assert [item.action for item in result.steps] == ["pull out", "detach"]

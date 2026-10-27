@@ -193,7 +193,7 @@ def test_run_writes_narration_and_names_request(tmp_path):
     assert result.language == "es"
     assert client.calls == 1
     assert client.respond_kwargs["text"]["format"]["name"] == "film_narration"
-    assert client.respond_kwargs["max_output_tokens"] == MAX_OUTPUT_TOKENS == 4000
+    assert client.respond_kwargs["max_output_tokens"] == MAX_OUTPUT_TOKENS == 12000
     assert (job_dir / "narrate_raw.txt").is_file()
 
 

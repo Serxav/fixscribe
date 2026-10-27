@@ -9,6 +9,7 @@ from typing import Any
 
 from app import artifacts
 from app.domains import profile_for
+from app.pipeline.analyze import guide_direction
 from app.pipeline.assembly import build_reassembly
 from app.schemas import (
     Box,
@@ -136,6 +137,7 @@ def build_guide(
     steps = with_motion(steps, motion)
     kind = profile_for(identity.category).fastener_kind if identity else "screw"
     steps = with_kind(steps, kind)
+    direction = guide_direction(identity.task if identity else None)
     level = safety.level if safety else "normal"
     warnings = (
         plan.warnings if level == "normal" else with_prechecks(plan.warnings, safety.prechecks)
@@ -146,7 +148,7 @@ def build_guide(
         steps, reassembly = blocked_steps(steps), []
         checks.append(PRO_ONLY_CHECK + " " + " ".join(safety.reasons))
     else:
-        assembled = build_reassembly(steps)
+        assembled = build_reassembly(steps, direction)
         reassembly = assembled.steps
         checks += assembled.warnings
         if any(step.screws and step.screws.count for step in steps) and not screws_verified(steps):
@@ -170,6 +172,7 @@ def build_guide(
         safety=safety,
         proof=proof,
         narration=narration,
+        direction=direction,
     )
 
 

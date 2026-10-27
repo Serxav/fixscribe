@@ -430,3 +430,12 @@ def test_automotive_alignment_failure_note_uses_bolts(tmp_path, monkeypatch):
     result = perception.run(tmp_path, settings, client=client)
 
     assert "Camera moved too much to verify the bolts." in result.steps[0].notes
+
+
+def test_part_concepts_prefer_plain_words_then_the_head_noun():
+    from app.pipeline.perception import part_concepts
+    from app.schemas import Step
+
+    step = Step(index=1, title="t", instruction="i", start_s=0, end_s=1, sam_concept="wooden leg",
+                target_part="leg frame C", removes=["Rail C"])  # fmt: skip
+    assert part_concepts(step) == ["wooden leg", "leg", "frame c"]

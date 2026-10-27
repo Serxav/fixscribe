@@ -414,3 +414,13 @@ def test_build_prompt_replaces_domain():
     )
     assert "Object: Phone X (electronics)" in prompt
     assert "<<" not in prompt
+
+
+def test_assembly_videos_get_an_assembly_prompt():
+    from app.pipeline.analyze import build_prompt, guide_direction
+
+    building = build_prompt(10, "narrated", [], [], "", task="assemble")
+    assert "assembly guide" in building and "put in" in building and "screw in" in building
+    repairing = build_prompt(10, "narrated", [], [], "", task="repair")
+    assert "repair / disassembly" in repairing and "taken out" in repairing
+    assert guide_direction("assemble") == "assemble" and guide_direction(None) == "disassemble"

@@ -70,6 +70,27 @@ def _clean_phrase(text: str | None) -> str | None:
     return " ".join(words[-2:])
 
 
+MAX_CONCEPT_TRIES = 3  # SAM calls spent looking for the part of one step
+
+
+def part_concepts(step: Step) -> list[str]:
+    """The words to ask SAM for the part, best first, without repeats.
+
+    Spark's `sam_concept` (a plain noun chosen to be visible) comes first; then the part names;
+    then their last word alone, because SAM finds "leg" when it cannot find "leg frame c".
+    """
+    names = [step.sam_concept, step.target_part, *(step.removes or [])]
+    found: list[str] = []
+    for name in names:
+        phrase = _clean_phrase(name)
+        if phrase is None:
+            continue
+        for candidate in (phrase, phrase.split()[-1]):
+            if candidate not in found and (len(candidate) > 2 and not candidate.isdigit()):
+                found.append(candidate)
+    return found[:MAX_CONCEPT_TRIES]
+
+
 def part_concept(target_part: str | None, removes: list[str]) -> str | None:
     """One short noun phrase for SAM, from the target part or what it removes."""
     concept = _clean_phrase(target_part)
@@ -397,16 +418,17 @@ def _process_step(
     keyframe_path = _keyframe_still(job_dir, ingest, frames, step, plan.duration_s)
     key_image = _read_image(keyframe_path)
     key_h, key_w = key_image.shape[:2]
-    concept = part_concept(step.target_part, step.removes)
-    if concept is not None:
+    concepts = part_concepts(step)
+    for concept in concepts:  # plain words first, then shorter fallbacks
         detections, sent_size = _segment(client, sp, keyframe_path, concept, max_side=1600)
         usable = [item for item in detections if _confidence_ok(item)]
         best = max(usable, key=_confidence_value, default=None)
         part_box = _norm_box(best.box, sent_size) if best is not None else None
         if best is not None and part_box is not None:
             sp.part = PartHighlight(concept=concept, box=part_box, confidence=best.confidence)
-        else:
-            sp.notes.append(f"No part found for '{concept}'.")
+            break
+    if concepts and sp.part is None:
+        sp.notes.append(f"No part found for '{concepts[0]}'.")
     if _screw_count(step) > 0:
         roi = roi_of(sp.part)
         name = f"{step.index:02d}"
@@ -488,11 +510,7 @@ def run(job_dir: Path, settings: Settings, client: Any = None) -> Perception:
     if client is None:
         client = make_client(settings, job_dir=job_dir)
     fastener = fastener_concept(job_dir)
-    eligible = [
-        step
-        for step in plan.steps
-        if _screw_count(step) > 0 or part_concept(step.target_part, step.removes) is not None
-    ]
+    eligible = [step for step in plan.steps if _screw_count(step) > 0 or part_concepts(step)]
     prioritised = sorted(eligible, key=lambda step: (-_screw_count(step), step.index))
     selected_indexes = {step.index for step in prioritised[:MAX_STEPS]}
     selected = [step for step in plan.steps if step.index in selected_indexes]

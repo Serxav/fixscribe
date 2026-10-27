@@ -9,6 +9,7 @@ from pathlib import Path
 from app import artifacts, spark
 from app.config import Settings
 from app.meta_client import MetaClient, make_client
+from app.pipeline.analyze import guide_direction
 from app.pipeline.assembly import AssemblyResult, build_reassembly
 from app.schemas import (
     NARRATION_JSON_SCHEMA,
@@ -21,7 +22,7 @@ from app.schemas import (
 )
 
 VERSION = "1"
-MAX_OUTPUT_TOKENS = 4000
+MAX_OUTPUT_TOKENS = 12000  # 10+ steps x 2 lines plus reasoning: 4000 came back empty
 PROFESSIONAL_LINE = "A qualified professional must do this step."
 
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "narrate_v1.md"
@@ -180,8 +181,14 @@ def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> 
     plan = artifacts.load(job_dir, Plan)
     identity = artifacts.load_optional(job_dir, Identity)
     safety = artifacts.load_optional(job_dir, Safety)
-    reassembly = build_reassembly(plan.steps)
+    direction = guide_direction(identity.task if identity else None)
+    reassembly = build_reassembly(plan.steps, direction)
     prompt = build_prompt(plan, identity, safety, reassembly)
+    if direction == "assemble":
+        prompt += (
+            "\n\nThis video BUILDS the object. Each `disassemble` line describes the step as the "
+            "video shows it (building); each `assemble` line describes undoing it (taking apart)."
+        )
     if client is None:
         client = make_client(settings, job_dir=job_dir)
     try:

@@ -25,13 +25,14 @@ import numpy as np
 from app import artifacts
 from app.config import Settings
 from app.meta_client import BudgetExceeded, make_client
+from app.pipeline.analyze import guide_direction
 from app.pipeline.ingest import run_ffmpeg
-from app.pipeline.perception import fastener_concept, part_concept
-from app.schemas import Motion, NormBox, Plan, StepMotion
+from app.pipeline.perception import fastener_concept, part_concepts
+from app.schemas import Identity, Motion, NormBox, Plan, StepMotion
 
 logger = logging.getLogger(__name__)
 
-VERSION = "2"
+VERSION = "3"
 MAX_STEPS = 6
 FPS = 15
 MAX_SECONDS = 8.0  # longer steps: the middle 8 s (SAM bills per frame)
@@ -41,6 +42,8 @@ SMOOTH = 0.6  # weight of this frame's mask against the previous one (removes ji
 SEED_MIN_CONFIDENCE = 0.3
 MAX_FASTENERS = 15  # SAM video follows at most 16 prompted objects; 1 is the part
 ZOOM_SIDE = 900  # fasteners are small: the crop around the part is upscaled to this side
+MAX_FASTENER_SIDE = 0.08  # a fastener box bigger than this share of the frame is a lost track
+MAX_RING = 0.03  # ring radius at most this share of the frame's long side
 
 ACCENT = (255, 132, 10)  # BGR of #0a84ff
 OUTLINE = (255, 214, 120)  # light cyan-blue, BGR
@@ -182,7 +185,7 @@ def render_frame(
 
     for object_id, (x1, y1, x2, y2) in fasteners.items():
         cx, cy = int((x1 + x2) / 2), int((y1 + y2) / 2)
-        radius = int(max(9, 0.75 * max(x2 - x1, y2 - y1)))
+        radius = int(min(max(9, 0.75 * max(x2 - x1, y2 - y1)), MAX_RING * max(out.shape[:2])))
         if object_id not in numbers:  # stays in place during this step: a faint ring only
             cv2.circle(out, (cx, cy), radius, (235, 235, 235), 1, cv2.LINE_AA)
             continue
@@ -196,7 +199,8 @@ def render_frame(
                     cv2.FONT_HERSHEY_DUPLEX, 0.5, (20, 20, 20), 1, cv2.LINE_AA)  # fmt: skip
     for (x1, y1, x2, y2), progress in pops:
         cx, cy = int((x1 + x2) / 2), int((y1 + y2) / 2)
-        radius = int(max(9, 0.75 * max(x2 - x1, y2 - y1)) * (1 + 2.2 * progress))
+        base = min(max(9, 0.75 * max(x2 - x1, y2 - y1)), MAX_RING * max(out.shape[:2]))
+        radius = int(base * (1 + 2.2 * progress))
         overlay = out.copy()
         cv2.circle(overlay, (cx, cy), radius, RING, 3, cv2.LINE_AA)
         out = cv2.addWeighted(overlay, 1 - progress, out, progress, 0)
@@ -217,6 +221,32 @@ def removed_fasteners(track: Track | None, frame_count: int) -> dict[int, int]:
             last[object_id] = max(index, last.get(object_id, -1))
     end = max(frame_count - 1, max(track.objects))
     return {oid: seen for oid, seen in last.items() if seen < end - HOLD_FRAMES}
+
+
+def added_fasteners(track: Track | None) -> dict[int, int]:
+    """The fasteners put in during the clip (absent at the start, then seen): {id: first frame}."""
+    if track is None or not track.objects:
+        return {}
+    first: dict[int, int] = {}
+    for index in sorted(track.objects):
+        for object_id in track.objects[index]:
+            first.setdefault(object_id, index)
+    start = min(track.objects)
+    return {oid: seen for oid, seen in first.items() if seen > start + HOLD_FRAMES}
+
+
+def drop_lost(track: Track | None, size: tuple[int, int]) -> Track | None:
+    """Remove fastener boxes that grew too big: SAM slid onto a hand or a whole part."""
+    if track is None:
+        return None
+    limit = MAX_FASTENER_SIDE * max(size)
+    kept = {
+        index: {
+            oid: box for oid, box in boxes.items() if max(box[2] - box[0], box[3] - box[1]) <= limit
+        }
+        for index, boxes in track.objects.items()
+    }
+    return Track(masks=track.masks, objects={i: b for i, b in kept.items() if b})
 
 
 def fastener_numbers(track: Track | None, only: set[int] | None = None) -> dict[int, int]:
@@ -433,11 +463,12 @@ def smoothed(track: Track | None, count: int, shape: tuple[int, int]) -> list[tu
 
 
 def motion_for_step(
-    job_dir: Path, client: Any, step, plan: Plan, fastener: str
+    job_dir: Path, client: Any, step, plan: Plan, fastener: str, direction: str = "disassemble"
 ) -> StepMotion | None:
-    concept = part_concept(step.target_part, step.removes)
-    if concept is None:
+    concepts = part_concepts(step)
+    if not concepts:
         return None
+    concept = concepts[0]
     start, end = clip_window(step.start_s, step.end_s)
     steps_dir = job_dir / "steps"
     source = steps_dir / f"{step.index:02d}_src.mp4"
@@ -448,17 +479,29 @@ def motion_for_step(
     size = (width, height)
     work = steps_dir / f"{step.index:02d}_work"
     seed = sharpest_frame(frames, 0, max(1, len(frames) // 2))
-    part_box = seed_part(client, frames[seed], concept, work)
+    part_box = None
+    for candidate in concepts:  # plain words first, then shorter fallbacks
+        part_box = seed_part(client, frames[seed], candidate, work)
+        if part_box is not None:
+            concept = candidate
+            break
     part_track = to_track(
         follow(client, source, size, [part_box] if part_box else [], seed, concept), size
     )
     screw_track = None
     if step.screws and step.screws.count:
-        # Fasteners are seeded on the first frame: they are all still in place there.
+        # Seed where the fasteners are all visible: the first frame when taking apart, the last
+        # one when building (they are in place at the end).
+        at = 0 if direction == "disassemble" else len(frames) - 1
         around = part_box or _track_box(part_track)
-        screws = seed_fasteners(client, frames[0], around, fastener, work)
-        screw_track = to_track(follow(client, source, size, screws, 0, fastener), size)
-    removed = removed_fasteners(screw_track, len(frames))
+        screws = seed_fasteners(client, frames[at], around, fastener, work)
+        screw_track = drop_lost(
+            to_track(follow(client, source, size, screws, at, fastener), size), size
+        )
+    if direction == "assemble":
+        removed = added_fasteners(screw_track)  # the ones that appear are the ones put in
+    else:
+        removed = removed_fasteners(screw_track, len(frames))
     numbers = fastener_numbers(screw_track, set(removed))
     seen_last = last_boxes(screw_track)
     pop_frames = 8
@@ -520,10 +563,12 @@ def run(job_dir: Path, settings: Settings, client: Any = None) -> Motion:
     if client is None:
         client = make_client(settings, job_dir=job_dir)
     fastener = fastener_concept(job_dir)
+    identity = artifacts.load_optional(job_dir, Identity)
+    direction = guide_direction(identity.task if identity else None)
     result = Motion()
     for step in plan.steps[:MAX_STEPS]:
         try:
-            motion = motion_for_step(job_dir, client, step, plan, fastener)
+            motion = motion_for_step(job_dir, client, step, plan, fastener, direction)
         except BudgetExceeded:
             result.notes.append("SAM budget reached: later steps have no motion clip.")
             break

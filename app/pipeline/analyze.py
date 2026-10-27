@@ -8,6 +8,7 @@ from app.config import Settings
 from app.domains import DomainProfile, profile_for
 from app.meta_client import MetaClient, make_client
 from app.schemas import (
+    ACTIONS,
     ANALYSIS_JSON_SCHEMA,
     Analysis,
     Identity,
@@ -54,8 +55,9 @@ def build_prompt(
     turns: list[dict],
     segments: list[dict],
     domain: str = "",
+    task: str = "repair",
 ) -> str:
-    """Fill the analyze prompt template with the job times and turns."""
+    """Fill the analyze prompt template with the job times, the turns and the task direction."""
     if turns:
         turn_lines = [
             f"- [{float(turn['start_s']):.1f}–{float(turn['end_s']):.1f} s] {turn['text']}"
@@ -78,7 +80,22 @@ def build_prompt(
     prompt = prompt.replace("<<TURNS>>", turns_text)
     prompt = prompt.replace("<<SEGMENTS>>", segments_text)
     prompt = prompt.replace("<<DOMAIN>>", domain)
+    building = guide_direction(task) == "assemble"
+    prompt = prompt.replace("<<GUIDE_KIND>>", "assembly" if building else "repair / disassembly")
+    prompt = prompt.replace(
+        "<<TASK_SENTENCE>>",
+        "the person BUILDS or assembles the object: each step adds or fixes parts together."
+        if building
+        else f"the person does a {task}: each step takes apart, repairs or checks something.",
+    )
+    prompt = prompt.replace("<<FASTENER_VERB>>", "put in" if building else "taken out")
+    prompt = prompt.replace("<<ACTIONS>>", ", ".join(ACTIONS))
     return prompt
+
+
+def guide_direction(task: str | None) -> str:
+    """'assemble' when the video builds something, else 'disassemble' (repairs take apart)."""
+    return "assemble" if task == "assemble" else "disassemble"
 
 
 def build_input(prompt: str, file_id: str) -> list[dict]:
@@ -122,7 +139,8 @@ def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> 
     identity = artifacts.load_optional(job_dir, Identity)
     profile = profile_for(identity.category if identity else None)
     domain = domain_context(identity, profile)
-    prompt = build_prompt(duration_s, mode, turns, segments, domain)
+    task = identity.task if identity else "repair"
+    prompt = build_prompt(duration_s, mode, turns, segments, domain, task)
     if client is None:
         client = make_client(settings, job_dir=job_dir)
     try:

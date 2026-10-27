@@ -130,6 +130,9 @@ def film_playlist(guide: Guide, job_id: str, transcript: Transcript | None = Non
         "outro": narration.outro_disassemble if narration else "That's it. Well done.",
         "outro_back": narration.outro_assemble if narration else "Back together. Well done.",
         "blocked": bool(guide.safety and guide.safety.level == "professional_only"),
+        # Labels of the two directions: what the video shows, then the reverse.
+        "forward_label": "Build" if guide.direction == "assemble" else "Take apart",
+        "backward_label": "Take apart" if guide.direction == "assemble" else "Put back",
         "steps": steps,
     }
 
