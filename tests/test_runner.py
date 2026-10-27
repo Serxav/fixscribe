@@ -196,3 +196,16 @@ def test_stage_cost_comes_from_the_job_spend(tmp_path):
 
     run_job(job_id, SETTINGS, [Stage("analyze", paid)], tmp_path)
     assert artifacts.load(tmp_path / job_id, Manifest).stages["analyze"].usd == 0.25
+
+
+def test_stages_follow_the_job_kind(monkeypatch):
+    from app.jobs import JobStatus
+    from app.pipeline import runner
+
+    monkeypatch.setattr(runner, "default_stages", lambda: ["guide"])
+    monkeypatch.setattr(runner, "attempt_stages", lambda: ["attempt"])
+    base = {"job_id": "a" * 12, "created_at": "x", "updated_at": "x"}
+    assert runner.stages_for(JobStatus(**base)) == ["guide"]
+    assert runner.stages_for(JobStatus(**base, kind="attempt", reference_job="b" * 12)) == [
+        "attempt"
+    ]
