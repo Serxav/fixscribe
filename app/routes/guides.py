@@ -11,7 +11,7 @@ from app.artifacts import ArtifactError
 from app.config import Settings
 from app.routes.common import job_folder, load_guide
 from app.routes.upload import settings_dep, templates
-from app.schemas import Guide, Perception
+from app.schemas import Guide, Perception, Transcript
 from app.text import plural
 
 router = APIRouter()
@@ -85,7 +85,18 @@ def _cutout_part(step, media: str) -> dict | None:
     }
 
 
-def film_playlist(guide: Guide, job_id: str) -> dict:
+def own_words(transcript: Transcript | None, start_s: float, end_s: float) -> str:
+    """What the technician said during [start_s, end_s] (their own words, for the caption)."""
+    if transcript is None:
+        return ""
+    return " ".join(
+        turn.text.strip()
+        for turn in transcript.turns
+        if turn.start_s < end_s and turn.end_s > start_s
+    )
+
+
+def film_playlist(guide: Guide, job_id: str, transcript: Transcript | None = None) -> dict:
     """Everything the film player needs: clips in both directions and the spoken lines."""
     media = f"/media/{job_id}/"
     narration = guide.narration
@@ -106,6 +117,9 @@ def film_playlist(guide: Guide, job_id: str) -> dict:
                 "poster": media + step.image if step.image else None,
                 "say": line.disassemble if line else step.instruction,
                 "say_back": line.assemble if line else reassembly.get(step.index, step.instruction),
+                # The technician's real voice is on the clip: play it instead of the device voice.
+                "voice": bool(motion and motion.voice),
+                "words": own_words(transcript, motion.start_s, motion.end_s) if motion else "",
                 "warnings": step.warnings,
             }
         )
@@ -118,6 +132,13 @@ def film_playlist(guide: Guide, job_id: str) -> dict:
         "blocked": bool(guide.safety and guide.safety.level == "professional_only"),
         "steps": steps,
     }
+
+
+def _transcript(folder: Path) -> Transcript | None:
+    try:
+        return artifacts.load_optional(folder, Transcript)
+    except ArtifactError:
+        return None
 
 
 def step_views(guide: Guide, job_id: str, parts: dict[int, dict]) -> list[dict]:
@@ -198,7 +219,11 @@ def film_page(
     return templates.TemplateResponse(
         request,
         "film.html",
-        {"guide": guide, "job_id": job_id, "film": film_playlist(guide, job_id)},
+        {
+            "guide": guide,
+            "job_id": job_id,
+            "film": film_playlist(guide, job_id, _transcript(folder)),
+        },
     )
 
 

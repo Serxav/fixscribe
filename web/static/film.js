@@ -108,17 +108,21 @@
     $("film-card").classList.add("gone");
     $("film-caption").classList.remove("hidden");
     $("film-step").textContent = (mode === "apart" ? "Step " : "Put back · step ") + step.index + " · " + step.title;
-    var line = mode === "apart" ? step.say : step.say_back;
+    var ownVoice = mode === "apart" && step.voice;
+    var line = mode === "apart" ? (ownVoice && step.words ? step.words : step.say) : step.say_back;
     $("film-line").textContent = line;
     var warn = step.warnings && step.warnings.length ? "⚠︎ " + step.warnings[0] : "";
     $("film-warn").textContent = warn;
     $("film-warn").classList.toggle("hidden", !warn);
     var src = mode === "apart" ? step.clip : step.reverse;
+    var clipDone = !ownVoice;
     if (src) {
       video.src = src;
       video.poster = step.poster || "";
-      video.loop = true;
-      video.play().catch(function () {});
+      video.loop = !ownVoice; // with the real voice, play the moment once, as it was said
+      video.muted = !ownVoice || !voiceOn;
+      video.onended = function () { clipDone = true; };
+      video.play().catch(function () { video.muted = true; video.play().catch(function () {}); });
     }
     var started = Date.now();
     var spoken = false;
@@ -126,11 +130,11 @@
       if (mine !== token) { clearInterval(tick); return; }
       progress((Date.now() - started) / Math.max(MIN_STEP_MS, 1));
     }, 120);
-    speak(line, function () { spoken = true; });
+    if (ownVoice) { spoken = true; } else { speak(line, function () { spoken = true; }); }
     (function waitThenNext() {
       if (mine !== token) return;
       if (!playing) { setTimeout(waitThenNext, 300); return; }
-      if (spoken && Date.now() - started >= MIN_STEP_MS) { clearInterval(tick); playStep(i + 1); return; }
+      if (spoken && clipDone && Date.now() - started >= MIN_STEP_MS) { clearInterval(tick); playStep(i + 1); return; }
       setTimeout(waitThenNext, 250);
     })();
   }
@@ -177,6 +181,7 @@
     $("film-voice").setAttribute("aria-pressed", String(voiceOn));
     $("film-voice").textContent = voiceOn ? "🔊" : "🔇";
     if (!voiceOn && synth) synth.cancel();
+    video.muted = !voiceOn || video.loop; // the real voice clips are the ones that do not loop
   });
 
   function setMode(next) {

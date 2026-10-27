@@ -264,6 +264,34 @@ def write_clip(frames: list[np.ndarray], dst: Path, reverse: Path | None = None)
                         "-movflags", "+faststart", str(tmp)])  # fmt: skip
 
 
+def has_audio(video: Path) -> bool:
+    probe = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=index",
+         "-of", "csv=p=0", str(video)],
+        capture_output=True, text=True,
+    )  # fmt: skip
+    return probe.returncode == 0 and bool(probe.stdout.strip())
+
+
+def add_voice(video: Path, start_s: float, end_s: float, clip: Path) -> bool:
+    """Put the technician's own words of this moment on the motion clip (if the video has sound).
+
+    The best narrator is the person who did the repair: the film plays their real voice while
+    taking apart, and only falls back to the device voice where there is none.
+    """
+    if not has_audio(video):
+        return False
+    with artifacts.atomic_path(clip) as tmp:
+        run_ffmpeg(
+            ["ffmpeg", "-y", "-v", "error", "-i", str(clip),
+             "-ss", f"{start_s:.3f}", "-to", f"{end_s:.3f}", "-i", str(video),
+             "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "aac", "-b:a", "128k",
+             "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-shortest", "-movflags", "+faststart",
+             str(tmp)]
+        )  # fmt: skip
+    return True
+
+
 def best_frame(track: Track) -> int | None:
     """The frame where the part is seen largest (the cut-out is taken there)."""
     sizes = {index: int(mask.sum()) for index, mask in track.masks.items()}
@@ -451,6 +479,7 @@ def motion_for_step(
     clip = f"steps/{step.index:02d}_motion.mp4"
     clip_reverse = f"steps/{step.index:02d}_motion_rev.mp4"
     write_clip(rendered, job_dir / clip, reverse=job_dir / clip_reverse)
+    voice = add_voice(job_dir / "video.mp4", start, start + len(frames) / FPS, job_dir / clip)
 
     motion = StepMotion(
         index=step.index,
@@ -459,6 +488,9 @@ def motion_for_step(
         part=concept,
         fasteners_tracked=len(numbers),
         frames=len(frames) * (2 if screw_track is not None else 1),
+        start_s=round(start, 3),
+        end_s=round(start + len(frames) / FPS, 3),
+        voice=voice,
     )
     best = best_frame(part_track)
     if best is not None and best < len(frames):
