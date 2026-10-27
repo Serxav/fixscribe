@@ -5,8 +5,16 @@ from pathlib import Path
 
 from app import artifacts
 from app.config import Settings
+from app.domains import DomainProfile, profile_for
 from app.meta_client import MetaClient
-from app.schemas import ANALYSIS_JSON_SCHEMA, Analysis, IngestInfo, Scenes, Transcript
+from app.schemas import (
+    ANALYSIS_JSON_SCHEMA,
+    Analysis,
+    Identity,
+    IngestInfo,
+    Scenes,
+    Transcript,
+)
 
 
 class AnalyzeError(Exception):
@@ -28,7 +36,32 @@ MAX_OUTPUT_TOKENS = 16000
 ANALYZE_TIMEOUT_S = 600.0
 
 
-def build_prompt(duration_s: float, mode: str, turns: list[dict], segments: list[dict]) -> str:
+def domain_context(identity: Identity | None, profile: DomainProfile) -> str:
+    """Short domain block for the prompt, steered by what identify found."""
+    tail = [
+        profile.prompt_hint,
+        f"Typical parts: {', '.join(profile.parts)}",
+        f"Fasteners in this domain: {', '.join(profile.fasteners)}; count them as `screw_count`.",
+    ]
+    if identity is None:
+        return "\n".join(tail)
+    problem = identity.problem or "not stated"
+    brand_model = f"{identity.brand} {identity.model}".strip() or "unknown"
+    head = [
+        f"Object: {identity.object_name} ({identity.category}), "
+        f"task: {identity.task}, problem: {problem}",
+        f"Brand/model: {brand_model}",
+    ]
+    return "\n".join(head + tail)
+
+
+def build_prompt(
+    duration_s: float,
+    mode: str,
+    turns: list[dict],
+    segments: list[dict],
+    domain: str = "",
+) -> str:
     """Fill the analyze prompt template with the job times and turns."""
     if turns:
         turn_lines = [
@@ -51,6 +84,7 @@ def build_prompt(duration_s: float, mode: str, turns: list[dict], segments: list
     prompt = prompt.replace("<<MODE>>", mode)
     prompt = prompt.replace("<<TURNS>>", turns_text)
     prompt = prompt.replace("<<SEGMENTS>>", segments_text)
+    prompt = prompt.replace("<<DOMAIN>>", domain)
     return prompt
 
 
@@ -92,7 +126,10 @@ def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> 
     )
     duration_s = ingest.duration_s
 
-    prompt = build_prompt(duration_s, mode, turns, segments)
+    identity = artifacts.load_optional(job_dir, Identity)
+    profile = profile_for(identity.category if identity else None)
+    domain = domain_context(identity, profile)
+    prompt = build_prompt(duration_s, mode, turns, segments, domain)
     if client is None:
         client = MetaClient(settings, job_dir=job_dir)
     file_id = client.upload_file(video_path)
