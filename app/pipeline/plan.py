@@ -122,6 +122,7 @@ def to_step(index: int, draft: DraftStep) -> Step:
         ],
         confidence=draft.confidence,
         review="needs_review" if draft.confidence < LOW_CONFIDENCE else "auto",
+        source_index=draft.source_index,
     )
 
 
@@ -133,6 +134,8 @@ def build_plan(
     refine: Refine | None = None,
 ) -> Plan:
     fused = apply_refine(apply_fusion(analysis.steps, fusion), refine)
+    # Remember each draft's number before cleaning can drop or reorder it (see Step.source_index).
+    fused = [draft.model_copy(update={"source_index": i}) for i, draft in enumerate(fused, start=1)]
     drafts, checks = clean_times(fused, duration_s)
     steps = [to_step(i, draft) for i, draft in enumerate(drafts, start=1)]
     low = [step.index for step in steps if step.review == "needs_review"]

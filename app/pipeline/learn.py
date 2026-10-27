@@ -17,13 +17,13 @@ VERSION = "1"
 ARTICLES = ("a", "an", "the")
 
 
-def normalize_term(text: str) -> str:
+def normalize_term(text: str, singular: bool = True) -> str:
     """Lower case, collapse spaces, drop one leading article, simple singular."""
     term = re.sub(r"\s+", " ", text.lower().strip())
     words = term.split(" ")
     if words and words[0] in ARTICLES:
         term = " ".join(words[1:])
-    if len(term) > 3 and term.endswith("s") and not term.endswith("ss"):
+    if singular and len(term) > 3 and term.endswith("s") and not term.endswith("ss"):
         term = term[:-1]
     return term
 
@@ -31,7 +31,7 @@ def normalize_term(text: str) -> str:
 def _known_terms(profile: DomainProfile) -> dict[str, set[str]]:
     return {
         "parts": {normalize_term(item) for item in profile.parts},
-        "tools": {normalize_term(item) for item in profile.tools},
+        "tools": {normalize_term(item, singular=False) for item in profile.tools},
         "fasteners": {normalize_term(item) for item in profile.fasteners},
     }
 
@@ -45,7 +45,7 @@ def suggest(guide: Guide, profile: DomainProfile) -> list[ProfileSuggestion]:
     def add(field: str, raw: str | None, seen_in: str) -> None:
         if not raw:
             return
-        value = normalize_term(raw)
+        value = normalize_term(raw, singular=field != "tools")  # "pliers" stays "pliers"
         if len(value) < 3 or len(value) > 40:
             return
         if value in known[field] or (field, value) in seen:

@@ -30,9 +30,9 @@ PART_CONFIDENCE = 0.5  # SAM below this only supports the part claim
 MAX_TURNS = 2  # transcript turns quoted per step
 TURN_CUT = 80  # characters kept per quoted turn
 
-# Index rule (the same one plan.py uses): fusion and refine number steps 1, 2, 3...
-# in Spark's time order, the order plan numbers its final steps in, so plan step N
-# pairs with the fusion/refine entry N. Perception entries carry their step index.
+# Index rule: fusion and refine number Spark's drafts 1, 2, 3... in time order; the plan keeps
+# that number in `step.source_index` (it can differ from `step.index` when the plan drops a
+# step). Perception entries carry the plan step index.
 SCORES = {"verified": 1.0, "supported": 0.5, "unverified": 0.0}
 
 
@@ -153,11 +153,12 @@ def build_proof(
     seen = {item.index: item for item in perception.steps} if perception else {}
     steps = []
     for step in plan.steps:
+        source = step.source_index if step.source_index is not None else step.index
         claims = [
-            boundaries_claim(step, fused.get(step.index), refined.get(step.index)),
+            boundaries_claim(step, fused.get(source), refined.get(source)),
             instruction_claim(step, transcript),
         ]
-        fasteners = fastener_claim(step, seen.get(step.index), refined.get(step.index))
+        fasteners = fastener_claim(step, seen.get(step.index), refined.get(source))
         if fasteners is not None:
             claims.append(fasteners)
         part = part_claim(step, seen.get(step.index))

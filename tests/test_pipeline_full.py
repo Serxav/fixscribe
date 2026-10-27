@@ -13,7 +13,7 @@ from app.jobs import create_job
 from app.pipeline import analyze, identify, perception, refine, transcribe
 from app.pipeline.publish import UNVERIFIED_SCREWS
 from app.pipeline.runner import default_stages, run_job
-from app.schemas import Guide, Identity, Manifest
+from app.schemas import Guide, Identity, Manifest, ProfileSuggestions, Proof
 
 pytestmark = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="needs ffmpeg")
 
@@ -175,7 +175,7 @@ def test_full_pipeline_builds_a_guide(tmp_path, fake_meta):
     manifest = artifacts.load(folder, Manifest)
     assert list(manifest.stages) == [
         "ingest", "transcribe", "identify", "signals", "scenes", "analyze", "fusion", "refine",
-        "plan", "safety", "frames", "perception", "publish",
+        "plan", "safety", "frames", "perception", "proof", "publish", "learn",
     ]  # fmt: skip
     assert all(record.status == "done" for record in manifest.stages.values())
     assert artifacts.load(folder, Identity).category == "electronics"
@@ -184,6 +184,10 @@ def test_full_pipeline_builds_a_guide(tmp_path, fake_meta):
     assert guide.safety is not None and guide.safety.level == "caution"
     assert guide.warnings[: len(guide.safety.prechecks)] == guide.safety.prechecks
     assert guide.identity is not None and guide.steps[0].screws.kind == "screw"
+    # Proof mode: every step has claims, and the guide carries the same proof as proof.json.
+    assert guide.proof == artifacts.load(folder, Proof) and len(guide.proof.steps) == 2
+    assert [s.source_index for s in guide.steps] == [1, 2]
+    assert artifacts.load(folder, ProfileSuggestions).category == "electronics"
     # Pass 2 looked again at the screw step and its answer reached the guide.
     assert guide.steps[0].instruction == "Remove the four screws on the back cover."
     assert any(kind == "segment" and concept == "screw" for kind, concept in fake_meta.calls)

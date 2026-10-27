@@ -73,8 +73,10 @@ def default_stages() -> list[Stage]:
         fusion,
         identify,
         ingest,
+        learn,
         perception,
         plan,
+        proof,
         publish,
         refine,
         safety_stage,
@@ -96,7 +98,9 @@ def default_stages() -> list[Stage]:
         stage_of("safety", safety_stage, "safety.json", weight=0.1),
         stage_of("frames", frames, "frames.json", weight=1.0, optional=True),
         stage_of("perception", perception, "perception.json", weight=1.5, optional=True),
+        stage_of("proof", proof, "proof.json", weight=0.1, optional=True),
         stage_of("publish", publish, "guide.json", weight=0.1),
+        stage_of("learn", learn, "profile_suggestions.json", weight=0.1, optional=True),
     ]
 
 

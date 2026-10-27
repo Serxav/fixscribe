@@ -68,6 +68,9 @@ class Step(Strict):
     evidence: list[Evidence] = Field(default_factory=list)
     confidence: float = Field(default=0.0, ge=0, le=1)
     review: Literal["auto", "needs_review", "edited"] = "auto"
+    # Spark's draft number in time order: the index fusion.json and refine.json use for this
+    # step. It differs from `index` when the plan drops or reorders steps.
+    source_index: int | None = Field(default=None, ge=1)
 
     @model_validator(mode="after")
     def check_seconds(self) -> "Step":
@@ -140,6 +143,8 @@ class DraftStep(BaseModel):
     """One step as Muse Spark returns it. Lenient: the guide builder cleans it up."""
 
     model_config = ConfigDict(extra="ignore")
+
+    source_index: int | None = None  # set by the plan, never by Spark (not in the JSON schema)
 
     title: str
     instruction: str = ""
