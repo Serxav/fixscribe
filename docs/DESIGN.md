@@ -1,9 +1,15 @@
-# FixScribe design v5 — "Civic editorial, warmer"
+# FixScribe design v6 — "Civic editorial, warmer"
 
-References: the 2025-26 sites of the US National Design Studio (grid, restraint) and the page
-organization of anthropic.com (two-tone statements, cards with rows, tag + picture tiles, dark
-footer, calm reveal on scroll). We borrow structure, never brand: no logos, fonts or signature
-colors of either. FixScribe must look like a serious public tool, not like an AI demo.
+FixScribe must look like a serious public tool, not like an AI demo: plain words, a strict grid,
+lots of space, warm neutrals, colored technical drawings and calm motion.
+
+## v6 additions
+- A "Built on Meta AI" line above the headline; the models section is titled "Built on Meta AI".
+  Accent is #0866ff. Meta's own logos are never used: names of the models only.
+- "What FixScribe does": a sticky phone shows the real screen of each feature
+  (`scripts/draw_screens.py`); each feature says "Available" or "Coming next". Never claim more.
+- The mosaic has 21 objects (7 x 3, 3 x 7 on a phone); the phone in the middle is drawn finer and
+  shows its part labels only while it is big (`--detail`).
 
 ## v5 additions
 - Header: section pills left, wordmark centered (the three-step glyph), one dark pill right.

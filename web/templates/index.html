@@ -2,6 +2,7 @@
 {% block title %}FixScribe — a guide that proves every step{% endblock %}
 {% block content %}
 <section class="hero" id="start">
+  <p class="built" data-reveal><span class="built-mark" aria-hidden="true"></span>Built on Meta AI — Muse Wonder, Muse Spark, SAM 3.1 and Muse Voice · Meta Global AI Developer Hackathon 2026</p>
   <h1 class="headline" data-reveal>
     <span class="lead">FixScribe turns one video of a person building or repairing something into a guide that proves every step.</span>
     <span class="rest">It names every part, points at it on the frame, checks each claim outside the model, and asks you when it is not sure.</span>
@@ -32,6 +33,32 @@
     <span class="lead">Most instructions are written by someone who already knows how.</span>
     <span class="rest">They skip the step that seems obvious — the one where you get stuck. The person who just did the job knows it best, so FixScribe keeps their hands, their words and their order of work.</span>
   </p>
+</section>
+
+
+<section class="block story" id="does">
+  <div class="block-head" data-reveal>
+    <p class="eyebrow">What FixScribe does</p>
+    <h2 class="title">From one video to a guide you can trust — and help while you work.</h2>
+    <p class="lede">Everything starts from a video of the job. A photo does not make a guide: it checks your own work against one.</p>
+  </div>
+  <div class="story-grid">
+    <div class="story-device" aria-hidden="true">
+      <div class="device"><div class="device-screen">{% include "art/screens.html" %}</div></div>
+      <div class="story-dots"><span class="on"></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+    <ol class="story-steps">
+      <li class="story-step" data-step="0"><span class="state ok">Available</span><h3>Film it once</h3><p>Record on your phone or upload a video you already have — a repair, an assembly, taking something apart. Talk through it or stay silent.</p><p class="used">MP4 or MOV · up to 10 minutes · any object</p></li>
+      <li class="story-step" data-step="1"><span class="state ok">Available</span><h3>It recognizes the job</h3><p>It works out what the object is, what you are doing to it and what can hurt you, and transcribes what you say, to the second. Gas, mains panels, airbags and refrigerant are refused before anything else runs.</p><p class="used">Muse Spark · Muse Voice · safety rules</p></li>
+      <li class="story-step" data-step="2"><span class="state ok">Available</span><h3>A guide that proves every step</h3><p>Each step names its parts, shows where they are on the frame and the screws numbered, and keeps the second of video and your own words it rests on. What cannot be proven is marked, not hidden.</p><p class="used">Muse Spark points · SAM 3.1 cuts out · checks in code</p></li>
+      <li class="story-step" data-step="3"><span class="state ok">Available</span><h3>Took it apart? It writes the way back</h3><p>From a video of taking something apart, FixScribe writes the guide to put it back together in reverse order — and checks that every screw that came out goes back in.</p><p class="used">Reverse guide · fastener count</p></li>
+      <li class="story-step" data-step="4"><span class="state ok">Available</span><h3>Check my step</h3><p>Take a photo of your own object at any step. SAM 3.1 compares it with the guide and tells you it is done — or which screws are still in place.</p><p class="used">One photo · SAM 3.1</p></li>
+      <li class="story-step" data-step="5"><span class="state ok">Available</span><h3>A coach that watches with you</h3><p>Point the camera at your work. FixScribe tells you which step you are on, whether it looks right and what to do next — out loud, hands free.</p><p class="used">Live camera · Muse Spark</p></li>
+      <li class="story-step" data-step="6"><span class="state ok">Available</span><h3>The instruction film</h3><p>A narrated film of the guide with captions and step markers: forward to take it apart, backward to put it back. The tracked parts stay lit as they move.</p><p class="used">SAM 3.1 tracking · voice in your language</p></li>
+      <li class="story-step" data-step="7"><span class="state next">Coming next</span><h3>Replace a part</h3><p>Pick the part you need to change. FixScribe plans the shortest way to reach it, the swap, and the way back — so a spare part is one guide away.</p><p class="used">Parts catalog A, B, C… from the agent</p></li>
+    </ol>
+  </div>
+  <p class="story-extra" data-reveal>Also in every guide: a printable screw tray, Markdown export, repair mode one step at a time, and the agent console to watch how the guide was proven.</p>
 </section>
 
 <section class="block" id="how">
@@ -74,12 +101,13 @@
 
 <section class="block" id="models">
   <div class="block-head" data-reveal>
-    <p class="eyebrow">Models</p>
+    <p class="eyebrow">Built on Meta AI</p>
     <h2 class="title">Every model has one job.</h2>
+    <p class="lede">All the AI inside FixScribe is Meta's, called through the Meta Model API. Code checks what the models say — no model grades its own work.</p>
   </div>
   <div class="cards">
     <article class="card-x" data-reveal>
-      <p class="meta"><span class="swatch" style="background:#3760f2"></span>Agent<span class="mono">muse-wonder-1.0</span></p>
+      <p class="meta"><span class="swatch" style="background:#0866ff"></span>Agent<span class="mono">muse-wonder-1.0</span></p>
       <h3>Muse Wonder</h3>
       <p class="desc">The investigator. It plans the work, uses the tools one turn at a time and asks you when it is not sure.</p>
       <dl class="rows-x"><div><dt>Job</dt><dd>Investigate the video</dd></div><div><dt>Turns</dt><dd>about 30 per video</dd></div></dl>
