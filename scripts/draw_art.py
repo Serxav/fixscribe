@@ -128,78 +128,6 @@ def grid(w, h, step, color, opacity) -> str:
 # --- drawings ---------------------------------------------------------------------------------
 
 
-def hero() -> str:
-    """The exploded table, in layers the landing animates on scroll (assembled -> exploded).
-
-    The drawing is the exploded state. ``fs-top`` and ``fs-bolts`` are lowered by the page script
-    (data-lift-top / data-lift-bolt pixels) to show the table assembled; ``fs-guides`` and
-    ``fs-callouts`` fade in as it comes apart. Without the script it stays exploded.
-    """
-    w, h = 1600, 900
-    lift, bolts_up = 40, 10
-    iso = Iso(520, 540, 4.3)
-    tones = ("#ffffff", "#e4e9fb", "#c7d1f6")
-    legs = "".join(box(iso, x, y, 0, LEG, LEG, LEG_H, tones) for x, y in CORNERS)
-    bolts, guides = "", ""
-    for x, y in CORNERS:
-        cx, cy = x + LEG / 2, y + LEG / 2
-        z0 = LEG_H + bolts_up
-        bolts += bolt(iso, cx, cy, z0 - 2, z0 + 10)
-        guides += dashed(iso, (cx, cy, z0 + 10), (cx, cy, LEG_H + lift))
-    top = box(iso, 0, 0, LEG_H + lift, *TOP, tones)
-    ax, ay = iso.p(0, 0, LEG_H + lift + TOP[2])
-    guides += f'<path d="M{ax:.0f} {ay - 80:.0f} V{ay - 16:.0f} m-9 -14 l9 14 l9 -14" fill="none" stroke="{WHITE}" stroke-width="2"/>'
-    parts = [
-        ((60, 20, LEG_H + lift + 6), "A", "Tabletop", "proven at 00:12.4 · SAM fill 81%"),
-        (
-            (71.5, 8.5, LEG_H + 18),
-            "B",
-            "Hanger bolt ×4",
-            "said at 00:44.2: “the bolt goes into the leg”",
-        ),
-        ((71.5, 8.5, 22), "C", "Leg ×4", "proven at 00:31.0 · SAM fill 77%"),
-    ]
-    callouts = ""
-    for i, (where, mark, name, proof) in enumerate(parts):
-        px, py = iso.p(*where)
-        lx, ly = 980, 300 + i * 150
-        callouts += f'<polyline points="{px:.0f},{py:.0f} {lx - 60},{ly - 6} {lx - 24},{ly - 6}" fill="none" stroke="{WHITE}" stroke-width="1.4"/>'
-        callouts += f'<circle cx="{px:.0f}" cy="{py:.0f}" r="4" fill="{WHITE}"/>'
-        callouts += letter(lx, ly - 6, mark, fill="#3760f2", ink=WHITE)
-        callouts += text(lx + 32, ly, name, 30, WHITE)
-        callouts += text(lx + 32, ly + 32, proof, 16, WHITE, mono=True, opacity=0.8)
-    callouts += text(
-        w - 48,
-        h - 44,
-        "Exploded view, drawn only from parts the agent proved on the video.",
-        16,
-        WHITE,
-        mono=True,
-        anchor="end",
-        opacity=0.8,
-    )
-    body = (
-        grid(w, h, 40, WHITE, 0.08)
-        + legs
-        + f'<g class="fs-bolts">{bolts}</g>'
-        + f'<g class="fs-guides">{guides}</g>'
-        + f'<g class="fs-top">{top}</g>'
-        + f'<g class="fs-callouts">{callouts}</g>'
-    )
-    out = svg(
-        w,
-        h,
-        body,
-        "A side table comes apart into three proven parts: tabletop, hanger bolts and legs",
-        "#3760f2",
-    )
-    return out.replace(
-        "<svg ",
-        f'<svg data-lift-top="{lift * iso.k:.1f}" data-lift-bolt="{bolts_up * iso.k:.1f}" ',
-        1,
-    )
-
-
 def tile_identify() -> str:
     w, h = 800, 1000
     iso = Iso(400, 520, 3.5)
@@ -392,7 +320,6 @@ def tile_build() -> str:
 
 
 DRAWINGS = {
-    "hero.svg": hero,
     "identify.svg": tile_identify,
     "listen.svg": tile_listen,
     "point.svg": tile_point,

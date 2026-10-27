@@ -11,7 +11,9 @@ colors of either. FixScribe must look like a serious public tool, not like an AI
   in grey (`.headline .lead` / `.rest`).
 - Soft cards (`.card-x`, radius 14 px) for things you can act on; hairlines for lists.
 - Illustrations are drawn by `scripts/draw_art.py` (isometric, manual style, one color field each).
-- Motion: `[data-reveal]` rises in once; the hero table comes apart on scroll (`[data-assemble]`);
+- Motion: `[data-reveal]` rises in once; the mosaic (`[data-mosaic-stage]`, drawn by
+  `scripts/draw_mosaic.py`) starts with the phone analysis full screen and unfolds into fifteen
+  objects as you scroll, each tile looping one step of the method (scan, point, number, lift, refuse);
   the agent trace appears line by line. All of it off with reduced motion, visible without JS.
 - Radius: 14 px cards and media, 10 px buttons, pills 999 px. (Overrides rule 7 below.)
 
