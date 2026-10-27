@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Any
 
 from app import artifacts
 from app.jobs import (
-    JOBS_DIR,
     JobStatus,
     job_dir,
     now_iso,
@@ -142,7 +141,7 @@ def job_lock(folder: Path, tries: int = LOCK_TRIES) -> Iterator[None]:
             fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
 
-def is_running(job_id: str, jobs_dir: Path = JOBS_DIR) -> bool:
+def is_running(job_id: str, jobs_dir: Path) -> bool:
     """True if a runner process holds the lock (a crashed runner does not)."""
     folder = job_dir(job_id, jobs_dir)
     try:
@@ -152,7 +151,7 @@ def is_running(job_id: str, jobs_dir: Path = JOBS_DIR) -> bool:
         return True
 
 
-def check_stale(job_id: str, jobs_dir: Path = JOBS_DIR) -> JobStatus:
+def check_stale(job_id: str, jobs_dir: Path) -> JobStatus:
     """Mark a job failed if it says queued/running but no runner holds its lock any more."""
     status = read_status(job_id, jobs_dir)
     if status.state not in ("queued", "running") or is_running(job_id, jobs_dir):
@@ -173,8 +172,9 @@ def run_job(
     job_id: str,
     settings: "Settings",
     stages: list[Stage] | None = None,
-    jobs_dir: Path = JOBS_DIR,
+    jobs_dir: Path | None = None,
 ) -> JobStatus:
+    jobs_dir = settings.jobs_dir if jobs_dir is None else jobs_dir
     folder = job_dir(job_id, jobs_dir)
     stages = stages_for(read_status(job_id, jobs_dir)) if stages is None else stages
     total = sum(stage.weight for stage in stages) or 1.0
@@ -234,7 +234,7 @@ def job_usd(folder: Path) -> float:
     return SpendCounter(folder / "spend.json", budget_usd=float("inf")).total()
 
 
-def start_job(job_id: str, jobs_dir: Path = JOBS_DIR) -> subprocess.Popen:
+def start_job(job_id: str, jobs_dir: Path) -> subprocess.Popen:
     """Launch the runner for one job in a separate process and return at once."""
     folder = job_dir(job_id, jobs_dir)
     # The child gets its own copy of the log file, so we can close ours right away.
@@ -254,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
     if len(args) not in (1, 2):
         print("usage: python -m app.pipeline.runner <job_id> [jobs_dir]")
         return 2
-    jobs_dir = Path(args[1]) if len(args) == 2 else JOBS_DIR
+    jobs_dir = Path(args[1]) if len(args) == 2 else get_settings().jobs_dir
     logging.basicConfig(level=logging.INFO)
     try:
         status = run_job(args[0], get_settings(), jobs_dir=jobs_dir)
