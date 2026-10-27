@@ -3,6 +3,8 @@
 import httpx
 import pytest
 
+from app import meta_client
+
 
 def _no_network(*args, **kwargs):
     raise RuntimeError("network is disabled in tests: use a fake client")
@@ -13,3 +15,4 @@ def block_network(monkeypatch):
     monkeypatch.setattr(httpx.Client, "send", _no_network)
     monkeypatch.setattr(httpx.AsyncClient, "send", _no_network)
     monkeypatch.setenv("MODEL_API_KEY", "")
+    monkeypatch.setattr(meta_client, "_factory", None)  # each test starts with no fake leaked

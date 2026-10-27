@@ -21,7 +21,7 @@ import numpy as np
 from app import artifacts
 from app.config import Settings
 from app.domains import profile_for
-from app.meta_client import BudgetExceeded, Detection, MetaClient
+from app.meta_client import BudgetExceeded, Detection, make_client
 from app.pipeline.ingest import find_original
 from app.pipeline.media import extract_still
 from app.pipeline.overlay import draw_part, draw_screws, save_jpeg
@@ -496,7 +496,7 @@ def run(job_dir: Path, settings: Settings, client: Any = None) -> Perception:
     frames = artifacts.load_optional(job_dir, Frames)
     ingest = artifacts.load_optional(job_dir, IngestInfo)
     if client is None:
-        client = MetaClient(settings, job_dir=job_dir)
+        client = make_client(settings, job_dir=job_dir)
     fastener = fastener_concept(job_dir)
     eligible = [
         step

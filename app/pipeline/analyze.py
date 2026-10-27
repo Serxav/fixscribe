@@ -6,7 +6,7 @@ from pathlib import Path
 from app import artifacts
 from app.config import Settings
 from app.domains import DomainProfile, profile_for
-from app.meta_client import MetaClient
+from app.meta_client import MetaClient, make_client
 from app.schemas import (
     ANALYSIS_JSON_SCHEMA,
     Analysis,
@@ -131,7 +131,7 @@ def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> 
     domain = domain_context(identity, profile)
     prompt = build_prompt(duration_s, mode, turns, segments, domain)
     if client is None:
-        client = MetaClient(settings, job_dir=job_dir)
+        client = make_client(settings, job_dir=job_dir)
     file_id = client.upload_file(video_path)
     try:
         response = client.respond(

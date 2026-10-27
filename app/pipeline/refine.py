@@ -22,7 +22,7 @@ import cv2
 from app import artifacts
 from app.artifacts import ArtifactError
 from app.config import Settings
-from app.meta_client import BudgetExceeded, MetaClient, MetaError
+from app.meta_client import BudgetExceeded, MetaError, make_client
 from app.schemas import (
     REFINE_JSON_SCHEMA,
     Analysis,
@@ -388,7 +388,7 @@ def run(job_dir: Path, settings: Settings, client=None) -> Refine:  # type: igno
         return result
 
     if client is None:
-        client = MetaClient(settings, job_dir=job_dir)
+        client = make_client(settings, job_dir=job_dir)
 
     drafts = _ordered_drafts(analysis)
     fused = {step.index: step for step in fusion.steps} if fusion is not None else {}
