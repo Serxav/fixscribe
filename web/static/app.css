@@ -297,7 +297,7 @@ details.proof[open] summary::after { content: "–"; }
 .stages li.waiting { color: var(--ink-3); }
 .stages .err { grid-column: 2 / -1; color: var(--bad); font-size: 13px; padding-bottom: 8px; }
 
-.hidden { display: none !important; }
+.hidden, [hidden] { display: none !important; }
 .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* Desktop: media on the left, instructions on the right */
