@@ -118,6 +118,60 @@ def stages_for(status: JobStatus) -> list[Stage]:
     return attempt_stages() if status.kind == "attempt" else default_stages()
 
 
+# What each stage does, in words a user understands (shown on the progress page).
+STAGE_LABELS = {
+    "ingest": "Preparing the video",
+    "transcribe": "Listening to the narration",
+    "identify": "Identifying the object",
+    "signals": "Finding pauses and scene changes",
+    "scenes": "Finding the spoken step cuts",
+    "analyze": "Watching the repair",
+    "fusion": "Aligning step boundaries",
+    "refine": "Double-checking unclear steps",
+    "plan": "Building the step plan",
+    "safety": "Checking safety",
+    "frames": "Picking the best frames and clips",
+    "perception": "Finding parts and fasteners",
+    "proof": "Collecting the proof",
+    "publish": "Writing the guide",
+    "learn": "Learning new vocabulary",
+    "attempt": "Comparing your attempt",
+}
+
+
+def stage_overview(status: JobStatus, folder: Path) -> list[dict[str, Any]]:
+    """Every stage of this job with its state, for the progress page.
+
+    A stage is "waiting" until it runs; the stage the runner is on is "running"; finished ones
+    take their status from manifest.json (done, failed or skipped).
+    """
+    try:
+        manifest = artifacts.load_optional(folder, Manifest)
+    except artifacts.ArtifactError:
+        manifest = None
+    records = manifest.stages if manifest else {}
+    overview = []
+    for stage in stages_for(status):
+        record = records.get(stage.name)
+        if status.state == "running" and stage.name == status.stage:
+            state, seconds, error = "running", None, None
+        elif record is not None:
+            state, seconds, error = record.status, record.seconds, record.error
+        else:
+            state, seconds, error = "waiting", None, None
+        overview.append(
+            {
+                "name": stage.name,
+                "label": STAGE_LABELS.get(stage.name, stage.name),
+                "optional": stage.optional,
+                "status": state,
+                "seconds": seconds,
+                "error": error,
+            }
+        )
+    return overview
+
+
 class JobAlreadyRunning(Exception):
     pass
 
