@@ -161,6 +161,27 @@ def test_no_identity_keeps_screw_kind():
     assert guide.steps[0].screws.kind == "screw"
 
 
+def test_proof_is_copied_into_the_guide(tmp_path):
+    from app.schemas import Claim, Proof, StepProof
+
+    proof = Proof(
+        steps=[
+            StepProof(
+                index=1,
+                claims=[
+                    Claim(field="boundaries", status="verified", sources=["voice cut at 1.0 s"])
+                ],
+                score=1.0,
+            )
+        ],
+        score=1.0,
+    )
+    artifacts.save(tmp_path, plan(step(1, 0, 10)))
+    assert run(tmp_path, settings=None).proof is None
+    artifacts.save(tmp_path, proof)
+    assert run(tmp_path, settings=None).proof == proof
+
+
 def test_run_passes_identity_and_safety(tmp_path):
     identity = car()
     safety = Safety(level="caution", prechecks=["Switch the engine off and let it cool."])

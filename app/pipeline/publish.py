@@ -17,6 +17,7 @@ from app.schemas import (
     Identity,
     Perception,
     Plan,
+    Proof,
     Safety,
     ScrewMap,
     Step,
@@ -107,6 +108,7 @@ def build_guide(
     perception: Perception | None = None,
     identity: Identity | None = None,
     safety: Safety | None = None,
+    proof: Proof | None = None,
 ) -> Guide:
     steps, perception_notes = with_perception(with_media(plan.steps, frames), perception)
     steps = with_kind(steps, profile_for(identity.category).fastener_kind if identity else "screw")
@@ -142,6 +144,7 @@ def build_guide(
         checks=checks,
         identity=identity,
         safety=safety,
+        proof=proof,
     )
 
 
@@ -152,6 +155,7 @@ def run(job_dir: Path, settings: Any) -> Guide:
         artifacts.load_optional(job_dir, Perception),
         artifacts.load_optional(job_dir, Identity),
         artifacts.load_optional(job_dir, Safety),
+        artifacts.load_optional(job_dir, Proof),
     )
     artifacts.save(job_dir, guide)
     return guide
