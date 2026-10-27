@@ -230,6 +230,18 @@ def film_page(
     )
 
 
+@router.get("/guides/{job_id}/live", response_class=HTMLResponse)
+def live_page(
+    request: Request,
+    job_id: str,
+    settings: Settings = Depends(settings_dep),  # noqa: B008
+):
+    folder, guide = load_guide(job_id, settings)
+    if guide is None:
+        return _not_ready(request, job_id, valid_id=folder is not None)
+    return templates.TemplateResponse(request, "live.html", {"guide": guide, "job_id": job_id})
+
+
 @router.get("/media/{job_id}/{path:path}")
 def media_file(
     job_id: str,

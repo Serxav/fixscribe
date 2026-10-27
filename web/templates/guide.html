@@ -34,6 +34,7 @@
     </div>
     <div class="btn-row">
       <a class="btn btn-primary btn-lg" href="/guides/{{ job_id }}/film">▶ Watch the film</a>
+      {% if not pro %}<a class="btn btn-glass btn-lg" href="/guides/{{ job_id }}/live">Live coach</a>{% endif %}
       {% if not pro %}<button class="btn btn-glass btn-lg" type="button" data-repair-open="0">Start repair</button>{% else %}<a class="btn btn-glass btn-lg" href="#steps">See all steps</a>{% endif %}
     </div>
   </article>
