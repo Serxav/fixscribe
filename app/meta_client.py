@@ -27,6 +27,7 @@ from meta_sam_parser import (
     FramePrompt,
     PromptBox,
     PromptObject,
+    PromptPoint,
     build_object_prompt,
     decode_mask_to_raster,
     decode_mask_to_svg_path,
@@ -409,6 +410,14 @@ def _build_box_prompt_text(
             object_id, frame, edges = item
         except (TypeError, ValueError):
             raise ValueError(f"box must be (object_id, frame, (l, t, r, b)): {item!r}") from None
+        if len(edges) == 2:  # a positive point (x, y) on the object, kept inside the frame
+            x = min(max(int(edges[0]), 0), width - 1)
+            y = min(max(int(edges[1]), 0), height - 1)
+            if object_id not in grouped:
+                grouped[object_id] = []
+                order.append(object_id)
+            grouped[object_id].append(FramePrompt(frame=frame, points=[PromptPoint(x, y)]))
+            continue
         clamped = _clamp_prompt_box(edges, width, height)
         if clamped is None:
             logger.warning(
@@ -1181,7 +1190,8 @@ class MetaClient:
         every object matching a word; boxes track exactly the pointed-at
         objects, one object id per box, with the prompt text built by
         `meta_sam_parser.build_object_prompt`. Box edges are half-open
-        `(left, top, right, bottom)` clamped inside `size`.
+        `(left, top, right, bottom)` clamped inside `size`; a prompt may also be a
+        positive point `(x, y)` on the object (https://dev.meta.ai/docs/sam/segmenting).
 
         Counts the clip frames with ffprobe, bills `max(50, frames)` video
         frames, and returns one track per answered frame sorted by frame

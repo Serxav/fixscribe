@@ -23,6 +23,7 @@ from app.config import Settings
 from app.meta_client import BudgetExceeded, Detection, make_client
 from app.pipeline.analyze import guide_direction
 from app.pipeline.fasteners import (
+    Found,
     clean_phrase,
     fastener_concept,
     find_in_step,
@@ -171,7 +172,7 @@ def _keyframe_still(
     return dst
 
 
-def _make_overlay(job_dir: Path, step: Step, image: np.ndarray, sp: StepPerception) -> str:
+def make_overlay(job_dir: Path, step: Step, image: np.ndarray, sp: StepPerception) -> str:
     """Draw the part (on the keyframe) or the fasteners (on the frame they were chosen on)."""
     height, width = image.shape[:2]
     longest = max(width, height)
@@ -205,7 +206,7 @@ def _make_overlay(job_dir: Path, step: Step, image: np.ndarray, sp: StepPercepti
     return relative
 
 
-def _best_video(job_dir: Path, ingest: IngestInfo | None) -> tuple[Path, str]:
+def best_video(job_dir: Path, ingest: IngestInfo | None) -> tuple[Path, str]:
     """The original upload and its colour conversion; the 720p working copy if it is gone."""
     if ingest is not None and ingest.source is not None:
         try:
@@ -227,6 +228,29 @@ def _find_part(client: Any, keyframe: Path, step: Step, sp: StepPerception) -> N
             return
     if concepts:
         sp.notes.append(f"No part found for '{concepts[0]}'.")
+
+
+def fill_ledger(sp: StepPerception, found: Found, next_number: int) -> int:
+    """Number the kept fasteners S<next_number>... on the frame they are drawn on."""
+    seed = found.frames.get(found.seed, {})
+    first, last = min(found.frames, default=0), max(found.frames, default=0)
+    sp.screws_before = len(found.frames.get(first, {}))
+    sp.screws_after = len(found.frames.get(last, {}))
+    sp.removed = []
+    for oid in found.kept:
+        box = _norm_box(seed[oid], found.size) if oid in seed else None
+        if box is None:
+            continue
+        sp.removed.append(
+            ScrewRecord(
+                id=f"S{next_number}",
+                number=len(sp.removed) + 1,
+                box=box,
+                confidence=found.confidence.get(oid),
+            )
+        )
+        next_number += 1
+    return next_number
 
 
 def _process_step(
@@ -252,7 +276,7 @@ def _process_step(
         context = f"{object_name or plan.device}. Step: {step.title}. {step.instruction}"
         work = job_dir / "steps" / f"{step.index:02d}_work"
         try:
-            video, prefilter = _best_video(job_dir, ingest)
+            video, prefilter = best_video(job_dir, ingest)
             result = find_in_step(
                 client,
                 settings.spark_model,
@@ -270,23 +294,7 @@ def _process_step(
         if result is not None:
             found, image = result
             save_found(job_dir, step.index, found)
-            seed = found.frames.get(found.seed, {})
-            first, last = min(found.frames, default=0), max(found.frames, default=0)
-            sp.screws_before = len(found.frames.get(first, {}))
-            sp.screws_after = len(found.frames.get(last, {}))
-            for number, oid in enumerate(found.kept, start=1):
-                box = _norm_box(seed[oid], found.size)
-                if box is None:
-                    continue
-                sp.removed.append(
-                    ScrewRecord(
-                        id=f"S{next_number}",
-                        number=number,
-                        box=box,
-                        confidence=found.confidence.get(oid),
-                    )
-                )
-                next_number += 1
+            next_number = fill_ledger(sp, found, next_number)
         seen = len(sp.removed)
         if seen < count:
             verb = "put in" if adding else "taken out"
@@ -294,7 +302,7 @@ def _process_step(
                 f"{seen} of {count} {plural(kind.split()[-1])} {verb} are clearly visible in "
                 "the video; the count comes from the analysis."
             )
-    sp.overlay = _make_overlay(job_dir, step, image, sp)
+    sp.overlay = make_overlay(job_dir, step, image, sp)
     sp.sam_calls = client.sam_calls
     return next_number
 

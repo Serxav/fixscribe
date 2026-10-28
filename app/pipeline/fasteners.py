@@ -349,12 +349,13 @@ def follow(
     client: Any,
     clip: Path,
     size: tuple[int, int],
-    seeds: list[tuple[int, Box]],
+    seeds: list[tuple[int, tuple]],
     area: tuple[int, int, int, int] | None = None,
     scale: float = 1.0,
 ) -> dict[int, dict[int, Box]]:
-    """SAM video follows each (frame, box) from its frame: frame -> id -> box (clip pixels).
+    """SAM video follows each (frame, box or point) from its frame: frame -> id -> box.
 
+    Boxes and points are in clip pixels, and so are the answers.
     With ``area``, ``clip`` is the step clip cropped to it and enlarged by ``scale``: the
     prompts are moved into the zoomed clip and the answers moved back.
     """
@@ -362,11 +363,11 @@ def follow(
     zoomed = (round(size[0] * scale), round(size[1] * scale))
     if area:
         zoomed = (round((area[2] - area[0]) * scale), round((area[3] - area[1]) * scale))
-    prompts = [
-        (oid, frame, tuple(int(round(v)) for v in ((box[0] - ox) * scale, (box[1] - oy) * scale,
-                                                    (box[2] - ox) * scale, (box[3] - oy) * scale)))
-        for oid, (frame, box) in enumerate(seeds, start=1)
-    ]  # fmt: skip
+
+    def moved(box: tuple) -> tuple:  # a box (l, t, r, b) or a point (x, y), into the zoom
+        return tuple(int(round((v - (ox, oy)[i % 2]) * scale)) for i, v in enumerate(box))
+
+    prompts = [(oid, frame, moved(box)) for oid, (frame, box) in enumerate(seeds, start=1)]
     tracks = client.segment_video(clip, boxes=prompts, size=zoomed)
     limit = MAX_SIDE * max(size)
     frames: dict[int, dict[int, Box]] = {}
