@@ -11,6 +11,7 @@ from app import artifacts
 from app.domains import profile_for
 from app.pipeline.analyze import guide_direction
 from app.pipeline.assembly import build_reassembly
+from app.pipeline.perception import step_fastener
 from app.schemas import (
     Box,
     Frames,
@@ -104,9 +105,16 @@ def with_motion(steps: list[Step], motion: Motion | None) -> list[Step]:
 
 
 def with_kind(steps: list[Step], kind: str) -> list[Step]:
-    """Label every screw map with the domain fastener kind (screws, bolts, ...)."""
+    """Label every fastener map with what the step handles ("pin", "bolt", "dowel"...),
+    else the domain fastener kind (screws, bolts, ...)."""
     return [
-        step.model_copy(update={"screws": step.screws.model_copy(update={"kind": kind})})
+        step.model_copy(
+            update={
+                "screws": step.screws.model_copy(
+                    update={"kind": step_fastener(step, kind).split()[-1]}
+                )
+            }
+        )
         if step.screws
         else step
         for step in steps

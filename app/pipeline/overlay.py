@@ -175,10 +175,14 @@ def draw_screws(
     pixel boxes in an image of ``size_sent`` (the image itself when omitted).
     The screw centre is never painted over: a hollow ring marks the screw and
     a graphite label with a lime outline sits up-right of it, joined by a thin
-    leader line that starts at the ring, not at the centre.
+    leader line that starts at the ring, not at the centre. Everything scales
+    with the image (a 720p still gets marks twice as thick as a 640 px one),
+    and each ring has a graphite halo so it stays visible on light wood.
     """
     result = image.copy()
     img_h, img_w = image.shape[:2]
+    unit = max(1, round(max(img_w, img_h) / 640))
+    min_radius = max(6, round(0.012 * float(np.hypot(img_w, img_h))))
     for item, number in zip(boxes, numbers, strict=False):
         x1, y1, x2, y2 = _pixel_box(item, image.shape, size_sent)
         if x2 <= x1 or y2 <= y1:
@@ -186,15 +190,16 @@ def draw_screws(
         center_x = (x1 + x2) // 2
         center_y = (y1 + y2) // 2
         diagonal = float(np.hypot(x2 - x1, y2 - y1))
-        radius = max(6, int(round(0.6 * diagonal)))
-        cv2.circle(result, (center_x, center_y), radius, LIME_BGR, 2)
+        radius = max(min_radius, int(round(0.6 * diagonal)))
+        cv2.circle(result, (center_x, center_y), radius, GRAPHITE_BGR, 2 * unit + 2, cv2.LINE_AA)
+        cv2.circle(result, (center_x, center_y), radius, LIME_BGR, 2 * unit, cv2.LINE_AA)
         label = _label_of(number)
         font = cv2.FONT_HERSHEY_SIMPLEX
-        font_scale = 0.5
-        thickness = 1
+        font_scale = 0.5 * unit
+        thickness = unit
         (text_w, text_h), _ = cv2.getTextSize(label, font, font_scale, thickness)
-        label_radius = max(10, text_w // 2 + 6, text_h // 2 + 6)
-        offset = radius + label_radius + 6
+        label_radius = max(10 * unit, text_w // 2 + 6 * unit, text_h // 2 + 6 * unit)
+        offset = radius + label_radius + 6 * unit
         label_x, label_y = center_x + offset, center_y - offset
         # Prefer up-right; fall back to another side so the label stays
         # inside the image and never covers the screw it names.
@@ -238,9 +243,9 @@ def draw_screws(
                 int(round(label_x - unit_x * (label_radius + 1))),
                 int(round(label_y - unit_y * (label_radius + 1))),
             )
-            cv2.line(result, start, end, LIME_BGR, 1)
-        cv2.circle(result, (label_x, label_y), label_radius, GRAPHITE_BGR, -1)
-        cv2.circle(result, (label_x, label_y), label_radius, LIME_BGR, 2)
+            cv2.line(result, start, end, LIME_BGR, unit, cv2.LINE_AA)
+        cv2.circle(result, (label_x, label_y), label_radius, GRAPHITE_BGR, -1, cv2.LINE_AA)
+        cv2.circle(result, (label_x, label_y), label_radius, LIME_BGR, 2 * unit, cv2.LINE_AA)
         origin = (label_x - text_w // 2, label_y + text_h // 2)
         cv2.putText(result, label, origin, font, font_scale, WHITE_BGR, thickness, cv2.LINE_AA)
     return result

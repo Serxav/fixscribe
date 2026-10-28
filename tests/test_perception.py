@@ -459,13 +459,16 @@ def _identity(tmp_path, task):
     )
 
 
-def test_assembly_counts_fasteners_put_in(tmp_path):
+def test_assembly_counts_fasteners_put_in(tmp_path, monkeypatch):
     settings = _job(tmp_path, [_step(1, 0.0, 5.0, screws=4)])
+    still = np.float64([[1, 0, 0], [0, 1, 0]])  # the camera did not move
+    monkeypatch.setattr(perception, "align_after_to_before", lambda *_args: still)
     _identity(tmp_path, "assemble")
     client = FakeClient(part=PART, before={"01": [FOUR[1]]}, after={"01": FOUR})
     step = perception.run(tmp_path, settings, client=client).steps[0]
     assert len(step.removed) == 3  # missing before, there after
     assert any("put in" in note for note in step.notes)
+    assert step.overlay == "steps/01_overlay.jpg"
 
 
 class CheckingClient(FakeClient):
@@ -512,3 +515,11 @@ def test_spark_points_at_a_part_sam_cannot_name(tmp_path):
     step = perception.run(tmp_path, settings, client=PointingClient()).steps[0]
     assert step.part is not None and step.part.confidence is None
     assert (step.part.box.x, step.part.box.w) == pytest.approx((0.1, 0.2))
+
+
+def test_spark_points_at_a_fastener_sam_missed(tmp_path):
+    settings = _job(tmp_path, [_step(1, 0.0, 5.0, screws=1)])
+    client = PointingClient(part=PART, before={"01": []}, after={"01": []})
+    step = perception.run(tmp_path, settings, client=client).steps[0]
+    assert len(step.removed) == 1
+    assert step.removed[0].confidence == 0.5

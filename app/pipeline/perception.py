@@ -9,8 +9,8 @@ and missing after was removed in that step and joins the screw ledger
 was put in). When the client can ask Muse Spark, every screw candidate is
 checked again on a zoomed contact sheet, so holes, wood grain and reflections
 are dropped, and a part SAM cannot find by name is pointed at by Spark.
-When the two stills do not line up (the camera moved), the comparison is
-unreliable, so at most as many screws as the analysis counted are kept.
+Never more fasteners than the analysis counted are kept (the most confident
+first): a fastener hidden in the wood is counted, never invented.
 Everything is saved in ``perception.json``; this stage writes no other
 artifact.
 """
@@ -27,6 +27,7 @@ from app import artifacts
 from app.config import Settings
 from app.domains import profile_for
 from app.meta_client import BudgetExceeded, Detection, make_client
+from app.pipeline.frames import hand_fraction, roi_sharpness
 from app.pipeline.ingest import find_original
 from app.pipeline.media import extract_still
 from app.pipeline.overlay import draw_part, draw_screws, save_jpeg
@@ -54,6 +55,7 @@ MIN_CROP_SIDE = 900
 MIN_CONFIDENCE = 0.3
 NMS_IOU = 0.5
 SAME_SCREW = 0.04
+STILL_TRIES = (-0.3, 0.0, 0.3)  # seconds around a before/after time; the clearest frame wins
 
 _BUDGET_NOTE = "SAM budget reached."
 
@@ -254,6 +256,21 @@ def align_after_to_before(before_img: Any, after_img: Any) -> np.ndarray | None:
     return full
 
 
+def _moved(box: NormBox, matrix: np.ndarray, source: Any, target: Any) -> NormBox:
+    """A box on ``source`` moved by the 2x3 pixel ``matrix`` onto ``target`` (same size kept)."""
+    src_h, src_w = source.shape[:2]
+    dst_h, dst_w = target.shape[:2]
+    cx, cy = (box.x + box.w / 2) * src_w, (box.y + box.h / 2) * src_h
+    x, y = matrix @ np.array([cx, cy, 1.0])
+    w, h = box.w * src_w / dst_w, box.h * src_h / dst_h
+    return NormBox(
+        x=min(max(x / dst_w - w / 2, 0.0), 1.0 - w),
+        y=min(max(y / dst_h - h / 2, 0.0), 1.0 - h),
+        w=w,
+        h=h,
+    )
+
+
 def _write_png_atomic(image: Any, path: Path) -> None:
     with artifacts.atomic_path(path) as tmp:
         if not cv2.imwrite(str(tmp), image):
@@ -329,6 +346,35 @@ def fasteners_on_still(
         if box is not None:
             found.append((box, detection.confidence))
     return found
+
+
+def pointed_fasteners(
+    client: Any,
+    crop_path: Path,
+    roi: tuple[float, float, float, float],
+    fastener: str,
+    context: str,
+    found: list[tuple[NormBox, float | None]],
+) -> list[tuple[NormBox, float | None]]:
+    """Add the fasteners Spark points at on the same crop that SAM missed."""
+    if not hasattr(client, "ground") or not crop_path.is_file():
+        return found
+    roi_x, roi_y, roi_w, roi_h = roi
+    out = list(found)
+    for item in client.ground(crop_path, f"each {fastener}", context=context, max_boxes=16):
+        x1, y1, x2, y2 = item.box
+        if x2 <= x1 or y2 <= y1:
+            continue
+        box = NormBox(
+            x=roi_x + x1 / 1000 * roi_w,
+            y=roi_y + y1 / 1000 * roi_h,
+            w=(x2 - x1) / 1000 * roi_w,
+            h=(y2 - y1) / 1000 * roi_h,
+        )
+        corners = (box.x, box.y, box.x + box.w, box.y + box.h)
+        if all(_iou(corners, (b.x, b.y, b.x + b.w, b.y + b.h)) <= 0.3 for b, _ in out):
+            out.append((box, 0.5))
+    return out
 
 
 def checked_fasteners(
@@ -417,6 +463,36 @@ def _still_at(
     original = find_original(job_dir)
     clamped = min(max(t, 0.0), duration_s)
     extract_still(original, ingest.source, clamped, dst)
+    return dst
+
+
+def _clear_still_at(
+    job_dir: Path,
+    ingest: IngestInfo | None,
+    t: float,
+    dst: Path,
+    duration_s: float,
+) -> Path:
+    """The sharpest frame with the least hand in it, a few tenths of a second around ``t``."""
+    if dst.is_file() or ingest is None or ingest.source is None:
+        return _still_at(job_dir, ingest, t, dst, duration_s)
+    best: tuple[float, Path] | None = None
+    tries: list[Path] = []
+    for n, shift in enumerate(STILL_TRIES):
+        path = dst.with_name(f"{dst.stem}_try{n}.png")
+        tries.append(path)
+        _still_at(job_dir, ingest, t + shift, path, duration_s)
+        image = cv2.imread(str(path))
+        if image is None:
+            continue
+        clarity = roi_sharpness(image) * (1.0 - hand_fraction(image))
+        if best is None or clarity > best[0]:
+            best = (clarity, path)
+    if best is None:
+        return _still_at(job_dir, ingest, t, dst, duration_s)
+    best[1].replace(dst)
+    for path in tries:
+        path.unlink(missing_ok=True)
     return dst
 
 
@@ -512,14 +588,14 @@ def _process_step(
     if _screw_count(step) > 0:
         roi = roi_of(sp.part)
         name = f"{step.index:02d}"
-        before_path = _still_at(
+        before_path = _clear_still_at(
             job_dir,
             ingest,
             step.start_s - BEFORE_S,
             job_dir / "stills" / f"{name}_before.png",
             plan.duration_s,
         )
-        after_path = _still_at(
+        after_path = _clear_still_at(
             job_dir,
             ingest,
             step.end_s + AFTER_S,
@@ -530,25 +606,52 @@ def _process_step(
         after_image = _read_image(after_path)
         alignment = align_after_to_before(before_image, after_image)
         aligned = alignment is not None
-        if aligned:
-            before_h, before_w = before_image.shape[:2]
-            after_for_screws = cv2.warpAffine(after_image, alignment, (before_w, before_h))
-        else:
-            after_for_screws = after_image
+        if not aligned:
             sp.notes.append(_align_failed_note(fastener))
-        before = fasteners_on_still(
-            client, sp, before_path, roi, image=before_image, fastener=fastener
+        if adding:
+            # assembly: the new fasteners are found and drawn on the after still as filmed;
+            # the before still's fasteners are moved onto it to see which ones were there
+            base_path, base_image = after_path, after_image
+            base = fasteners_on_still(
+                client, sp, after_path, roi, image=after_image, fastener=fastener
+            )
+            before = fasteners_on_still(
+                client, sp, before_path, roi, image=before_image, fastener=fastener
+            )
+            other_side = (
+                [
+                    (
+                        _moved(
+                            box, cv2.invertAffineTransform(alignment), before_image, after_image
+                        ),
+                        c,
+                    )
+                    for box, c in before
+                ]
+                if aligned
+                else []
+            )
+            sp.screws_before, sp.screws_after = len(before), len(base)
+        else:
+            # removal: found on the before still; the after still is turned to line up with it
+            base_path, base_image = before_path, before_image
+            if aligned:
+                before_h, before_w = before_image.shape[:2]
+                after_for_screws = cv2.warpAffine(after_image, alignment, (before_w, before_h))
+            else:
+                after_for_screws = after_image
+            base = fasteners_on_still(
+                client, sp, before_path, roi, image=before_image, fastener=fastener
+            )
+            other_side = fasteners_on_still(
+                client, sp, after_path, roi, image=after_for_screws, fastener=fastener
+            )
+            sp.screws_before, sp.screws_after = len(base), len(other_side)
+        base = pointed_fasteners(
+            client, base_path.with_name(f"{base_path.stem}_crop.png"), roi, fastener, context, base
         )
-        sp.screws_before = len(before)
-        after = fasteners_on_still(
-            client, sp, after_path, roi, image=after_for_screws, fastener=fastener
-        )
-        sp.screws_after = len(after)
-        # removing: there before, gone after; adding (assembly): gone before, there after
-        base, other_side = (after, before) if adding else (before, after)
-        base_image = after_for_screws if adding else before_image
         base = checked_fasteners(client, base_image, base, settings.spark_model, context, fastener)
-        screws_still = after_path if adding and not aligned else before_path
+        screws_still = base_path
         diagonal = math.hypot(key_w, key_h)
         limit = SAME_SCREW * diagonal
         removed: list[tuple[NormBox, float | None]] = []
@@ -564,7 +667,7 @@ def _process_step(
             )
             if not on_other:
                 removed.append((box, confidence))
-        if not aligned and _screw_count(step):
+        if _screw_count(step):  # never more than the analysis counted; most confident first
             removed = sorted(removed, key=lambda item: -(item[1] or 0.0))[: _screw_count(step)]
         records: list[ScrewRecord] = []
         for number, (box, confidence) in enumerate(_reading_order(removed), start=1):
