@@ -4,7 +4,13 @@ For each planned step SAM 3.1 looks for the part on the keyframe still and,
 when the step removes screws, for screws on stills just before and just
 after the step. Screws are searched on native-resolution crops around the
 part, upscaled so a few-pixel screw becomes visible. A screw present before
-and missing after was removed in that step and joins the screw ledger.
+and missing after was removed in that step and joins the screw ledger
+(in an assembly the other way round: missing before, present after, means it
+was put in). When the client can ask Muse Spark, every screw candidate is
+checked again on a zoomed contact sheet, so holes, wood grain and reflections
+are dropped, and a part SAM cannot find by name is pointed at by Spark.
+When the two stills do not line up (the camera moved), the comparison is
+unreliable, so at most as many screws as the analysis counted are kept.
 Everything is saved in ``perception.json``; this stage writes no other
 artifact.
 """
@@ -24,6 +30,7 @@ from app.meta_client import BudgetExceeded, Detection, make_client
 from app.pipeline.ingest import find_original
 from app.pipeline.media import extract_still
 from app.pipeline.overlay import draw_part, draw_screws, save_jpeg
+from app.pipeline.verify import MAX_TILES, confirm
 from app.schemas import (
     Frames,
     Identity,
@@ -42,6 +49,7 @@ MAX_STEPS = 12
 BEFORE_S = 0.5
 AFTER_S = 0.5
 ROI_GROW = 1.6
+MIN_ROI = 0.5  # never search fasteners in less than half the frame: a tiny part is no area
 MIN_CROP_SIDE = 900
 MIN_CONFIDENCE = 0.3
 NMS_IOU = 0.5
@@ -56,6 +64,22 @@ def fastener_concept(job_dir: Path) -> str:
     if identity is None:
         return "screw"
     return profile_for(identity.category).fastener_kind
+
+
+FASTENER_WORDS = ("screw", "bolt", "nut", "dowel", "pin", "washer", "clip", "rivet", "peg", "stud")
+
+
+def step_fastener(step: Step, default: str) -> str:
+    """The fastener this step handles, as SAM should search it ("allen bolt", "dowel").
+
+    The job-wide word ("screw") misses an assembly that uses bolts in one step and dowels in
+    the next, so the step's own fastener name wins when it has one.
+    """
+    for name in step.removes or []:
+        phrase = _clean_phrase(name)
+        if phrase and any(word in phrase.split()[-1] for word in FASTENER_WORDS):
+            return phrase
+    return default
 
 
 def _clean_phrase(text: str | None) -> str | None:
@@ -157,8 +181,8 @@ def roi_of(part: PartHighlight | None) -> tuple[float, float, float, float]:
     if part is None:
         return (0.0, 0.0, 1.0, 1.0)
     box = part.box
-    grown_w = min(1.0, box.w * ROI_GROW)
-    grown_h = min(1.0, box.h * ROI_GROW)
+    grown_w = min(1.0, max(box.w * ROI_GROW, MIN_ROI))
+    grown_h = min(1.0, max(box.h * ROI_GROW, MIN_ROI))
     centre_x = box.x + box.w / 2
     centre_y = box.y + box.h / 2
     x = min(max(centre_x - grown_w / 2, 0.0), 1.0 - grown_w)
@@ -296,6 +320,8 @@ def fasteners_on_still(
     crop_path = still_path.with_name(f"{still_path.stem}_crop.png")
     _write_png_atomic(crop, crop_path)
     detections, sent_size = _segment(client, sp, crop_path, fastener)
+    if not detections and " " in fastener:  # SAM knows "bolt" better than "allen bolt"
+        detections, sent_size = _segment(client, sp, crop_path, fastener.split()[-1])
     kept = _nms([item for item in detections if _confidence_ok(item)])
     found: list[tuple[NormBox, float | None]] = []
     for detection in kept:
@@ -303,6 +329,51 @@ def fasteners_on_still(
         if box is not None:
             found.append((box, detection.confidence))
     return found
+
+
+def checked_fasteners(
+    client: Any,
+    image: Any,
+    found: list[tuple[NormBox, float | None]],
+    model: str,
+    context: str,
+    fastener: str,
+) -> list[tuple[NormBox, float | None]]:
+    """Spark's second look at every candidate; kept as is when the client cannot ask Spark."""
+    if not found or not model or not hasattr(client, "respond"):
+        return found
+    found = sorted(found, key=lambda item: -(item[1] or 0.0))[:MAX_TILES]
+    marks = [
+        {
+            "label": fastener,
+            "cut_box": [
+                round(box.x * 1000),
+                round(box.y * 1000),
+                round((box.x + box.w) * 1000),
+                round((box.y + box.h) * 1000),
+            ],
+        }
+        for box, _ in found
+    ]
+    checked = confirm(client, model, image, marks, context)
+    return [item for item, mark in zip(found, checked, strict=True) if mark["checked"]]
+
+
+def _pointed_part(client: Any, path: Path, concept: str, context: str) -> PartHighlight | None:
+    """Spark points at the part SAM could not find by name (0..1000 grid of the still)."""
+    if not hasattr(client, "ground"):
+        return None
+    boxes = client.ground(path, concept, context=context, max_boxes=1)
+    if not boxes:
+        return None
+    x1, y1, x2, y2 = boxes[0].box
+    if x2 <= x1 or y2 <= y1:
+        return None
+    return PartHighlight(
+        concept=concept,
+        box=NormBox(x=x1 / 1000, y=y1 / 1000, w=(x2 - x1) / 1000, h=(y2 - y1) / 1000),
+        confidence=None,
+    )
 
 
 def _centre(box: NormBox) -> tuple[float, float]:
@@ -413,8 +484,11 @@ def _process_step(
     sp: StepPerception,
     next_number: int,
     fastener: str = "screw",
+    adding: bool = False,
+    object_name: str = "",
 ) -> int:
-    del settings
+    context = f"{object_name or plan.device}. Step: {step.title}. {step.instruction}"
+    fastener = step_fastener(step, fastener)
     keyframe_path = _keyframe_still(job_dir, ingest, frames, step, plan.duration_s)
     key_image = _read_image(keyframe_path)
     key_h, key_w = key_image.shape[:2]
@@ -427,6 +501,8 @@ def _process_step(
         if best is not None and part_box is not None:
             sp.part = PartHighlight(concept=concept, box=part_box, confidence=best.confidence)
             break
+    if concepts and sp.part is None:
+        sp.part = _pointed_part(client, keyframe_path, concepts[0], context)
     if concepts and sp.part is None:
         sp.notes.append(f"No part found for '{concepts[0]}'.")
     if _screw_count(step) > 0:
@@ -464,21 +540,27 @@ def _process_step(
             client, sp, after_path, roi, image=after_for_screws, fastener=fastener
         )
         sp.screws_after = len(after)
+        # removing: there before, gone after; adding (assembly): gone before, there after
+        base, other_side = (after, before) if adding else (before, after)
+        base_image = after_for_screws if adding else before_image
+        base = checked_fasteners(client, base_image, base, settings.spark_model, context, fastener)
         diagonal = math.hypot(key_w, key_h)
         limit = SAME_SCREW * diagonal
         removed: list[tuple[NormBox, float | None]] = []
-        for box, confidence in before:
+        for box, confidence in base:
             centre_x, centre_y = _centre(box)
-            still_there = any(
+            on_other = any(
                 math.hypot(
                     (centre_x - _centre(other)[0]) * key_w,
                     (centre_y - _centre(other)[1]) * key_h,
                 )
                 <= limit
-                for other, _ in after
+                for other, _ in other_side
             )
-            if not still_there:
+            if not on_other:
                 removed.append((box, confidence))
+        if not aligned and _screw_count(step):
+            removed = sorted(removed, key=lambda item: -(item[1] or 0.0))[: _screw_count(step)]
         records: list[ScrewRecord] = []
         for number, (box, confidence) in enumerate(_reading_order(removed), start=1):
             if not aligned:
@@ -495,7 +577,7 @@ def _process_step(
         sp.removed = records
         if len(records) != _screw_count(step):
             sp.notes.append(
-                f"SAM found {len(records)} {plural(fastener)} removed, "
+                f"SAM found {len(records)} {plural(fastener)} {'put in' if adding else 'removed'}, "
                 f"the analysis counted {_screw_count(step)}."
             )
     sp.overlay = _make_overlay(job_dir, step, keyframe_path, sp)
@@ -510,6 +592,9 @@ def run(job_dir: Path, settings: Settings, client: Any = None) -> Perception:
     if client is None:
         client = make_client(settings, job_dir=job_dir)
     fastener = fastener_concept(job_dir)
+    identity = artifacts.load_optional(job_dir, Identity)
+    adding = identity is not None and identity.task == "assemble"
+    object_name = identity.object_name if identity is not None else ""
     eligible = [step for step in plan.steps if _screw_count(step) > 0 or part_concepts(step)]
     prioritised = sorted(eligible, key=lambda step: (-_screw_count(step), step.index))
     selected_indexes = {step.index for step in prioritised[:MAX_STEPS]}
@@ -520,7 +605,18 @@ def run(job_dir: Path, settings: Settings, client: Any = None) -> Perception:
         sp = StepPerception(index=step.index)
         try:
             next_number = _process_step(
-                job_dir, settings, client, plan, frames, ingest, step, sp, next_number, fastener
+                job_dir,
+                settings,
+                client,
+                plan,
+                frames,
+                ingest,
+                step,
+                sp,
+                next_number,
+                fastener,
+                adding,
+                object_name,
             )
         except BudgetExceeded:
             sp.notes.append(_BUDGET_NOTE)

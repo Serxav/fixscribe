@@ -164,15 +164,15 @@ def test_crop_mapping_returns_screw_to_full_still_position(tmp_path):
     def crop_boxes(name, size):
         if "_before" not in name:
             return []
-        # Part pixels 100..180 on the 200 px still in this test's scale are
-        # replaced below by a 400 px still; see ``_job`` note. The crop the
-        # stage builds grows that box by 1.6, so a screw whose full-still
-        # box starts at pixel 136 sits at (136 - 76) * upscale in the crop.
+        # The part (pixels 100..180 of a 400 px still) is small, so the crop
+        # is the minimum search area: half the still, 200 px wide, starting at
+        # pixel 40. A screw whose full-still box starts at pixel 136 sits at
+        # (136 - 40) * upscale in the crop.
         width, _ = size
-        factor = width / 128  # crop is 128 px wide before the upscale
+        factor = width / 200  # crop is 200 px wide before the upscale
         return [
             _det(
-                ((136 - 76) * factor, (136 - 76) * factor, (144 - 76) * factor, (144 - 76) * factor)
+                ((136 - 40) * factor, (136 - 40) * factor, (144 - 40) * factor, (144 - 40) * factor)
             )
         ]
 
@@ -439,3 +439,76 @@ def test_part_concepts_prefer_plain_words_then_the_head_noun():
     step = Step(index=1, title="t", instruction="i", start_s=0, end_s=1, sam_concept="wooden leg",
                 target_part="leg frame C", removes=["Rail C"])  # fmt: skip
     assert part_concepts(step) == ["wooden leg", "leg", "frame c"]
+
+
+def _identity(tmp_path, task):
+    from app.schemas import Identity
+
+    artifacts.save(
+        tmp_path,
+        Identity(
+            object_name="Garden table",
+            category="furniture",
+            task=task,
+            hazards=[],
+            skill="beginner",
+            language="en",
+            evidence=["seen"],
+            confidence=0.9,
+        ),
+    )
+
+
+def test_assembly_counts_fasteners_put_in(tmp_path):
+    settings = _job(tmp_path, [_step(1, 0.0, 5.0, screws=4)])
+    _identity(tmp_path, "assemble")
+    client = FakeClient(part=PART, before={"01": [FOUR[1]]}, after={"01": FOUR})
+    step = perception.run(tmp_path, settings, client=client).steps[0]
+    assert len(step.removed) == 3  # missing before, there after
+    assert any("put in" in note for note in step.notes)
+
+
+class CheckingClient(FakeClient):
+    """Fake SAM plus a fake Spark that rejects the tiles listed in ``reject``."""
+
+    def __init__(self, reject, **kwargs):
+        super().__init__(**kwargs)
+        self.reject = reject
+        self.checks = 0
+
+    def respond(self, **kwargs):
+        self.checks += 1
+        text = kwargs["input"][0]["content"][0]["text"]
+        assert "green frame" in text
+        tiles = [{"n": n, "real": n not in self.reject, "why": "test"} for n in range(1, 17)]
+        return type("Response", (), {"output_text": json.dumps({"tiles": tiles})})()
+
+
+def test_spark_check_drops_rejected_candidates(tmp_path):
+    settings = _job(tmp_path, [_step(1, 0.0, 5.0, screws=4)])
+    client = CheckingClient(reject={2}, part=PART, before={"01": FOUR}, after={"01": []})
+    step = perception.run(tmp_path, settings, client=client).steps[0]
+    assert client.checks == 1
+    assert len(step.removed) == 3
+
+
+def test_unaligned_stills_keep_at_most_the_counted_screws(tmp_path, monkeypatch):
+    settings = _job(tmp_path, [_step(1, 0.0, 5.0, screws=2)])
+    monkeypatch.setattr(perception, "align_after_to_before", lambda *_args: None)
+    client = FakeClient(part=PART, before={"01": FOUR}, after={"01": []})
+    step = perception.run(tmp_path, settings, client=client).steps[0]
+    assert len(step.removed) == 2
+
+
+class PointingClient(FakeClient):
+    def ground(self, path, query, context="", max_boxes=8):
+        from app.meta_client import GroundBox
+
+        return [GroundBox(label=query, box=(100, 200, 300, 400), why="test")]
+
+
+def test_spark_points_at_a_part_sam_cannot_name(tmp_path):
+    settings = _job(tmp_path, [_step(1, 0.0, 5.0, target="rail")])
+    step = perception.run(tmp_path, settings, client=PointingClient()).steps[0]
+    assert step.part is not None and step.part.confidence is None
+    assert (step.part.box.x, step.part.box.w) == pytest.approx((0.1, 0.2))
