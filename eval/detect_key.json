@@ -1,0 +1,22 @@
+{
+  "laptop": {"find": [["screw", 309, 320], ["screw", 490, 319], ["screw", 671, 321], ["screw", 277, 534], ["screw", 702, 538], ["screw", 243, 808], ["screw", 484, 810], ["screw", 723, 808]], "optional": [["screw", 190, 847], ["screw", 774, 848], ["screw", 746, 644], ["screw", 714, 422]]},
+  "chair": {"find": [["gas lift", 505, 640]]},
+  "bike": {"find": [["rear derailleur", 622, 615], ["cassette", 542, 461]]},
+  "engine": {"find": [["stud", 250, 363], ["stud", 366, 326], ["stud", 461, 289], ["stud", 548, 256], ["stud", 628, 229], ["stud", 787, 289], ["stud", 700, 324], ["stud", 613, 370], ["stud", 507, 420], ["stud", 381, 481]]},
+  "washer": {"find": [["drain filter", 525, 658]]},
+  "panel": {"find": [["main breaker", 478, 461], ["breaker row", 486, 267], ["breaker row", 617, 300]]},
+  "drone": {"find": [["battery", 478, 489], ["motor", 219, 263], ["motor", 744, 263], ["motor", 183, 747], ["motor", 774, 744]]},
+  "faucet": {"find": [["cartridge", 497, 425]]},
+  "wheel": {"find": [["lug nut", 464, 283], ["lug nut", 413, 372], ["lug nut", 522, 364], ["lug nut", 469, 450]]},
+  "pc": {"find": [["graphics card", 411, 633], ["RAM stick", 489, 456], ["RAM stick", 594, 444]]},
+  "phone": {"find": [["battery", 444, 600], ["bracket", 350, 350]], "optional": [["screw", 306, 340], ["screw", 317, 374], ["screw", 389, 315], ["screw", 404, 348]]},
+  "drill": {"find": [["chuck", 333, 608]]},
+  "coffee": {"find": [["water tank", 300, 692], ["portafilter", 767, 537]]},
+  "guitar": {"find": [["peg", 283, 400], ["peg", 444, 398], ["peg", 606, 391], ["peg", 298, 722], ["peg", 458, 722], ["peg", 609, 722]]},
+  "controller": {"find": [["stick module", 360, 600], ["stick module", 598, 522]]},
+  "lamp": {"find": [["shade", 517, 275]], "optional": [["socket", 517, 320]]},
+  "aircon": {"find": [["service valve", 720, 525], ["service valve", 763, 613]], "optional": [["refrigerant line", 900, 508], ["refrigerant line", 833, 833], ["refrigerant line", 700, 640]]},
+  "vacuum": {"find": [["roller brush", 489, 486], ["side brush", 291, 650], ["side brush", 694, 650]]},
+  "boiler": {"find": [["gas valve", 725, 467], ["burner", 517, 625]]},
+  "table": {"find": [["tabletop", 356, 683], ["leg", 706, 622], ["leg", 739, 576], ["leg", 844, 656], ["leg", 883, 619]], "optional": [["leg", 567, 533]]}
+}
