@@ -316,8 +316,8 @@ details.proof[open] summary::after { content: "–"; }
 @media (prefers-reduced-motion: reduce) { .device-screen .screen, .story-step { transition: none; } }
 
 .mosaic { height: 320vh; margin-inline: calc(var(--margin) * -1); }
-.mosaic-stick { position: sticky; top: 72px; height: calc(100vh - 72px); display: grid; place-items: center; align-content: center; gap: 28px; overflow: hidden; }
-.mz-grid { --gap: 16px; --tile: calc((var(--box, 100vh) - 2 * var(--gap) - 150px) / 3);
+.mosaic-stick { container-type: inline-size; position: sticky; top: 72px; height: calc(100vh - 72px); display: grid; place-items: center; align-content: center; gap: 28px; overflow: hidden; }
+.mz-grid { --gap: 16px; --tile: min(calc((var(--box, 100vh) - 2 * var(--gap) - 150px) / 3), calc((100cqw - 2 * var(--margin) - 6 * var(--gap)) / 7));
   display: grid; grid-template-columns: repeat(7, var(--tile)); gap: var(--gap); }
 @media (max-width: 699px) { .mz-grid { --gap: 8px; --tile: min(calc((100vw - 2 * var(--margin) - 2 * var(--gap)) / 3), calc((100vh - 190px) / 7));
   grid-template-columns: repeat(3, var(--tile)); } }
@@ -328,7 +328,7 @@ details.proof[open] summary::after { content: "–"; }
   box-shadow: 0 30px 60px rgba(0, 0, 0, .18); overflow: hidden; }
 .mz-tile svg { display: block; width: 100%; height: 100%; }
 @media (min-width: 700px) {
-  .mosaic-stick { --box: min(56.25vw, calc(100vh - 72px)); height: var(--box); top: max(72px, calc(50vh - var(--box) / 2 + 36px)); background: #ebe8df; gap: 22px; }
+  .mosaic-stick { --box: min(56.25vw, calc(100vh - 72px), 900px); height: var(--box); top: max(72px, calc(50vh - var(--box) / 2 + 36px)); background: #ebe8df; gap: 22px; }
 }
 .mosaic-caption { max-width: 40em; text-align: center; padding-inline: var(--margin); font-size: clamp(20px, 2vw, 30px); }
 .js .mosaic-caption { opacity: 0; }
