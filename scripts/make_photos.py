@@ -14,6 +14,7 @@ import argparse
 import base64
 import dataclasses
 import json
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -244,6 +245,12 @@ def contact_sheet(image: np.ndarray, marks: list[dict]) -> np.ndarray:
         corner1 = (int((x1 + pad - left) * scale) - 3, int((y1 + pad - top) * scale) - 3)
         corner2 = (int((x2 + pad - left) * scale) + 3, int((y2 + pad - top) * scale) + 3)
         cv2.rectangle(tile, corner1, corner2, (0, 220, 0), 2)
+        if mark.get("outline"):
+            shape = [
+                [(x * width / 1000 + pad - left) * scale, (y * height / 1000 + pad - top) * scale]
+                for x, y in mark["outline"]
+            ]
+            cv2.polylines(tile, [np.array(shape, np.int32)], True, (255, 0, 255), 2)
         caption = np.full((34, TILE, 3), 255, dtype=np.uint8)
         cv2.putText(caption, f"{n}: {mark['label']}"[:28], (6, 24), 0, 0.62, (0, 0, 0), 2)
         tiles.append(np.vstack([tile, caption]))
@@ -429,6 +436,77 @@ def refine(
     return kept, lost
 
 
+COUNT_SCHEMA = {
+    "type": "object",
+    "properties": {"count": {"type": "integer"}, "why": {"type": "string"}},
+    "required": ["count", "why"],
+    "additionalProperties": False,
+}
+
+
+def split_query(query: str) -> list[str]:
+    """One query per kind of part: "the battery and each screw" -> ["the battery", "each screw"].
+
+    Grounding several kinds at once often drops one of them; each kind on its own does not.
+    """
+    parts = re.split(r"\s+and\s+(?=(?:the|each|every|all)\b)", query.strip())
+    return [part.strip() for part in parts if part.strip()]
+
+
+def repeated(query: str) -> bool:
+    """True when the query asks for every one of several alike parts."""
+    return re.match(r"(each|every|all)\b", query.strip().lower()) is not None
+
+
+def count(client: MetaClient, model: str, photo: Path, query: str, context: str) -> int:
+    """Ask Spark how many of ``query`` it can see, so a short search can be detected."""
+    image = cv2.imread(str(photo))
+    ok, buffer = cv2.imencode(".jpg", image, [cv2.IMWRITE_JPEG_QUALITY, 90])
+    if not ok:
+        raise MetaError(f"cannot encode {photo}")
+    data_url = "data:image/jpeg;base64," + base64.b64encode(buffer.tobytes()).decode("ascii")
+    prompt = (
+        f"Context: {context}\nCount in this photo: {query}.\nCount only the ones you can "
+        "really see, one by one, including small, partly hidden or out of focus ones. "
+        "Do not count loose spare parts lying around unless the query asks for them."
+    )
+    response = client.respond(
+        model=model,
+        input=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": prompt},
+                    {"type": "input_image", "image_url": data_url},
+                ],
+            }
+        ],
+        text={
+            "format": {
+                "type": "json_schema",
+                "name": "count",
+                "schema": COUNT_SCHEMA,
+                "strict": True,
+            }
+        },
+        reasoning={"effort": "medium"},
+        max_output_tokens=4000,
+    )
+    try:
+        return max(0, int(json.loads(response.output_text)["count"]))
+    except (ValueError, TypeError, KeyError):
+        return 0
+
+
+def merge(marks: list[dict], more: list[dict]) -> list[dict]:
+    """Add the marks of ``more`` that are not already in ``marks``."""
+    out = list(marks)
+    for mark in more:
+        if all(overlap(mark["cut_box"], other["cut_box"]) < 0.3 for other in out):
+            out.append(mark)
+    return out
+
+
 QUADRANTS = [[0, 0, 560, 560], [440, 0, 1000, 560], [0, 440, 560, 1000], [440, 440, 1000, 1000]]
 
 
@@ -464,12 +542,19 @@ def make(client: MetaClient, model: str, name: str, subject: dict[str, str], fre
     dropped: list[dict] = []
     if subject["query"]:
         min_fill = float(subject.get("min_fill", MIN_FILL))
-        if subject.get("tiled") == "yes":
-            marks, dropped = tiled(client, photo, subject["query"], subject["context"], min_fill)
-        else:
-            marks, dropped = cut(
-                client, photo, subject["query"], subject["context"], [0, 0, 1000, 1000], 8, min_fill
-            )
+        for query in split_query(subject["query"]):
+            if subject.get("tiled") == "yes":
+                found, lost = tiled(client, photo, query, subject["context"], min_fill)
+            else:
+                found, lost = cut(
+                    client, photo, query, subject["context"], [0, 0, 1000, 1000], 8, min_fill
+                )
+            if repeated(query) and subject.get("tiled") != "yes":
+                expected = count(client, model, photo, query, subject["context"])
+                if len(found) < expected:
+                    more, missed = tiled(client, photo, query, subject["context"], min_fill)
+                    found, lost = merge(found, more), lost + missed
+            marks, dropped = merge(marks, found), dropped + lost
         parent = subject.get("zoom_into", "")
         holder = next((m for m in marks if parent and parent in m["label"].lower()), None)
         if holder is not None:
