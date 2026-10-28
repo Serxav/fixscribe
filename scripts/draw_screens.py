@@ -4,13 +4,14 @@
 Run: ``python -m scripts.draw_screens`` -> writes web/templates/art/screens.html: one SVG phone
 screen per feature, stacked; landing.js shows the one whose text is on screen. Each screen is a
 faithful sketch of a real page of the app (record, progress, guide, reverse guide, check my step,
-live coach, film) plus one marked "coming next" (replace a part). Every photo inside a screen is
-the same opened phone as the mosaic, and every mark sits on its real screws and battery.
+live coach, film) plus one marked "coming next" (replace a part). Each screen shows a different job
+from the landing photos, and every mark sits where Muse Spark and SAM 3.1 found that part.
 """
 
+import json
 from pathlib import Path
 
-from scripts.draw_mosaic import ORANGE, RED, SCREWS, YELLOW, phone_parts, ring
+from scripts.draw_art import centre, keys
 
 OUT = Path(__file__).resolve().parents[1] / "web" / "templates" / "art" / "screens.html"
 W, H = 360, 760
@@ -21,7 +22,29 @@ CARD = "#ecebe5"
 GREEN = "#1d7a3a"
 FONT = "Inter Tight, Helvetica, Arial, sans-serif"
 MONO = "JetBrains Mono, ui-monospace, Menlo, monospace"
-BATTERY = (136, 158, 264, 296)  # the battery in the phone drawing's own coordinates
+ORANGE = "#ff5a1f"
+YELLOW = "#ffd60a"
+RED = "#e5202e"
+LINE = "#0b1020"
+
+PHOTOS = Path(__file__).resolve().parents[1] / "web" / "static" / "photos"
+_ids = iter(range(1, 1000))
+
+
+def marks_of(name: str, word: str = "") -> list[dict]:
+    """The marks make_photos kept on photo ``name`` (labels containing ``word``), in reading order."""
+    data = json.loads((PHOTOS / f"{name}.json").read_text(encoding="utf-8"))
+    found = [m for m in data["marks"] if word in m["label"].lower()]
+    return sorted(found, key=lambda m: (m["cut_box"][1] // 40, m["cut_box"][0]))
+
+
+def ring(x, y, n, r=11) -> str:
+    """A numbered fastener ring (mz-ring pulses in turn by --i)."""
+    return (
+        f'<g class="mz-ring" style="--i:{n}"><circle cx="{x}" cy="{y}" r="{r}" fill="none" stroke="{YELLOW}" stroke-width="3.5"/>'
+        f'<circle cx="{x + r}" cy="{y - r}" r="9" fill="{YELLOW}"/>'
+        f'<text x="{x + r}" y="{y - r + 4.5}" text-anchor="middle" font-family="{MONO}" font-size="12" fill="{LINE}">{n}</text></g>'
+    )
 
 
 def t(x, y, s, size=15, fill=INK, mono=False, weight=400, anchor="start", opacity=1.0) -> str:
@@ -43,27 +66,49 @@ def header(title: str) -> str:
     return glyph + t(54, 72, title, 16, weight=500)
 
 
-class Phone:
-    """The mosaic's opened phone placed on a screen: top-left corner (x, y), scale k."""
+class Shot:
+    """A real workshop photo cropped into the screen rectangle (x, y, w, h) around some marks."""
 
-    def __init__(self, x: float, y: float, k: float) -> None:
-        self.x, self.y, self.k = x, y, k
+    def __init__(
+        self,
+        name: str,
+        x: float,
+        y: float,
+        w: float,
+        h: float,
+        marks: list[dict],
+        pad: int = 60,
+        radius: float = 14,
+    ) -> None:
+        self.name, self.x, self.y, self.w, self.h, self.radius = name, x, y, w, h, radius
+        x1 = min(m["cut_box"][0] for m in marks) - pad
+        y1 = min(m["cut_box"][1] for m in marks) - pad
+        x2 = max(m["cut_box"][2] for m in marks) + pad
+        y2 = max(m["cut_box"][3] for m in marks) + pad
+        vh = min(1000.0, max(y2 - y1, (x2 - x1) * h / w))
+        vw = vh * w / h
+        if vw > 1000:
+            vw, vh = 1000.0, 1000.0 * h / w
+        self.view = (
+            min(max(0.0, (x1 + x2) / 2 - vw / 2), 1000 - vw),
+            min(max(0.0, (y1 + y2) / 2 - vh / 2), 1000 - vh),
+            vw,
+            vh,
+        )
 
-    def at(self, px: float, py: float) -> tuple[float, float]:
-        return self.x + (px - 109) * self.k, self.y + (py - 16) * self.k
+    def at(self, gx: float, gy: float) -> tuple[float, float]:
+        """A point on the photo's 0..1000 grid -> screen units."""
+        vx, vy, vw, vh = self.view
+        return self.x + (gx - vx) * self.w / vw, self.y + (gy - vy) * self.h / vh
 
-    def draw(self, battery_class: str = "") -> str:
-        tx, ty = self.x - 109 * self.k, self.y - 16 * self.k
-        return f'<g transform="translate({tx:.1f} {ty:.1f}) scale({self.k})">{phone_parts(battery_class)}</g>'
-
-    def battery_box(self, pad: float = 5, tag: str = "1") -> str:
-        (x0, y0), (x1, y1) = self.at(BATTERY[0], BATTERY[1]), self.at(BATTERY[2], BATTERY[3])
-        x0, y0, x1, y1 = x0 - pad, y0 - pad, x1 + pad, y1 + pad
+    def draw(self, inner: str = "") -> str:
+        """The photo; ``inner`` is drawn on top in photo grid units."""
+        n = next(_ids)
+        view = " ".join(f"{v:.1f}" for v in self.view)
         return (
-            f'<rect class="mz-box" x="{x0:.1f}" y="{y0:.1f}" width="{x1 - x0:.1f}" height="{y1 - y0:.1f}" fill="none" stroke="{ORANGE}" stroke-width="3.5" pathLength="100"/>'
-            f'<g class="mz-tag"><rect x="{x0:.1f}" y="{y0 - 22:.1f}" width="22" height="22" fill="{ORANGE}"/>'
-            + t(round(x0 + 11, 1), round(y0 - 6, 1), tag, 14, "#fff", mono=True, anchor="middle")
-            + "</g>"
+            f'<clipPath id="shot{n}"><rect x="{self.x}" y="{self.y}" width="{self.w}" height="{self.h}" rx="{self.radius}"/></clipPath>'
+            f'<g clip-path="url(#shot{n})"><svg x="{self.x}" y="{self.y}" width="{self.w}" height="{self.h}" viewBox="{view}" preserveAspectRatio="none">'
+            f'<image href="/static/photos/{self.name}.webp" width="1000" height="1000"/>{inner}</svg></g>'
         )
 
 
@@ -92,10 +137,7 @@ def record() -> str:
     b += "".join(
         f'<path d="M0 {y} H360" stroke="#fff" stroke-opacity=".07"/>' for y in range(30, 616, 30)
     )
-    phone = Phone(100, 150, 0.88)
-    b += '<ellipse cx="180" cy="452" rx="92" ry="10" fill="#000" opacity=".18"/>' + phone.draw()
-    tip_x, tip_y = phone.at(*SCREWS[3])
-    b += f'<g transform="translate({tip_x:.1f} {tip_y:.1f}) rotate(38)"><rect x="-2" y="-96" width="4" height="96" fill="#c9ced6" stroke="{INK}" stroke-width="1"/><rect x="-11" y="-180" width="22" height="88" rx="10" fill="#f2b33d" stroke="{INK}" stroke-width="1.6"/><rect x="-11" y="-150" width="22" height="20" fill="{INK}" opacity=".85"/></g>'
+    b += Shot("bike", 0, 0, 360, 616, marks_of("bike"), pad=220, radius=0).draw()
     b += corners(28, 96, 332, 520)
     b += f'<rect x="124" y="56" width="112" height="30" rx="15" fill="{RED}"/><circle class="mz-glow" cx="142" cy="71" r="5" fill="#fff"/>'
     b += t(186, 76, "REC 00:42", 13, "#fff", mono=True, anchor="middle")
@@ -121,7 +163,7 @@ def record() -> str:
     )
     b += status_bar(dark=True)
     return screen(
-        0, "Recording a repair video in FixScribe; each spoken step is marked", b, "#0e0e0e"
+        0, "Recording a bike repair in FixScribe; each spoken step is marked", b, "#0e0e0e"
     )
 
 
@@ -130,13 +172,13 @@ def recognize() -> str:
     b += f'<rect x="20" y="96" width="320" height="150" rx="16" fill="{CARD}"/>'
     b += (
         '<rect x="36" y="112" width="76" height="118" rx="10" fill="#1b2233"/>'
-        + Phone(44.5, 117, 0.33).draw()
+        + Shot("drone", 36, 112, 76, 118, marks_of("drone"), pad=20, radius=10).draw()
     )
-    b += t(128, 136, "Smartphone", 20, weight=500) + t(
+    b += t(128, 136, "Drone", 20, weight=500) + t(
         128, 158, "electronics · repair", 13, MUTED, mono=True
     )
     x = 128
-    for chip in ("lithium battery", "glass"):
+    for chip in ("LiPo battery", "propellers"):
         width = 16 + len(chip) * 7.4
         b += (
             f'<rect x="{x}" y="174" width="{width:.0f}" height="24" rx="12" fill="#fff4e5" stroke="#a35a00" stroke-opacity=".45"/>'
@@ -149,7 +191,7 @@ def recognize() -> str:
     for i in range(46):
         h = 8 + (abs(((i * 37) % 23) - 11)) * 2.2
         b += f'<rect x="{24 + i * 6.9:.1f}" y="{300 - h / 2:.1f}" width="3" height="{h:.1f}" rx="1.5" fill="{INK if 14 < i < 30 else "#b9b8b2"}"/>'
-    b += t(24, 346, "“Take out the four little screws first…”", 14, INK)
+    b += t(24, 346, "“Take the four motors off first…”", 14, INK)
     b += t(24, 366, "00:41.0 · Muse Voice", 12, MUTED, mono=True)
     stages = [
         ("Identify", "Muse Spark", "done"),
@@ -175,22 +217,22 @@ def recognize() -> str:
 
 
 def guide() -> str:
-    b = status_bar() + header("Replace the battery")
-    b += t(24, 106, "5 steps · 92% proven · 25 min", 13, MUTED, mono=True)
-    b += '<rect x="20" y="122" width="320" height="260" rx="14" fill="#1b2233"/>'
-    phone = Phone(116, 136, 0.7)
-    b += phone.draw()
-    for i, (sx, sy) in enumerate(SCREWS, start=1):
-        x, y = phone.at(sx, sy)
-        b += ring(round(x, 1), round(y, 1), i, r=7)
+    b = status_bar() + header("Open the laptop")
+    b += t(24, 106, "5 steps · 92% proven · 15 min", 13, MUTED, mono=True)
+    screws = marks_of("laptop", "screw")
+    shot = Shot("laptop", 20, 122, 320, 260, screws, pad=60)
+    b += shot.draw()
+    for i, mark in enumerate(screws, start=1):
+        x, y = shot.at(*centre(mark))
+        b += ring(round(x, 1), round(y, 1), i, r=8)
     b += (
         t(24, 414, "STEP 2", 12, MUTED, mono=True)
-        + t(24, 444, "Remove the four screws", 22, weight=500)
-        + t(24, 470, "that hold the battery bracket.", 22, weight=500)
+        + t(24, 444, "Remove the five screws", 22, weight=500)
+        + t(24, 470, "of the bottom panel.", 22, weight=500)
     )
     b += (
         f'<rect x="24" y="490" width="312" height="52" rx="10" fill="{CARD}"/>'
-        + t(38, 513, "“the four little screws”", 15)
+        + t(38, 513, "“the five little screws”", 15)
         + t(38, 532, "you, at 00:41", 12, MUTED, mono=True)
     )
     b += f'<path d="M20 566 H340" stroke="{INK}" stroke-opacity=".12"/>' + t(24, 592, "Proof", 15)
@@ -204,21 +246,21 @@ def guide() -> str:
         263, 646, "Check this step", 14, "#fff", anchor="middle"
     )
     return screen(
-        2, "A FixScribe guide step with the four screws numbered, the quote and its proof", b
+        2, "A FixScribe guide step with the five laptop screws numbered, the quote and its proof", b
     )
 
 
 def reverse() -> str:
-    b = status_bar() + header("Replace the battery")
+    b = status_bar() + header("Open the laptop")
     b += f'<rect x="20" y="96" width="320" height="40" rx="20" fill="{CARD}"/><rect x="184" y="100" width="152" height="32" rx="16" fill="{INK}"/>'
     b += t(102, 121, "Take apart", 14, anchor="middle") + t(
         260, 121, "Put back", 14, "#fff", anchor="middle"
     )
     steps = [
-        ("Place the new battery", "battery"),
-        ("Reconnect the flex cable", "connector"),
-        ("Screw in the four screws", "4 screws back"),
-        ("Close the back cover", "cover"),
+        ("Place the new SSD", "SSD"),
+        ("Reconnect the battery", "connector"),
+        ("Set the bottom panel", "panel"),
+        ("Screw in the five screws", "5 screws back"),
         ("Power on and test", ""),
     ]
     for i, (text, part) in enumerate(steps):
@@ -229,7 +271,7 @@ def reverse() -> str:
             b += t(64, y + 24, part, 12, MUTED, mono=True)
         b += "</g>"
     b += f'<rect x="20" y="650" width="320" height="64" rx="14" fill="#e3f1e7"/><circle cx="48" cy="682" r="11" fill="{GREEN}"/><path d="M42 682 l4 4 l8 -9" stroke="#fff" stroke-width="2.2" fill="none"/>'
-    b += t(70, 678, "Screws: 4 out · 4 back", 15, GREEN, weight=500) + t(
+    b += t(70, 678, "Screws: 5 out · 5 back", 15, GREEN, weight=500) + t(
         70, 698, "every fastener accounted for", 12, GREEN, mono=True
     )
     return screen(3, "The reverse guide: put it back together, with every screw accounted for", b)
@@ -237,30 +279,35 @@ def reverse() -> str:
 
 def check() -> str:
     b = '<rect x="0" y="0" width="360" height="760" fill="#2b2b2b"/>'
-    phone = Phone(51, 104, 1.42)
-    b += phone.draw()
-    for i, (sx, sy) in enumerate(SCREWS):
-        x, y = phone.at(sx, sy)
+    motors = sorted(marks_of("drone", "motor"), key=lambda m: m["cut_box"][0])
+    shot = Shot("drone", 0, 130, 360, 420, motors, pad=90, radius=0)
+    b += shot.draw()
+    for i, mark in enumerate(motors):
+        x, y = shot.at(*centre(mark))
         if i >= 2:
-            b += f'<circle cx="{x:.1f}" cy="{y:.1f}" r="15" fill="#0e3b22" fill-opacity=".55" stroke="#7ee2a0" stroke-width="3"/><path d="M{x - 6:.1f} {y:.1f} l4 4 l8 -9" stroke="#7ee2a0" stroke-width="2.5" fill="none"/>'
+            b += f'<circle cx="{x:.1f}" cy="{y:.1f}" r="22" fill="#0e3b22" fill-opacity=".55" stroke="#7ee2a0" stroke-width="3"/><path d="M{x - 8:.1f} {y:.1f} l5 5 l11 -12" stroke="#7ee2a0" stroke-width="3" fill="none"/>'
         else:
-            b += f'<circle class="mz-glow" cx="{x:.1f}" cy="{y:.1f}" r="15" fill="none" stroke="#ff8a80" stroke-width="3.5"/>'
+            b += f'<circle class="mz-glow" cx="{x:.1f}" cy="{y:.1f}" r="22" fill="none" stroke="#ff8a80" stroke-width="4"/>'
     b += t(24, 82, "Check this step · SAM 3.1", 13, "#fff", mono=True, opacity=0.8)
     b += f'<rect x="16" y="664" width="328" height="76" rx="14" fill="{INK}"/><circle cx="44" cy="702" r="7" fill="#ffb340"/>'
     b += t(62, 697, "Not yet", 16, "#fff", weight=500) + t(
-        62, 718, "2 screws are still in place, at the top.", 13, "#fff", opacity=0.8
+        62, 718, "2 motors are still on, on the left.", 13, "#fff", opacity=0.8
     )
     b += status_bar(dark=True)
     return screen(
-        4, "Check my step: a photo of your own phone, two screws still in place", b, "#0e0e0e"
+        4, "Check my step: a photo of your own drone, two motors still in place", b, "#0e0e0e"
     )
 
 
 def live() -> str:
     b = '<rect x="0" y="0" width="360" height="760" fill="#24302b"/>'
-    phone = Phone(89, 112, 1.0)
-    b += phone.draw(battery_class="mz-lift")
-    b += corners(40, 96, 320, 470)
+    pegs = keys(marks_of("guitar", "peg"))
+    shot = Shot("guitar", 0, 96, 360, 400, pegs, pad=40, radius=0)
+    b += shot.draw()
+    for i, mark in enumerate(pegs, start=1):
+        x, y = shot.at(*centre(mark))
+        b += ring(round(x, 1), round(y, 1), i, r=14)
+    b += corners(28, 108, 332, 484)
     b += (
         t(24, 82, "Live coach", 13, "#fff", mono=True, opacity=0.8)
         + '<circle class="mz-glow" cx="326" cy="77" r="6" fill="#30d158"/>'
@@ -269,10 +316,10 @@ def live() -> str:
     b += t(34, 548, "STEP 3 OF 5", 12, "#fff", mono=True, opacity=0.7) + t(
         326, 548, "ON TRACK", 12, "#30d158", mono=True, anchor="end"
     )
-    b += t(34, 588, "Lift the battery", 24, "#fff", weight=500) + t(
-        34, 618, "with the pull tabs.", 24, "#fff", weight=500
+    b += t(34, 588, "Loosen the six pegs", 24, "#fff", weight=500) + t(
+        34, 618, "until the strings are slack.", 24, "#fff", weight=500
     )
-    b += t(34, 654, "Next: disconnect the flex cable", 14, "#fff", opacity=0.7)
+    b += t(34, 654, "Next: pull the old strings out", 14, "#fff", opacity=0.7)
     for i in range(14):
         h = 6 + (abs(((i * 29) % 13) - 6)) * 2.4
         b += f'<rect class="mz-glow" x="{34 + i * 7}" y="{700 - h / 2:.1f}" width="3" height="{h:.1f}" rx="1.5" fill="#fff" style="animation-delay:{i * 0.09:.2f}s"/>'
@@ -280,20 +327,25 @@ def live() -> str:
     b += status_bar(dark=True)
     return screen(
         5,
-        "Live coach: the camera sees your work and says which step you are on and what comes next",
+        "Live coach: the camera sees your guitar and says which step you are on and what comes next",
         b,
         "#24302b",
     )
 
 
 def film() -> str:
-    b = '<rect x="0" y="0" width="360" height="760" fill="#0e0e0e"/><rect x="0" y="112" width="360" height="440" fill="#1b2233"/>'
-    phone = Phone(80, 128, 1.1)
-    b += phone.draw() + phone.battery_box()
-    b += t(24, 82, "Replace the battery · film", 13, "#fff", mono=True, opacity=0.8)
+    b = '<rect x="0" y="0" width="360" height="760" fill="#0e0e0e"/>'
+    brushes = marks_of("vacuum")
+    roller = marks_of("vacuum", "roller")[0]
+    shot = Shot("vacuum", 0, 112, 360, 440, brushes, pad=120, radius=0)
+    x1, y1, x2, y2 = roller["box"]
+    b += shot.draw(
+        f'<rect class="mz-box" x="{x1}" y="{y1}" width="{x2 - x1}" height="{y2 - y1}" fill="none" stroke="{ORANGE}" stroke-width="3" vector-effect="non-scaling-stroke" pathLength="100"/>'
+    )
+    b += t(24, 82, "Replace the brushes · film", 13, "#fff", mono=True, opacity=0.8)
     b += (
         '<rect x="24" y="486" width="312" height="48" rx="10" fill="#000" fill-opacity=".72"/>'
-        + t(180, 516, "Lift the battery with the pull tabs.", 14, "#fff", anchor="middle")
+        + t(180, 516, "Lift the roller brush out of its slot.", 14, "#fff", anchor="middle")
     )
     b += '<rect x="24" y="584" width="312" height="4" rx="2" fill="#fff" fill-opacity=".2"/><rect class="mz-grow" x="24" y="584" width="140" height="4" rx="2" fill="#fff"/>'
     b += "".join(
@@ -314,18 +366,18 @@ def film() -> str:
 def replace() -> str:
     b = status_bar() + header("Replace a part")
     b += t(24, 106, "Which part do you need to change?", 15, MUTED)
-    parts = ["A cover", "B screws", "C flex", "D battery", "E camera", "F port"]
+    parts = ["A roller", "B side brush", "C wheels", "D filter", "E bin", "F battery"]
     for i, name in enumerate(parts):
         x, y = 20 + (i % 2) * 164, 126 + (i // 2) * 96
-        on = name.startswith("D")
+        on = name.startswith("B")
         b += f'<rect x="{x}" y="{y}" width="156" height="84" rx="12" fill="{ORANGE if on else CARD}"/>'
         b += t(x + 16, y + 34, name[0], 22, "#fff" if on else INK, mono=True) + t(
             x + 16, y + 62, name[2:], 15, "#fff" if on else INK
         )
     plan = [
-        ("Take apart to D", "steps 1–3"),
-        ("Swap D for the new part", "your new battery"),
-        ("Put back", "steps 3–1, 4 screws"),
+        ("Take apart to B", "steps 1–2"),
+        ("Swap B for the new part", "your new side brush"),
+        ("Put back", "steps 2–1, 1 screw"),
     ]
     for i, (a, s) in enumerate(plan):
         y = 450 + i * 74

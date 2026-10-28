@@ -31,6 +31,16 @@ def index(request: Request):
     return templates.TemplateResponse(request, "index.html", {})
 
 
+@router.get("/privacy", response_class=HTMLResponse)
+def privacy(request: Request):
+    return templates.TemplateResponse(request, "privacy.html", {})
+
+
+@router.get("/terms", response_class=HTMLResponse)
+def terms(request: Request):
+    return templates.TemplateResponse(request, "terms.html", {})
+
+
 @router.post("/upload")
 async def upload_video(
     video: UploadFile,

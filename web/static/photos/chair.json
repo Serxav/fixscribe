@@ -1,0 +1,138 @@
+{
+ "name": "chair",
+ "width": 1600,
+ "height": 1600,
+ "query": "the chrome gas lift cylinder",
+ "refused": false,
+ "dropped": [],
+ "marks": [
+  {
+   "label": "the chrome gas lift cylinder",
+   "box": [
+    488,
+    528,
+    555,
+    743
+   ],
+   "cut_box": [
+    472,
+    538,
+    543,
+    749
+   ],
+   "outline": [
+    [
+     488,
+     539
+    ],
+    [
+     484,
+     542
+    ],
+    [
+     482,
+     572
+    ],
+    [
+     475,
+     577
+    ],
+    [
+     472,
+     589
+    ],
+    [
+     475,
+     606
+    ],
+    [
+     474,
+     693
+    ],
+    [
+     485,
+     696
+    ],
+    [
+     489,
+     702
+    ],
+    [
+     484,
+     710
+    ],
+    [
+     487,
+     715
+    ],
+    [
+     504,
+     709
+    ],
+    [
+     519,
+     716
+    ],
+    [
+     529,
+     742
+    ],
+    [
+     538,
+     749
+    ],
+    [
+     543,
+     732
+    ],
+    [
+     539,
+     707
+    ],
+    [
+     542,
+     701
+    ],
+    [
+     527,
+     685
+    ],
+    [
+     526,
+     579
+    ],
+    [
+     522,
+     574
+    ],
+    [
+     514,
+     572
+    ],
+    [
+     511,
+     552
+    ],
+    [
+     498,
+     544
+    ],
+    [
+     504,
+     539
+    ],
+    [
+     498,
+     538
+    ],
+    [
+     491,
+     541
+    ]
+   ],
+   "confidence": 0.57,
+   "checked": true,
+   "why": "Green frame clearly encloses the vertical chrome gas lift cylinder connecting the 5-star base to the seat mechanism, a real part of the office chair being repaired."
+  }
+ ]
+}

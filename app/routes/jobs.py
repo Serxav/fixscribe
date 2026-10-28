@@ -1,9 +1,12 @@
-"""Job progress: JSON status API and the progress page."""
+"""Job progress: JSON status API, the progress page, and deleting a job with all its files."""
+
+import shutil
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import TypeAdapter
 
+from app.agent import loop as agent_loop
 from app.config import Settings
 from app.jobs import JobStatus, update_status
 from app.pipeline.runner import check_stale, is_running, stage_overview, start_job
@@ -50,6 +53,21 @@ def api_job_resume(
         update_status(job_id, settings.jobs_dir, state="failed", error="Could not restart the job.")
         return JSONResponse({"detail": "could not restart the job"}, status_code=500)
     return JSONResponse({"state": "queued"}, status_code=202)
+
+
+@router.post("/api/jobs/{job_id}/delete")
+def api_job_delete(
+    job_id: str,
+    settings: Settings = Depends(settings_dep),  # noqa: B008
+):
+    """Delete the job's folder: the video, its frames, the guide and every answer about it."""
+    folder = job_folder(job_id, settings)
+    if folder is None or not folder.is_dir():
+        return JSONResponse({"detail": "job not found"}, status_code=404)
+    if is_running(job_id, settings.jobs_dir) or agent_loop.is_running(folder):
+        return JSONResponse({"detail": "job is still being processed"}, status_code=409)
+    shutil.rmtree(folder)
+    return JSONResponse({"deleted": job_id})
 
 
 @router.get("/jobs/{job_id}", response_class=HTMLResponse)

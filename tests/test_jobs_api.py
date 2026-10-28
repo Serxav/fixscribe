@@ -80,3 +80,27 @@ def test_resume_refuses_jobs_that_did_not_fail(jobs_dir):
     assert client.post(f"/api/jobs/{job_id}/resume").status_code == 409
     assert client.post("/api/jobs/nothere/resume").status_code == 404
     assert started == []
+
+
+def test_delete_removes_the_whole_job_folder(jobs_dir):
+    jobs, _ = jobs_dir
+    job_id = create_job(jobs).job_id
+    (jobs / job_id / "original.mp4").write_bytes(b"video")
+    update_status(job_id, jobs, state="done")
+    response = TestClient(app).post(f"/api/jobs/{job_id}/delete")
+    assert response.status_code == 200 and response.json() == {"deleted": job_id}
+    assert not (jobs / job_id).exists()
+
+
+def test_delete_refuses_a_running_job(jobs_dir, monkeypatch):
+    jobs, _ = jobs_dir
+    job_id = create_job(jobs).job_id
+    monkeypatch.setattr("app.routes.jobs.is_running", lambda job_id, jobs_dir: True)
+    assert TestClient(app).post(f"/api/jobs/{job_id}/delete").status_code == 409
+    assert (jobs / job_id).exists()
+
+
+def test_delete_unknown_or_bad_id_is_404(jobs_dir):
+    client = TestClient(app)
+    assert client.post("/api/jobs/aaaaaaaaaaaa/delete").status_code == 404
+    assert client.post("/api/jobs/..%2F..%2Fx/delete").status_code == 404

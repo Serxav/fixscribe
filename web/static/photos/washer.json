@@ -1,0 +1,118 @@
+{
+ "name": "washer",
+ "width": 1600,
+ "height": 1600,
+ "query": "the round drain filter cap",
+ "refused": false,
+ "dropped": [],
+ "marks": [
+  {
+   "label": "round drain filter cap",
+   "box": [
+    463,
+    625,
+    597,
+    715
+   ],
+   "cut_box": [
+    463,
+    611,
+    596,
+    699
+   ],
+   "outline": [
+    [
+     466,
+     643
+    ],
+    [
+     464,
+     660
+    ],
+    [
+     468,
+     681
+    ],
+    [
+     467,
+     683
+    ],
+    [
+     463,
+     682
+    ],
+    [
+     470,
+     692
+    ],
+    [
+     491,
+     699
+    ],
+    [
+     560,
+     699
+    ],
+    [
+     588,
+     692
+    ],
+    [
+     596,
+     682
+    ],
+    [
+     589,
+     665
+    ],
+    [
+     594,
+     651
+    ],
+    [
+     594,
+     642
+    ],
+    [
+     588,
+     627
+    ],
+    [
+     578,
+     616
+    ],
+    [
+     562,
+     616
+    ],
+    [
+     557,
+     622
+    ],
+    [
+     558,
+     616
+    ],
+    [
+     555,
+     611
+    ],
+    [
+     549,
+     613
+    ],
+    [
+     525,
+     611
+    ],
+    [
+     481,
+     627
+    ]
+   ],
+   "confidence": 0.89,
+   "checked": true,
+   "why": "Green frame contains a clearly visible black ribbed circular drain filter cap resting on the open access door, a real part of the washing machine."
+  }
+ ]
+}

@@ -1,0 +1,186 @@
+{
+ "name": "coffee",
+ "width": 1600,
+ "height": 1600,
+ "query": "the removed water tank and the portafilter",
+ "refused": false,
+ "dropped": [],
+ "marks": [
+  {
+   "label": "removed water tank",
+   "box": [
+    163,
+    576,
+    437,
+    867
+   ],
+   "cut_box": [
+    166,
+    553,
+    434,
+    844
+   ],
+   "outline": [
+    [
+     434,
+     581
+    ],
+    [
+     342,
+     553
+    ],
+    [
+     166,
+     578
+    ],
+    [
+     179,
+     807
+    ],
+    [
+     242,
+     844
+    ],
+    [
+     329,
+     836
+    ],
+    [
+     342,
+     828
+    ],
+    [
+     428,
+     808
+    ]
+   ],
+   "confidence": 0.98,
+   "checked": true,
+   "why": "Clear transparent plastic reservoir sitting beside the machine, matches removed water tank."
+  },
+  {
+   "label": "portafilter",
+   "box": [
+    616,
+    503,
+    872,
+    605
+   ],
+   "cut_box": [
+    660,
+    494,
+    830,
+    612
+   ],
+   "outline": [
+    [
+     661,
+     505
+    ],
+    [
+     660,
+     512
+    ],
+    [
+     665,
+     511
+    ],
+    [
+     666,
+     515
+    ],
+    [
+     676,
+     521
+    ],
+    [
+     679,
+     528
+    ],
+    [
+     688,
+     536
+    ],
+    [
+     704,
+     536
+    ],
+    [
+     779,
+     572
+    ],
+    [
+     783,
+     578
+    ],
+    [
+     786,
+     602
+    ],
+    [
+     790,
+     612
+    ],
+    [
+     801,
+     612
+    ],
+    [
+     803,
+     606
+    ],
+    [
+     792,
+     584
+    ],
+    [
+     795,
+     581
+    ],
+    [
+     819,
+     576
+    ],
+    [
+     829,
+     561
+    ],
+    [
+     830,
+     544
+    ],
+    [
+     825,
+     535
+    ],
+    [
+     780,
+     516
+    ],
+    [
+     758,
+     516
+    ],
+    [
+     717,
+     505
+    ],
+    [
+     704,
+     494
+    ],
+    [
+     692,
+     494
+    ],
+    [
+     672,
+     506
+    ]
+   ],
+   "confidence": 0.88,
+   "checked": true,
+   "why": "Black handle locked into group head, clearly a portafilter."
+  }
+ ]
+}

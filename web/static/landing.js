@@ -19,6 +19,20 @@
     items.forEach(function (el) { seen.observe(el); });
   }
 
+  document.querySelectorAll("[data-delete-job]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      if (!window.confirm("Delete this video, its guide and every file made from it? This cannot be undone.")) return;
+      button.disabled = true;
+      fetch("/api/jobs/" + button.getAttribute("data-delete-job") + "/delete", { method: "POST" })
+        .then(function (response) {
+          if (response.ok) { window.location.href = "/"; return; }
+          button.disabled = false;
+          button.textContent = response.status === 409 ? "Still working — try again when it stops" : "Could not delete — try again";
+        })
+        .catch(function () { button.disabled = false; });
+    });
+  });
+
   var steps = document.querySelectorAll(".story-step");
   var screens = document.querySelectorAll(".device-screen .screen");
   var dots = document.querySelectorAll(".story-dots span");
@@ -40,8 +54,68 @@
     }
   }
 
+  var live = document.querySelector("[data-live]");
+  if (live && watch && !reduce) {
+    var shots = live.querySelectorAll(".live-shot");
+    var current = 0;
+    var timer = null;
+    var turn = function () {
+      shots[current].classList.remove("on");
+      current = (current + 1) % shots.length;
+      shots[current].classList.add("on");
+    };
+    new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting && !timer) timer = window.setInterval(turn, 5200);
+        if (!entry.isIntersecting && timer) { window.clearInterval(timer); timer = null; }
+      });
+    }, { threshold: 0.3 }).observe(live);
+  }
+
+  var CYCLE = 7000;
+  var play = function (svg, index) {
+    var delay = -((index * 1370) % CYCLE);
+    var loop = { duration: CYCLE, iterations: Infinity, delay: delay, easing: "linear" };
+    svg.querySelectorAll(".mk").forEach(function (mark) {
+      var at = parseFloat(mark.getAttribute("data-at")) || 0.2;
+      mark.animate([
+        { opacity: 0, offset: 0 }, { opacity: 0, offset: at }, { opacity: 1, offset: at + 0.03 },
+        { opacity: 1, offset: 0.88 }, { opacity: 0, offset: 0.95 }, { opacity: 0, offset: 1 }
+      ], loop);
+      var cut = mark.querySelector(".mk-cut");
+      if (cut) cut.animate([
+        { opacity: 0, offset: 0 }, { opacity: 0, offset: Math.min(0.86, at + 0.05) },
+        { opacity: 1, offset: Math.min(0.87, at + 0.1) }, { opacity: 1, offset: 1 }
+      ], loop);
+    });
+    var scan = svg.querySelector(".mk-scan");
+    if (scan) scan.animate([
+      { transform: "translateY(0)", opacity: 1, offset: 0 },
+      { transform: "translateY(1120px)", opacity: 1, offset: 0.2 },
+      { transform: "translateY(1120px)", opacity: 0, offset: 1 }
+    ], { duration: CYCLE, iterations: Infinity, delay: delay, easing: "ease-in-out" });
+    var aim = svg.querySelector(".mk-aim");
+    if (!aim) return;
+    var stops = aim.getAttribute("data-stops").split(";").map(function (s) { return s.split(","); });
+    var frames = [{ transform: "translate(500px,500px) scale(1.6)", opacity: 0, offset: 0 },
+      { transform: "translate(500px,500px) scale(1.6)", opacity: 0, offset: 0.16 }];
+    svg.querySelectorAll(".mk").forEach(function (mark, i) {
+      var at = parseFloat(mark.getAttribute("data-at")) || 0.2;
+      var to = "translate(" + stops[i][0] + "px," + stops[i][1] + "px) scale(1)";
+      frames.push({ transform: to, opacity: 1, offset: Math.max(frames[frames.length - 1].offset + 0.001, at - 0.02) });
+      frames.push({ transform: to, opacity: 1, offset: at + 0.01 });
+    });
+    var last = frames[frames.length - 1];
+    frames.push({ transform: last.transform, opacity: 0, offset: Math.min(0.99, last.offset + 0.06) });
+    frames.push({ transform: last.transform, opacity: 0, offset: 1 });
+    aim.animate(frames, { duration: CYCLE, iterations: Infinity, delay: delay, easing: "ease-in-out" });
+  };
+
   var stage = document.querySelector("[data-mosaic-stage]");
   var grid = stage && stage.querySelector("[data-mosaic]");
+  if (grid && !reduce && grid.animate) {
+    Array.prototype.forEach.call(grid.querySelectorAll(".mz-tile svg"), play);
+  }
   if (!grid || reduce) return;
   var stick = stage.querySelector(".mosaic-stick");
   var caption = stage.querySelector(".mosaic-caption");
@@ -60,7 +134,8 @@
       tile.dy = tile.offsetTop + tile.offsetHeight / 2 - cy;
       tile.ring = Math.round(Math.max(Math.abs(tile.dx), Math.abs(tile.dy)) / size);
     });
-    startScale = Math.max(1, Math.min(stick.clientWidth * 0.9 / size, (stick.clientHeight - 30) * 0.86 / size));
+    var share = window.matchMedia("(max-width: 699px)").matches ? 0.9 : 0.33;
+    startScale = Math.max(1, Math.min(stick.clientWidth * share / size, (stick.clientHeight - 30) * 0.86 / size));
     var big = size * startScale;
     center.classList.add("big");
     art.style.width = art.style.height = big.toFixed(1) + "px";
@@ -76,7 +151,6 @@
     var shrink = ease(clamp((p - 0.1) / 0.4));
     var scale = startScale + (1 - startScale) * shrink;
     art.style.transform = "scale(" + (scale / startScale).toFixed(4) + ")";
-    center.style.setProperty("--detail", clamp(1 - shrink * 2.2).toFixed(2));
     tiles.forEach(function (tile) {
       if (tile === center) return;
       var start = 0.24 + 0.1 * (tile.ring - 1);

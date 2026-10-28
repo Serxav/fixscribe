@@ -6,7 +6,7 @@
     <span class="lead">FixScribe turns one video of a person building or repairing something into a guide that proves every step.</span>
     <span class="rest">It names every part, points at it on the frame, checks each claim outside the model, and asks you when it is not sure.</span>
   </h1>
-  <form class="start" action="/upload" method="post" enctype="multipart/form-data" id="upload-form" data-reveal style="--d:.12s">
+  <form class="start" action="/upload" method="post" enctype="multipart/form-data" data-reveal style="--d:.12s">
     <label class="btn btn-primary btn-lg">
       Record a video
       <input class="visually-hidden" type="file" name="video" accept="video/*" capture="environment" data-autosubmit>
@@ -16,7 +16,8 @@
       <input class="visually-hidden" type="file" name="video" accept="video/mp4,video/quicktime,.mov,.m4v,.mp4" data-autosubmit>
     </label>
     <p class="note">One take from a phone. Talk through it or stay silent. MP4 or MOV, up to 10 minutes.</p>
-    <p id="upload-status" class="note hidden" role="status">Uploading…</p>
+    <p class="note">Your video is analyzed by Meta's AI models and kept until you delete it. By uploading you accept the <a href="/terms">Terms</a> and the <a href="/privacy">Privacy</a> notice.</p>
+    <p class="note hidden" role="status">Uploading…</p>
   </form>
 </section>
 
@@ -34,6 +35,15 @@
   </p>
 </section>
 
+
+<section class="block live" id="sees">
+  <div class="block-head" data-reveal>
+    <p class="eyebrow">Live view</p>
+    <h2 class="title">It sees every part — and what you do with it.</h2>
+    <p class="lede">Muse Spark names each part it can see and SAM 3.1 cuts it out, frame after frame. That is how the guide knows what you touched, and how the coach knows where you are.</p>
+  </div>
+  <div class="live-frame" data-live data-reveal>{% include "art/live.html" %}</div>
+</section>
 
 <section class="block story" id="does">
   <div class="block-head" data-reveal>
@@ -68,8 +78,8 @@
   <div class="tiles-grid">
     <figure class="tile" data-reveal><figcaption><span class="tag">01</span>Muse Spark</figcaption>{% include "art/identify.svg" %}<h3>Identify</h3><p>The object, the task and its hazards. Safety rules run first: gas, mains panels and airbags get no do-it-yourself steps.</p></figure>
     <figure class="tile" data-reveal style="--d:.08s"><figcaption><span class="tag">02</span>Muse Voice</figcaption>{% include "art/listen.svg" %}<h3>Listen</h3><p>The narration, transcribed and timed to the second. A step may quote the person only with words they really said.</p></figure>
-    <figure class="tile" data-reveal style="--d:.16s"><figcaption><span class="tag">03</span>Muse Spark</figcaption>{% include "art/point.svg" %}<h3>Point</h3><p>Spark points at the battery on the frame — not the logic board above it — because it knows which step this is.</p></figure>
-    <figure class="tile" data-reveal><figcaption><span class="tag">04</span>SAM 3.1</figcaption>{% include "art/cutout.svg" %}<h3>Cut out</h3><p>SAM cuts the battery out inside that box. A part enters the catalog only when the cut-out fills the box.</p></figure>
+    <figure class="tile" data-reveal style="--d:.16s"><figcaption><span class="tag">03</span>Muse Spark</figcaption>{% include "art/point.svg" %}<h3>Point</h3><p>Spark points at each drone motor on the frame — the motor bell, not the leg below it — because it knows what this step is about.</p></figure>
+    <figure class="tile" data-reveal><figcaption><span class="tag">04</span>SAM 3.1</figcaption>{% include "art/cutout.svg" %}<h3>Cut out</h3><p>SAM cuts the roller brush out inside that box. A part enters the catalog only when the cut-out fills enough of it.</p></figure>
     <figure class="tile" data-reveal style="--d:.08s"><figcaption><span class="tag">05</span>Code, not a model</figcaption>{% include "art/check.svg" %}<h3>Check</h3><p>Every step is checked outside the model: parts proven, times, frame, quote. A refusal goes back to the agent.</p></figure>
     <figure class="tile" data-reveal style="--d:.16s"><figcaption><span class="tag">06</span>Muse Wonder</figcaption>{% include "art/build.svg" %}<h3>Build</h3><p>The guide step: what to do, which part, and the seconds of video it comes from — and the reverse guide to close it up again.</p></figure>
   </div>
@@ -135,15 +145,72 @@
     </article>
   </div>
 </section>
+
+<section class="block ready" id="ready">
+  <div class="block-head" data-reveal>
+    <p class="eyebrow">Before you film</p>
+    <h2 class="title">Three things to know before you start.</h2>
+    <p class="lede">A good video makes a good guide. Here is how to film it, what FixScribe does with it, and what you get back.</p>
+  </div>
+  <div class="ready-grid">
+    <article class="ready-card" data-reveal>
+      <p class="ready-num mono">01</p>
+      <h3>Film it like this</h3>
+      <ul>
+        <li>One take of the whole job, from start to finish, up to 10 minutes.</li>
+        <li>Hold the phone steady, in good light, close enough to see each screw.</li>
+        <li>Show each part for a second before you remove it.</li>
+        <li>Talk through it if you like — say “step” when a new one starts. Silent works too.</li>
+        <li>Keep faces, documents and other people out of the frame.</li>
+      </ul>
+    </article>
+    <article class="ready-card" data-reveal style="--d:.08s">
+      <p class="ready-num mono">02</p>
+      <h3>What happens next</h3>
+      <ul>
+        <li>Muse Spark identifies the object and the job. Professional-only jobs get no steps.</li>
+        <li>Muse Voice transcribes what you say, to the second.</li>
+        <li>Spark points at every part, SAM 3.1 cuts it out, and code checks each claim.</li>
+        <li>Muse Wonder writes the guide. If it is not sure, it asks you one question.</li>
+        <li>You can follow every stage on the progress page while it works.</li>
+      </ul>
+    </article>
+    <article class="ready-card" data-reveal style="--d:.16s">
+      <p class="ready-num mono">03</p>
+      <h3>What you get</h3>
+      <ul>
+        <li>A step-by-step guide: each step with its parts marked, its screws numbered and the seconds of video it comes from.</li>
+        <li>The way back: the reverse guide, with every screw accounted for.</li>
+        <li>A narrated film, a printable screw tray and a Markdown copy.</li>
+        <li>While you repair: <i>Check my step</i> and the <i>Live coach</i>.</li>
+      </ul>
+    </article>
+  </div>
+  <div class="ready-start" data-reveal>
+    <form class="start" action="/upload" method="post" enctype="multipart/form-data">
+      <label class="btn btn-primary btn-lg">
+        Record a video
+        <input class="visually-hidden" type="file" name="video" accept="video/*" capture="environment" data-autosubmit>
+      </label>
+      <label class="btn btn-glass btn-lg">
+        Upload a video
+        <input class="visually-hidden" type="file" name="video" accept="video/mp4,video/quicktime,.mov,.m4v,.mp4" data-autosubmit>
+      </label>
+      <p class="note">Your video is analyzed by Meta's AI models and kept until you delete it — <a href="/privacy">what happens to your video</a>. By uploading you accept the <a href="/terms">Terms</a>.</p>
+      <p class="note hidden" role="status">Uploading…</p>
+    </form>
+  </div>
+</section>
 {% endblock %}
 {% block scripts %}
 <script>
 document.querySelectorAll("[data-autosubmit]").forEach(function (input) {
   input.addEventListener("change", function () {
     if (!input.files.length) return;
+    var form = input.closest("form");
     document.querySelectorAll("[data-autosubmit]").forEach(function (other) { if (other !== input) other.disabled = true; });
-    document.getElementById("upload-status").classList.remove("hidden");
-    document.getElementById("upload-form").submit();
+    form.querySelector("[role=status]").classList.remove("hidden");
+    form.submit();
   });
 });
 </script>

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Privacy · FixScribe{% endblock %}
+{% block content %}
+<article class="legal">
+  <p class="eyebrow">Privacy</p>
+  <h1 class="title">What happens to your video</h1>
+  <p class="lede">FixScribe needs your video to write your guide. This page says exactly what it keeps, who else sees it and how to delete it.</p>
+
+  <h2>What FixScribe receives</h2>
+  <ul>
+    <li>The video you upload: its images and its sound.</li>
+    <li>A photo you take with <i>Check my step</i>.</li>
+    <li>Camera frames and your voice while you use the <i>Live coach</i>.</li>
+    <li>The questions you type or say about a guide.</li>
+  </ul>
+  <p>There are no accounts. FixScribe does not ask for your name or email, sets no cookies, and runs no analytics or ads.</p>
+
+  <h2>Who processes it</h2>
+  <p>FixScribe sends what it needs to Meta's models through the Meta Model API: Muse Spark, Muse Wonder, SAM 3.1 and Muse Voice. A video file stored at Meta for analysis is deleted as soon as that analysis ends. Meta processes this data under the terms of the Meta Model API.</p>
+  <p>The page fonts are loaded from Google Fonts, so your browser connects to Google's servers when the page opens.</p>
+
+  <h2>Where it is kept, and for how long</h2>
+  <p>Each video gets its own folder on the FixScribe server: the video, the frames and clips cut from it, the transcript and the guide. It stays there until you delete it.</p>
+  <p>A guide opens with its link, which holds a random code. Anyone who has the link can open the guide, so only share it with people you trust.</p>
+
+  <h2>Deleting your video</h2>
+  <p>Every guide and every progress page has a <i>Delete</i> button. It removes the whole folder: the video, every file made from it and the guide. It cannot be undone.</p>
+
+  <h2>Please do not film</h2>
+  <ul>
+    <li>Faces, or anyone who has not agreed to be filmed.</li>
+    <li>Documents, screens or labels with personal data.</li>
+    <li>Children.</li>
+  </ul>
+
+  <h2>The pictures on the home page</h2>
+  <p>The workshop photos on the home page are examples made with Muse Image. Their boxes, outlines and part names come from the same models that analyze your video.</p>
+
+  <h2>About FixScribe</h2>
+  <p>FixScribe is a project for the Meta Global AI Developer Hackathon. You control your data yourself: nothing is linked to you, and the <i>Delete</i> button removes everything about a video.</p>
+  <p class="note">Last updated October 28, 2026.</p>
+</article>
+{% endblock %}

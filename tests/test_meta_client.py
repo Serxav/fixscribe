@@ -771,3 +771,36 @@ def test_edit_image_missing_file_no_post(tmp_path):
     with pytest.raises(ValueError):
         client.edit_image(tmp_path / "missing.jpg", "draw an exploded view")
     assert fake_http.posts == []
+
+
+def test_generate_image_posts_json_body_and_records_spend(tmp_path):
+    client, fake_http = make_asr_client(tmp_path, [(200, image_payload(b"photo"))])
+
+    result = client.generate_image("a car engine on a bench", size="1024x1024")
+
+    assert result == b"photo"
+    url, kwargs = fake_http.posts[0]
+    assert url.endswith("/images/generations")
+    assert kwargs["json"] == {
+        "model": "muse-image-1.0",
+        "prompt": "a car engine on a bench",
+        "n": 1,
+        "size": "1024x1024",
+        "output_format": "webp",
+    }
+    with open(tmp_path / "spend.json", encoding="utf-8") as f:
+        assert json.load(f)["total_usd"] == pytest.approx(0.01)
+
+
+def test_generate_image_rejects_bad_size_without_post(tmp_path):
+    client, fake_http = make_asr_client(tmp_path, [(200, image_payload())])
+    with pytest.raises(ValueError):
+        client.generate_image("an engine", size="big")
+    assert fake_http.posts == []
+
+
+def test_generate_image_400_policy_error(tmp_path):
+    client, fake_http = make_asr_client(tmp_path, [(400, {"error": "refused"})])
+    with pytest.raises(ImagePolicyError, match="image generation"):
+        client.generate_image("an engine")
+    assert len(fake_http.posts) == 1

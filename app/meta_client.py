@@ -904,9 +904,7 @@ class MetaClient:
         "output_format": "webp"}``; the answer is ``data[0].b64_json``.
         See https://dev.meta.ai/docs/image-generation
 
-        Only 429 and 503 are retried (through the shared retry helper); a
-        400 content-policy refusal raises ImagePolicyError and every other
-        error raises MetaError, both without retries.
+        Errors are handled by ``_image_post``.
         """
         if not prompt or not prompt.strip():
             raise ValueError("prompt must not be empty")
@@ -918,12 +916,6 @@ class MetaClient:
             raise ValueError(f"cannot read image: {image_path}")
         data_url = "data:" + _image_mime(Path(image_path).suffix) + ";base64,"
         data_url += base64.b64encode(raw).decode("ascii")
-        self._check_budget()
-        url = f"{self._settings.meta_api_base}/images/edits"
-        headers = {
-            "Authorization": f"Bearer {self._settings.model_api_key}",
-            "Accept": "application/json",
-        }
         body = {
             "model": "muse-image-1.0",
             "prompt": prompt,
@@ -931,6 +923,45 @@ class MetaClient:
             "n": 1,
             "output_format": "webp",
         }
+        return self._image_post("edits", body)
+
+    def generate_image(self, prompt: str, size: str = "auto", output_format: str = "webp") -> bytes:
+        """Draw a new image from text with Muse Image.
+
+        Raw JSON POST to ``/v1/images/generations`` with
+        ``{"model", "prompt", "n": 1, "size", "output_format"}``; ``size`` is a
+        ``"WxH"`` aspect ratio or ``"auto"``. The answer is ``data[0].b64_json``.
+        See https://dev.meta.ai/docs/image-generation
+        """
+        if not prompt or not prompt.strip():
+            raise ValueError("prompt must not be empty")
+        if output_format not in ("webp", "png", "jpeg"):
+            raise ValueError(f"unsupported output_format: {output_format}")
+        if size != "auto" and not re.fullmatch(r"[1-9]\d{1,4}x[1-9]\d{1,4}", size):
+            raise ValueError(f"size must be 'WxH' or 'auto', got {size!r}")
+        body = {
+            "model": "muse-image-1.0",
+            "prompt": prompt,
+            "n": 1,
+            "size": size,
+            "output_format": output_format,
+        }
+        return self._image_post("generations", body)
+
+    def _image_post(self, endpoint: str, body: dict[str, Any]) -> bytes:
+        """POST one Muse Image request and return the image bytes.
+
+        Only 429 and 503 are retried (through the shared retry helper); a
+        400 content-policy refusal raises ImagePolicyError and every other
+        error raises MetaError, both without retries.
+        """
+        self._check_budget()
+        url = f"{self._settings.meta_api_base}/images/{endpoint}"
+        headers = {
+            "Authorization": f"Bearer {self._settings.model_api_key}",
+            "Accept": "application/json",
+        }
+        what = "image edit" if endpoint == "edits" else "image generation"
 
         def _do_post() -> bytes:
             try:
@@ -946,25 +977,25 @@ class MetaClient:
                 raise openai.APIConnectionError(message=str(exc), request=exc.request) from exc
             if resp.status_code == 400:
                 raise ImagePolicyError(
-                    f"image edit refused with status 400: {resp.text[:200]}",
+                    f"{what} refused with status 400: {resp.text[:200]}",
                     status_code=400,
                 )
             if resp.status_code == 500:
-                raise MetaError("image edit failed with status 500", status_code=500)
+                raise MetaError(f"{what} failed with status 500", status_code=500)
             if resp.status_code == 429:
-                raise openai.RateLimitError("image edit status 429", response=resp, body=None)
+                raise openai.RateLimitError(f"{what} status 429", response=resp, body=None)
             if resp.status_code == 503:
-                raise openai.APIStatusError("image edit status 503", response=resp, body=None)
+                raise openai.APIStatusError(f"{what} status 503", response=resp, body=None)
             if resp.status_code >= 400:
                 raise MetaError(
-                    f"image edit failed with status {resp.status_code}",
+                    f"{what} failed with status {resp.status_code}",
                     status_code=resp.status_code,
                 )
             try:
                 payload = resp.json()
                 return base64.b64decode(payload["data"][0]["b64_json"])
             except Exception as exc:
-                raise MetaError("image edit returned an invalid answer") from exc
+                raise MetaError(f"{what} returned an invalid answer") from exc
 
         result = self._with_retries(_do_post)
         self._add_spend("muse-image-1.0", PRICES["muse-image-1.0"]["per_image"])
