@@ -14,6 +14,8 @@ from pathlib import Path
 
 import cv2
 
+from scripts.draw_art import centre
+
 ROOT = Path(__file__).resolve().parents[1]
 PHOTOS = ROOT / "web" / "static" / "photos"
 OUT = ROOT / "web" / "templates" / "art" / "mosaic.html"
@@ -235,10 +237,7 @@ def tile(name: str, title: str, short: str) -> str:
         count += fastener
         at = 0.22 + i * min(0.08, 0.5 / max(1, len(marks)))
         body.append(mark_svg(mark, at, count if fastener else None, RED if refused else ORANGE))
-    stops = ";".join(
-        f"{(m['cut_box'][0] + m['cut_box'][2]) // 2},{(m['cut_box'][1] + m['cut_box'][3]) // 2}"
-        for m in marks
-    )
+    stops = ";".join("{:.0f},{:.0f}".format(*centre(m)) for m in marks)
     aim = (
         f'<g class="mk-aim" data-stops="{stops}"><circle r="34" fill="none" stroke="#fff" stroke-width="2" vector-effect="non-scaling-stroke"/>'
         '<path d="M-52 0H-22M22 0H52M0 -52V-22M0 22V52" stroke="#fff" stroke-width="2" vector-effect="non-scaling-stroke"/></g>'

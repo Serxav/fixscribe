@@ -314,5 +314,131 @@
    "checked": true,
    "why": "Green frame encloses the rear derailleur body with jockey wheels and chain below the cassette, clearly visible as a real drivetrain part."
   }
+ ],
+ "inventory": [
+  {
+   "label": "rear wheel tire",
+   "box": [
+    190,
+    0,
+    769,
+    987
+   ],
+   "cut_box": [
+    188,
+    0,
+    744,
+    985
+   ],
+   "outline": [
+    [
+     662,
+     0
+    ],
+    [
+     327,
+     0
+    ],
+    [
+     274,
+     78
+    ],
+    [
+     222,
+     229
+    ],
+    [
+     188,
+     474
+    ],
+    [
+     224,
+     704
+    ],
+    [
+     263,
+     824
+    ],
+    [
+     324,
+     924
+    ],
+    [
+     431,
+     985
+    ],
+    [
+     504,
+     978
+    ],
+    [
+     563,
+     937
+    ],
+    [
+     642,
+     786
+    ],
+    [
+     744,
+     698
+    ],
+    [
+     657,
+     750
+    ],
+    [
+     685,
+     598
+    ],
+    [
+     701,
+     593
+    ],
+    [
+     686,
+     586
+    ],
+    [
+     691,
+     535
+    ],
+    [
+     742,
+     541
+    ],
+    [
+     732,
+     489
+    ],
+    [
+     694,
+     474
+    ],
+    [
+     696,
+     416
+    ],
+    [
+     716,
+     412
+    ],
+    [
+     692,
+     398
+    ],
+    [
+     657,
+     159
+    ],
+    [
+     676,
+     20
+    ]
+   ],
+   "confidence": 0.93,
+   "checked": true,
+   "why": "Green frame clearly contains the black rear wheel tire mounted on the serviced bicycle, a real part of the object."
+  }
  ]
 }

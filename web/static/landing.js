@@ -40,6 +40,24 @@
     }
   }
 
+  var live = document.querySelector("[data-live]");
+  if (live && watch && !reduce) {
+    var shots = live.querySelectorAll(".live-shot");
+    var current = 0;
+    var timer = null;
+    var turn = function () {
+      shots[current].classList.remove("on");
+      current = (current + 1) % shots.length;
+      shots[current].classList.add("on");
+    };
+    new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting && !timer) timer = window.setInterval(turn, 9000);
+        if (!entry.isIntersecting && timer) { window.clearInterval(timer); timer = null; }
+      });
+    }, { threshold: 0.3 }).observe(live);
+  }
+
   var CYCLE = 7000;
   var play = function (svg, index) {
     var delay = -((index * 1370) % CYCLE);

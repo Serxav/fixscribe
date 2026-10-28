@@ -11,6 +11,8 @@ from the landing photos, and every mark sits where Muse Spark and SAM 3.1 found 
 import json
 from pathlib import Path
 
+from scripts.draw_art import centre
+
 OUT = Path(__file__).resolve().parents[1] / "web" / "templates" / "art" / "screens.html"
 W, H = 360, 760
 INK = "#161616"
@@ -34,11 +36,6 @@ def marks_of(name: str, word: str = "") -> list[dict]:
     data = json.loads((PHOTOS / f"{name}.json").read_text(encoding="utf-8"))
     found = [m for m in data["marks"] if word in m["label"].lower()]
     return sorted(found, key=lambda m: (m["cut_box"][1] // 40, m["cut_box"][0]))
-
-
-def centre(mark: dict) -> tuple[float, float]:
-    x1, y1, x2, y2 = mark["cut_box"]
-    return (x1 + x2) / 2, (y1 + y2) / 2
 
 
 def ring(x, y, n, r=11) -> str:

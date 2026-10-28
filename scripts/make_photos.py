@@ -88,6 +88,8 @@ SUBJECTS: dict[str, dict[str, str]] = {
         "tidy garage, the valve cover bolts clearly visible on top, the spark plug wells exposed, "
         "a socket wrench resting on the bench beside it.",
         "query": "each threaded stud sticking up from the top of the cylinder head",
+        "inventory": "the cylinder head, the engine block, the engine stand, each intake port "
+        "on the side and the socket wrench on the bench",
         "context": "A bare engine block with its cylinder head on a stand, being rebuilt.",
     },
     "washer": {
@@ -130,6 +132,8 @@ SUBJECTS: dict[str, dict[str, str]] = {
         "prompt": "Desktop computer tower lying on its side on a desk with the side panel removed, "
         "the motherboard, the RAM sticks and a large graphics card clearly visible.",
         "query": "the graphics card and each RAM stick",
+        "inventory": "the graphics card, each RAM stick, the CPU cooler, the motherboard, "
+        "the power supply and each case fan",
         "context": "A desktop computer being upgraded.",
     },
     "phone": {
@@ -165,6 +169,8 @@ SUBJECTS: dict[str, dict[str, str]] = {
         "prompt": "Opened game controller on an anti-static mat, the front shell removed, the "
         "circuit board with the two analog stick modules clearly visible, tiny screws beside it.",
         "query": "the two analog stick modules",
+        "inventory": "each analog stick module, the circuit board, the controller shell, "
+        "the ribbon cable and the tweezers",
         "context": "A game controller with stick drift being repaired.",
     },
     "shelf": {
@@ -472,11 +478,36 @@ def make(client: MetaClient, model: str, name: str, subject: dict[str, str], fre
     return data
 
 
+def inventory(client: MetaClient, model: str, name: str, subject: dict[str, str]) -> list[dict]:
+    """Every distinct part Spark can name on the photo, cut out by SAM and checked again.
+
+    Stored as ``inventory`` next to the job's marks, so the page can show how much it sees.
+    """
+    photo = OUT / f"{name}.webp"
+    image = cv2.imread(str(photo))
+    if image is None:
+        raise MetaError(f"unreadable photo: {photo}")
+    query = subject.get(
+        "inventory",
+        "every distinct part of the object being repaired that you can clearly see, "
+        "one box per part, each labelled with its own short specific name",
+    )
+    found, _ = cut(client, photo, query, subject["context"], [0, 0, 1000, 1000], 12, 0.1)
+    checked = confirm(client, model, image, found, subject["context"])
+    parts = [m for m in checked if m["checked"]]
+    path = OUT / f"{name}.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["inventory"] = parts
+    path.write_text(json.dumps(data, indent=1), encoding="utf-8")
+    return parts
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", nargs="*", default=list(SUBJECTS))
     parser.add_argument("--cap", type=float, default=2.0)
     parser.add_argument("--fresh", action="store_true", help="draw the photo again")
+    parser.add_argument("--inventory", action="store_true", help="name every part on the photo")
     args = parser.parse_args()
     settings = dataclasses.replace(get_settings(), job_budget_usd=args.cap)
     if not settings.model_api_key:
@@ -486,6 +517,11 @@ def main() -> int:
     client = MetaClient(settings, job_dir=settings.data_dir / "web_photos")
     for name in args.only:
         try:
+            if args.inventory:
+                parts = inventory(client, settings.spark_model, name, SUBJECTS[name])
+                print(f"{name}: {len(parts)} parts named")
+                print(f"spent so far: ${client.job_spend.total():.3f} of ${args.cap:.2f}")
+                continue
             data = make(client, settings.spark_model, name, SUBJECTS[name], args.fresh)
             print(f"{name}: {len(data['marks'])} marks kept, {len(data['dropped'])} dropped")
         except BudgetExceeded as exc:

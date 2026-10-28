@@ -90,8 +90,16 @@ def view_for(
 
 
 def centre(mark: dict) -> tuple[float, float]:
-    x1, y1, x2, y2 = mark["cut_box"]
-    return (x1 + x2) / 2, (y1 + y2) / 2
+    """The centre of SAM's cut-out (area centroid of its outline), where a ring belongs."""
+    pts = mark["outline"]
+    pairs = list(zip(pts, pts[1:] + pts[:1], strict=True))
+    area = sum(x1 * y2 - x2 * y1 for (x1, y1), (x2, y2) in pairs) / 2
+    if abs(area) < 1:
+        x1, y1, x2, y2 = mark["cut_box"]
+        return (x1 + x2) / 2, (y1 + y2) / 2
+    cx = sum((x1 + x2) * (x1 * y2 - x2 * y1) for (x1, y1), (x2, y2) in pairs) / (6 * area)
+    cy = sum((y1 + y2) * (x1 * y2 - x2 * y1) for (x1, y1), (x2, y2) in pairs) / (6 * area)
+    return cx, cy
 
 
 def points(mark: dict) -> str:
