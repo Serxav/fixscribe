@@ -1,10 +1,10 @@
 # ruff: noqa: E501 -- SVG markup reads better on one line per element
-"""Draw the six method illustrations of the landing as SVG over the real phone photo.
+"""Draw the six method illustrations of the landing as SVG over the real workshop photos.
 
 Run: ``python -m scripts.draw_art`` -> writes web/templates/art/*.svg (inlined by the templates,
-so they use the page fonts). The six drawings follow one job, a phone battery swap: identify,
-listen, point, cut out, check, build. Every box, outline and number comes from
-web/static/photos/phone.json, the answers make_photos got from Muse Spark and SAM 3.1.
+so they use the page fonts). The six drawings are the method's steps: identify,
+listen, point, cut out, check, build, each shown on a different job. Every box, outline and number
+comes from web/static/photos/<name>.json, the answers make_photos got from Muse Spark and SAM 3.1.
 """
 
 import json
@@ -13,14 +13,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "web" / "templates" / "art"
-PHOTO = ROOT / "web" / "static" / "photos" / "phone.json"
-HREF = "/static/photos/phone.webp"
+PHOTOS = ROOT / "web" / "static" / "photos"
 
 INK = "#0b1020"
 WHITE = "#ffffff"
 ORANGE = "#ff5a1f"
 YELLOW = "#ffd60a"
 GREEN = "#1d7a3a"
+RED = "#e5202e"
 FONT = "Inter Tight, Helvetica, Arial, sans-serif"
 MONO = "JetBrains Mono, ui-monospace, Menlo, monospace"
 W, H = 800, 1000
@@ -67,17 +67,26 @@ def card(y, h, rows: str) -> str:
 
 # --- the real marks ---------------------------------------------------------------------------
 
-DATA = json.loads(PHOTO.read_text(encoding="utf-8"))
+
+def marks_of(name: str) -> list[dict]:
+    """The marks make_photos kept for photo ``name``, top to bottom then left to right."""
+    data = json.loads((PHOTOS / f"{name}.json").read_text(encoding="utf-8"))
+    return sorted(data["marks"], key=lambda m: (m["cut_box"][1] // 40, m["cut_box"][0]))
 
 
-def find(word: str) -> list[dict]:
-    return [m for m in DATA["marks"] if word in m["label"].lower()]
-
-
-BATTERY = find("battery")[0]
-BRACKET = find("bracket")[0]
-SCREWS = sorted(find("screw"), key=lambda m: (m["cut_box"][1] // 25, m["cut_box"][0]))
-PHONE = DATA["object_box"]
+def view_for(
+    marks: list[dict], top: float = 0.6, pad: int = 40, place: float | None = None
+) -> tuple[float, float, float, float]:
+    """A tile-shaped crop that fits ``marks`` in a ``top`` share of the tile, centred at ``place``."""
+    x1 = min(m["cut_box"][0] for m in marks) - pad
+    y1 = min(m["cut_box"][1] for m in marks) - pad
+    x2 = max(m["cut_box"][2] for m in marks) + pad
+    y2 = max(m["cut_box"][3] for m in marks) + pad
+    h = min(1000.0, max((y2 - y1) / top, (x2 - x1) * H / W, 380.0))
+    w = h * W / H
+    x = min(max(0.0, (x1 + x2) / 2 - w / 2), 1000 - w)
+    y = min(max(0.0, (y1 + y2) / 2 - (top / 2 if place is None else place) * h), 1000 - h)
+    return x, y, w, h
 
 
 def centre(mark: dict) -> tuple[float, float]:
@@ -104,15 +113,17 @@ def fill_share(mark: dict) -> int:
     return round(100 * area / ((x2 - x1) * (y2 - y1)))
 
 
-def photo(view: tuple[float, float, float, float], marks: str = "", dim: float = 0.0) -> str:
-    """The phone photo cropped to ``view`` (0..1000 grid), full bleed, with marks in photo units."""
+def photo(
+    name: str, view: tuple[float, float, float, float], marks: str = "", dim: float = 0.0
+) -> str:
+    """Photo ``name`` cropped to ``view`` (0..1000 grid), full bleed, with marks in photo units."""
     x, y, w, h = view
     shade = (
         f'<rect x="0" y="0" width="1000" height="1000" fill="#000" opacity="{dim}"/>' if dim else ""
     )
     return (
         f'<svg x="0" y="0" width="{W}" height="{H}" viewBox="{x} {y} {w} {h}" preserveAspectRatio="xMidYMid slice">'
-        f'<image href="{HREF}" width="1000" height="1000"/>{shade}{marks}</svg>'
+        f'<image href="/static/photos/{name}.webp" width="1000" height="1000"/>{shade}{marks}</svg>'
     )
 
 
@@ -131,41 +142,46 @@ def ring(mark: dict, n: int, r: float) -> str:
     )
 
 
-# --- the six tiles ---------------------------------------------------------------------------
+# --- the six tiles, each on a different job ---------------------------------------------------
 
 
 def tile_identify() -> str:
-    view = (100, 150, 640, 800)
-    x1, y1, x2, y2 = PHONE
-    marks = corners(x1, y1, x2, y2, 50, cls="mz-box")
-    marks += '<rect class="mz-scan" x="100" y="60" width="640" height="90" fill="url(#idscan)"/>'
-    marks += '<defs><linearGradient id="idscan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fb2ff" stop-opacity="0"/><stop offset="1" stop-color="#0866ff" stop-opacity=".7"/></linearGradient></defs>'
+    marks = marks_of("panel")
+    view = view_for(marks, top=0.62, pad=60)
+    x1 = min(m["cut_box"][0] for m in marks)
+    y1 = min(m["cut_box"][1] for m in marks)
+    x2 = max(m["cut_box"][2] for m in marks)
+    y2 = max(m["cut_box"][3] for m in marks)
+    body = corners(x1 - 20, y1 - 20, x2 + 20, y2 + 20, 40, cls="mz-box")
+    body += "".join(
+        f'<polygon class="mz-glow" points="{points(m)}" fill="{RED}" fill-opacity=".3" stroke="{RED}" stroke-width="2.5" {THIN}/>'
+        for m in marks
+    )
     rows = text(84, 704, "MUSE SPARK · IDENTIFY", 15, "#6b6b6b", mono=True)
-    for i, (key, value) in enumerate(
-        [
-            ("Object", "Smartphone"),
-            ("Task", "Battery swap"),
-            ("Hazard", "Lithium battery · caution"),
-        ]
-    ):
+    lines = [
+        ("Object", "Electrical panel", INK),
+        ("Task", "Replace a breaker", INK),
+        ("Safety", "Professional only · no steps", RED),
+    ]
+    for i, (key, value, color) in enumerate(lines):
         y = 762 + i * 58
         rows += (
             f'<g class="mz-in" style="--i:{i}">'
             + text(84, y, key, 22, "#6b6b6b")
-            + text(250, y, value, 26, INK, weight=500)
+            + text(230, y, value, 26, color, weight=500)
             + "</g>"
         )
         if i < 2:
             rows += f'<line x1="84" y1="{y + 22}" x2="716" y2="{y + 22}" stroke="{INK}" stroke-opacity=".08"/>'
     return svg(
-        photo(view, marks) + card(660, 290, rows),
-        "Muse Spark identifies the opened smartphone, the battery swap and its hazard",
+        photo("panel", view, body) + card(660, 290, rows),
+        "Muse Spark identifies a live electrical panel; the safety rules give no steps",
     )
 
 
 def tile_listen() -> str:
-    view = (100, 150, 640, 800)
-    body = photo(view, dim=0.62)
+    marks = marks_of("bike")
+    body = photo("bike", view_for(marks, top=0.9, pad=80), dim=0.62)
     for i in range(52):
         x = 70 + i * 12.8
         v = abs(math.sin(i * 0.57) * math.cos(i * 0.19))
@@ -174,9 +190,9 @@ def tile_listen() -> str:
         delay = f"animation-delay:{(i % 7) * 0.13:.2f}s"
         body += f'<rect class="mz-level" style="{delay}" x="{x:.1f}" y="{300 - bar / 2:.1f}" width="6" height="{bar:.1f}" rx="3" fill="{YELLOW if hot else WHITE}" opacity="{1 if hot else 0.5}"/>'
     lines = [
-        ("00:38.5", "Okay, the bracket first.", False),
-        ("00:41.0", "the four little screws", True),
-        ("00:44.6", "keep them in the tray.", False),
+        ("00:12.4", "Okay, smallest cog first.", False),
+        ("00:15.0", "push the derailleur back", True),
+        ("00:18.6", "and the wheel drops out.", False),
     ]
     for i, (stamp, words, hot) in enumerate(lines):
         y = 520 + i * 96
@@ -187,73 +203,78 @@ def tile_listen() -> str:
             body += f'<rect x="198" y="{y - 34}" width="{len(words) * 15.4:.0f}" height="48" rx="6" fill="{YELLOW}"/>'
         body += text(210, y, words, 28, INK if hot else WHITE, opacity=1 if hot else 0.9) + "</g>"
     body += text(70, 880, "MUSE VOICE · timed to the second", 17, WHITE, mono=True, opacity=0.7)
-    body += text(70, 914, "the quote of step 2 is found here", 17, YELLOW, mono=True)
+    body += text(70, 914, "the quote of step 1 is found here", 17, YELLOW, mono=True)
     return svg(
-        body, "Muse Voice transcribes the narration to the second; the step's quote is found in it"
+        body,
+        "Muse Voice transcribes a bike repair to the second; the step's quote is found in it",
     )
 
 
 def tile_point() -> str:
-    view = (170, 250, 520, 650)
-    x1, y1, x2, y2 = BATTERY["box"]
-    bx1, by1, bx2, by2 = BRACKET["cut_box"]
-    marks = f'<rect x="{bx1 - 6}" y="{by1 - 6}" width="{bx2 - bx1 + 12}" height="{by2 - by1 + 12}" fill="none" stroke="#c9ced8" stroke-width="2.5" stroke-dasharray="8 6" {THIN}/>'
-    marks += f'<rect class="mz-box" x="{x1}" y="{y1}" width="{x2 - x1}" height="{y2 - y1}" fill="none" stroke="{ORANGE}" stroke-width="4" {THIN} pathLength="100"/>'
-    cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
-    marks += f'<path d="M{cx - 16} {cy}h32M{cx} {cy - 16}v32" stroke="{ORANGE}" stroke-width="3" {THIN}/>'
-    tx, ty = to_tile(view, x1, y1)
-    tag, _ = pill(round(tx), round(ty) - 44, "1 battery", fill=ORANGE, size=17)
-    rows = text(84, 760, f"battery  [{x1}, {y1}, {x2}, {y2}]", 23, INK, mono=True)
-    rows += text(84, 802, "not the bracket above it:", 19, "#5c5c5c")
-    rows += text(84, 830, "this step is about the battery", 19, "#5c5c5c")
-    rows += text(84, 900, "MUSE SPARK · 0–1000 grid", 15, "#6b6b6b", mono=True)
+    marks = marks_of("drone")
+    motors = [m for m in marks if "motor" in m["label"].lower()]
+    view = view_for(marks, top=0.8, pad=30)
+    body = ""
+    for m in motors:
+        x1, y1, x2, y2 = m["box"]
+        body += f'<rect class="mz-box" x="{x1}" y="{y1}" width="{x2 - x1}" height="{y2 - y1}" fill="none" stroke="{ORANGE}" stroke-width="3.5" {THIN} pathLength="100"/>'
+        cx, cy = centre(m)
+        body += f'<path d="M{cx - 10} {cy}h20M{cx} {cy - 10}v20" stroke="{ORANGE}" stroke-width="2.5" {THIN}/>'
+    tags = ""
+    for n, m in enumerate(motors, start=1):
+        tx, ty = to_tile(view, m["box"][0], m["box"][1])
+        tag, _ = pill(round(tx), round(ty) - 40, str(n), fill=ORANGE, size=15)
+        tags += f'<g class="mz-tag">{tag}</g>'
+    x1, y1, x2, y2 = motors[0]["box"]
+    rows = text(84, 868, f"motor  [{x1}, {y1}, {x2}, {y2}]", 23, INK, mono=True)
+    rows += text(716, 868, "MUSE SPARK", 14, "#6b6b6b", mono=True, anchor="end")
+    rows += text(84, 906, "the round motor bell only, not the leg below it", 18, "#5c5c5c")
     return svg(
-        photo(view, marks) + f'<g class="mz-tag">{tag}</g>' + card(710, 240, rows),
-        "Muse Spark points at the battery on a 0 to 1000 grid and skips the bracket above it",
+        photo("drone", view, body) + tags + card(824, 124, rows),
+        "Muse Spark points at the four drone motors on a 0 to 1000 grid",
     )
 
 
 def tile_cutout() -> str:
-    view = (170, 250, 520, 650)
-    x1, y1, x2, y2 = BATTERY["box"]
-    marks = (
-        f'<defs><mask id="cutmask"><rect width="1000" height="1000" fill="#fff"/><polygon points="{points(BATTERY)}" fill="#000"/></mask></defs>'
+    marks = marks_of("vacuum")
+    brush = next(m for m in marks if "roller" in m["label"].lower())
+    view = view_for(marks, top=0.62, pad=50)
+    x1, y1, x2, y2 = brush["box"]
+    body = (
+        f'<defs><mask id="cutmask"><rect width="1000" height="1000" fill="#fff"/><polygon points="{points(brush)}" fill="#000"/></mask></defs>'
         '<rect width="1000" height="1000" fill="#000" opacity=".62" mask="url(#cutmask)"/>'
-        f'<polygon class="mz-glow" points="{points(BATTERY)}" fill="{ORANGE}" fill-opacity=".35" stroke="{ORANGE}" stroke-width="3" {THIN}/>'
+        f'<polygon class="mz-glow" points="{points(brush)}" fill="{ORANGE}" fill-opacity=".35" stroke="{ORANGE}" stroke-width="3" {THIN}/>'
         f'<rect x="{x1}" y="{y1}" width="{x2 - x1}" height="{y2 - y1}" fill="none" stroke="{WHITE}" stroke-width="2" stroke-dasharray="8 6" {THIN}/>'
     )
-    share = fill_share(BATTERY)
+    share = fill_share(brush)
     rows = text(84, 762, "SAM 3.1", 24, INK, weight=500) + text(
         716, 762, f"{share}%", 40, INK, weight=500, anchor="end"
     )
-    rows += text(84, 796, "of Spark's box is the battery", 18, "#5c5c5c")
+    rows += text(84, 796, "of Spark's box is the roller brush", 18, "#5c5c5c")
     rows += f'<rect x="84" y="826" width="632" height="14" rx="7" fill="{INK}" fill-opacity=".1"/><rect class="mz-grow" x="84" y="826" width="{632 * share / 100:.0f}" height="14" rx="7" fill="{ORANGE}"/>'
     rows += f'<rect x="146" y="818" width="3" height="30" fill="{INK}"/>'
     rows += text(152, 884, "under 10%, the part is refused", 15, "#6b6b6b", mono=True)
     return svg(
-        photo(view, marks) + card(710, 240, rows),
-        f"SAM 3.1 cuts the battery out inside Spark's box; the cut-out fills {share}% of it",
+        photo("vacuum", view, body) + card(710, 240, rows),
+        f"SAM 3.1 cuts the robot vacuum's roller brush out inside Spark's box; it fills {share}% of it",
     )
 
 
 def tile_check() -> str:
-    x1, y1, x2, y2 = BRACKET["cut_box"]
-    pad = 36
-    scale = 470 / (y2 - y1 + 2 * pad)
-    w, h = W / scale, H / scale
-    view = ((x1 + x2) / 2 - w / 2, y1 - pad, w, h)
-    marks = "".join(ring(m, n, 14) for n, m in enumerate(SCREWS, start=1))
-    rows = text(84, 562, 'add_step(n=2, action="unscrew")', 21, INK, mono=True)
-    rows += f'<line x1="84" y1="588" x2="716" y2="588" stroke="{INK}" stroke-opacity=".12"/>'
+    screws = marks_of("laptop")
+    view = view_for(screws, top=0.44, pad=50, place=0.76)
+    body = "".join(ring(m, n, 22) for n, m in enumerate(screws, start=1))
+    rows = text(84, 92, 'add_step(n=1, action="unscrew")', 21, INK, mono=True)
+    rows += f'<line x1="84" y1="118" x2="716" y2="118" stroke="{INK}" stroke-opacity=".12"/>'
     checks = [
-        (True, f"{len(SCREWS)} screws proven by SAM"),
-        (True, "times 38.5–51.0 s fit the video"),
-        (True, "frame 41.0 s is inside the step"),
+        (True, f"{len(screws)} screws proven by SAM"),
+        (True, "times 08.0–21.5 s fit the video"),
+        (True, "frame 12.0 s is inside the step"),
         (True, "quote found in the narration"),
-        (False, "refused: screw 5 is not on the frame"),
+        (False, f"refused: screw {len(screws) + 1} is not on the frame"),
     ]
     for i, (ok, label) in enumerate(checks):
-        y = 646 + i * 62
+        y = 176 + i * 62
         color = GREEN if ok else "#bf000f"
         rows += f'<g class="mz-in" style="--i:{i}"><circle cx="102" cy="{y - 8}" r="17" fill="{color}" opacity=".12"/>'
         if ok:
@@ -262,33 +283,33 @@ def tile_check() -> str:
             rows += f'<path d="M95 {y - 15} l14 14 m0 -14 l-14 14" fill="none" stroke="{color}" stroke-width="3.5" stroke-linecap="round"/>'
         rows += text(136, y, label, 22, INK if ok else color) + "</g>"
     return svg(
-        photo(view, marks) + card(510, 450, rows),
-        "Code outside the model checks each step on the real frame; one claim is refused",
+        photo("laptop", view, body) + card(40, 450, rows),
+        "Code outside the model checks a laptop step on the real frame; one claim is refused",
     )
 
 
 def tile_build() -> str:
-    view = (120, 200, 520, 650)
-    marks = f'<polygon points="{points(BATTERY)}" fill="{WHITE}" fill-opacity=".14" stroke="{WHITE}" stroke-width="2" {THIN}/>'
-    marks += "".join(ring(m, n, 11) for n, m in enumerate(SCREWS, start=1))
-    body = photo(view, marks, dim=0.25)
+    pegs = marks_of("guitar")
+    view = view_for(pegs, top=0.55, pad=50, place=0.36)
+    rings = "".join(ring(m, n, 34) for n, m in enumerate(pegs, start=1))
+    body = photo("guitar", view, rings, dim=0.15)
     body += '<rect x="0" y="560" width="800" height="440" fill="url(#buildfade)"/>'
     body += '<defs><linearGradient id="buildfade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1020" stop-opacity="0"/><stop offset=".45" stop-color="#0b1020" stop-opacity=".92"/></linearGradient></defs>'
-    body += text(70, 120, "2", 72, WHITE, weight=500) + text(
-        118, 120, "/ 5", 32, WHITE, opacity=0.7
+    body += text(70, 120, "3", 72, WHITE, weight=500) + text(
+        118, 120, "/ 7", 32, WHITE, opacity=0.7
     )
     body += '<g class="mz-in" style="--i:0">' + text(
-        70, 790, "Take out the four", 36, WHITE, weight=500
+        70, 790, "Loosen the six pegs", 36, WHITE, weight=500
     )
-    body += text(70, 836, "bracket screws.", 36, WHITE, weight=500) + "</g>"
+    body += text(70, 836, "until every string is slack.", 36, WHITE, weight=500) + "</g>"
     x = 70
-    for i, label in enumerate((f"screws 1–{len(SCREWS)}", "▶ 00:38.5", "back in at step 9")):
+    for i, label in enumerate((f"pegs 1–{len(pegs)}", "▶ 00:15.0", "tuned again at step 6")):
         chip, width = pill(x, 884, label, fill="rgba(255,255,255,.16)", size=15)
         body += f'<g class="mz-in" style="--i:{i + 1}">{chip}</g>'
         x += width + 12
     return svg(
         body,
-        "The guide step: take out the four bracket screws, with the video second and where they go back",
+        "The guide step: loosen the six tuning pegs, with the video second and where they are tuned again",
     )
 
 

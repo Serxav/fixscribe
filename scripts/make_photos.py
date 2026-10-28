@@ -61,7 +61,7 @@ CHECK_SCHEMA = {
     "additionalProperties": False,
 }
 
-# query "" means the job is refused by the safety rules: the photo gets no marks.
+# "refused": the safety rules give no steps for this job; its marks show the hazards found.
 SUBJECTS: dict[str, dict[str, str]] = {
     "laptop": {
         "prompt": "Top-down view of a laptop lying upside down on a dark desk mat, its bottom "
@@ -99,8 +99,9 @@ SUBJECTS: dict[str, dict[str, str]] = {
     "panel": {
         "prompt": "Residential electrical distribution panel on a wall with its front cover "
         "removed, rows of circuit breakers and wiring visible.",
-        "query": "",
-        "context": "",
+        "query": "the main breaker and each row of circuit breakers",
+        "context": "A live mains distribution panel: a job for a licensed electrician only.",
+        "refused": "yes",
     },
     "drone": {
         "prompt": "Top-down view of a quadcopter drone on a wooden workbench with its top shell "
@@ -151,7 +152,7 @@ SUBJECTS: dict[str, dict[str, str]] = {
     "coffee": {
         "prompt": "Espresso machine on a kitchen counter with its water tank lifted out and set "
         "beside it, a descaling bottle next to it.",
-        "query": "the removed water tank",
+        "query": "the removed water tank and the portafilter",
         "context": "An espresso machine being descaled.",
     },
     "guitar": {
@@ -183,8 +184,9 @@ SUBJECTS: dict[str, dict[str, str]] = {
     "aircon": {
         "prompt": "Outdoor unit of a split air conditioner on a wall bracket, the copper "
         "refrigerant lines and their service valves visible at the side.",
-        "query": "",
-        "context": "",
+        "query": "each refrigerant service valve and the copper refrigerant lines",
+        "context": "An air conditioner refrigerant circuit: a job for a certified technician only.",
+        "refused": "yes",
     },
     "vacuum": {
         "prompt": "Robot vacuum cleaner turned upside down on a wooden floor, its round body seen "
@@ -196,8 +198,9 @@ SUBJECTS: dict[str, dict[str, str]] = {
     "boiler": {
         "prompt": "Wall-mounted gas boiler in a utility room with its front cover removed, "
         "showing the burner, the gas valve and pipes.",
-        "query": "",
-        "context": "",
+        "query": "the gas valve and the burner",
+        "context": "A gas boiler: a job for a registered gas engineer only.",
+        "refused": "yes",
     },
     "table": {
         "prompt": "Flat-pack side table being assembled on a rug, the tabletop upside down with "
@@ -461,7 +464,7 @@ def make(client: MetaClient, model: str, name: str, subject: dict[str, str], fre
         "width": width,
         "height": height,
         "query": subject["query"],
-        "refused": not subject["query"],
+        "refused": subject.get("refused") == "yes",
         "dropped": dropped,
         "marks": marks,
     }

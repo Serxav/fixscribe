@@ -317,7 +317,7 @@ details.proof[open] summary::after { content: "–"; }
 
 .mosaic { height: 320vh; margin-inline: calc(var(--margin) * -1); }
 .mosaic-stick { position: sticky; top: 72px; height: calc(100vh - 72px); display: grid; place-items: center; align-content: center; gap: 28px; overflow: hidden; }
-.mz-grid { --gap: 12px; --tile: min(calc((100vw - 2 * var(--margin) - 6 * var(--gap)) / 7), calc((100vh - 250px) / 3));
+.mz-grid { --gap: 16px; --tile: min(160px, calc((100vw - 2 * var(--margin) - 6 * var(--gap)) / 7), calc((var(--box, 100vh) - 230px) / 3));
   display: grid; grid-template-columns: repeat(7, var(--tile)); gap: var(--gap); }
 @media (max-width: 699px) { .mz-grid { --gap: 8px; --tile: min(calc((100vw - 2 * var(--margin) - 2 * var(--gap)) / 3), calc((100vh - 190px) / 7));
   grid-template-columns: repeat(3, var(--tile)); } }
@@ -327,6 +327,9 @@ details.proof[open] summary::after { content: "–"; }
 .mz-tile[data-center].big svg { position: absolute; transform-origin: 50% 50%; will-change: transform;
   box-shadow: 0 30px 60px rgba(0, 0, 0, .18); overflow: hidden; }
 .mz-tile svg { display: block; width: 100%; height: 100%; }
+@media (min-width: 700px) {
+  .mosaic-stick { --box: min(56.25vw, calc(100vh - 72px)); height: var(--box); top: max(72px, calc(50vh - var(--box) / 2 + 36px)); background: #f5f4ed; }
+}
 .mosaic-caption { max-width: 40em; text-align: center; padding-inline: var(--margin); font-size: clamp(20px, 2vw, 30px); }
 .js .mosaic-caption { opacity: 0; }
 
@@ -352,7 +355,8 @@ details.proof[open] summary::after { content: "–"; }
 .mz-tile image { image-rendering: auto; }
 .mk-scan, .mk-aim { opacity: 0; }
 .mk-aim { transform-box: view-box; }
-.mk-progress { transform-box: fill-box; transform-origin: 0 50%; }
+.lay { animation: mzLay 6s var(--ease) infinite; }
+@keyframes mzLay { 0%, 12% { transform: translateY(var(--from)); } 45%, 82% { transform: translateY(var(--to)); } 100% { transform: translateY(var(--from)); } }
 @media (prefers-reduced-motion: reduce) {
   .mosaic { height: auto; padding-block: 40px; } .mosaic-stick { position: static; height: auto; }
   .mz-tile *, .screen *, .tile * { animation: none !important; } .js .mosaic-caption { opacity: 1; }

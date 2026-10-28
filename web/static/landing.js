@@ -62,19 +62,6 @@
       { transform: "translateY(1120px)", opacity: 1, offset: 0.2 },
       { transform: "translateY(1120px)", opacity: 0, offset: 1 }
     ], { duration: CYCLE, iterations: Infinity, delay: delay, easing: "ease-in-out" });
-    var bar = svg.querySelector(".mk-progress");
-    if (bar) bar.animate([
-      { transform: "scaleX(0)", offset: 0 }, { transform: "scaleX(0)", offset: 0.04 },
-      { transform: "scaleX(1)", offset: 0.86 }, { transform: "scaleX(1)", offset: 1 }
-    ], loop);
-    var head = svg.querySelector(".mk-head");
-    if (head) {
-      var span = head.getAttribute("data-span") + "px";
-      head.animate([
-        { transform: "translateX(0)", offset: 0 }, { transform: "translateX(0)", offset: 0.04 },
-        { transform: "translateX(" + span + ")", offset: 0.86 }, { transform: "translateX(" + span + ")", offset: 1 }
-      ], loop);
-    }
     var aim = svg.querySelector(".mk-aim");
     if (!aim) return;
     var stops = aim.getAttribute("data-stops").split(";").map(function (s) { return s.split(","); });
@@ -115,7 +102,8 @@
       tile.dy = tile.offsetTop + tile.offsetHeight / 2 - cy;
       tile.ring = Math.round(Math.max(Math.abs(tile.dx), Math.abs(tile.dy)) / size);
     });
-    startScale = Math.max(1, Math.min(stick.clientWidth * 0.9 / size, (stick.clientHeight - 30) * 0.86 / size));
+    var share = window.matchMedia("(max-width: 699px)").matches ? 0.9 : 0.33;
+    startScale = Math.max(1, Math.min(stick.clientWidth * share / size, (stick.clientHeight - 30) * 0.86 / size));
     var big = size * startScale;
     center.classList.add("big");
     art.style.width = art.style.height = big.toFixed(1) + "px";

@@ -20,6 +20,7 @@ OUT = ROOT / "web" / "templates" / "art" / "mosaic.html"
 SMALL = 520
 
 ORANGE = "#ff5a1f"
+RED = "#ff2d3a"
 YELLOW = "#ffd60a"
 BLUE = "#0866ff"
 MONO = "JetBrains Mono, ui-monospace, Menlo, monospace"
@@ -52,6 +53,11 @@ CENTER = 10
 
 # What a grounded label is called on the page, and whether it is a fastener (gets a number).
 PARTS = [
+    ("breaker", "breaker row", False),
+    ("service valve", "service valve", False),
+    ("gas valve", "gas valve", False),
+    ("refrigerant lin", "refrigerant line", False),
+    ("portafilter", "portafilter", False),
     ("side brush", "side brush", False),
     ("roller", "roller brush", False),
     ("hub", "wheel hub", False),
@@ -119,10 +125,11 @@ def corners(x1: int, y1: int, x2: int, y2: int, pad: int = 6) -> str:
     )
 
 
-def mark_svg(mark: dict, at: float, number: int | None) -> str:
+def mark_svg(mark: dict, at: float, number: int | None, color: str = ORANGE) -> str:
+    """One mark; a hazard on a refused job is drawn in red."""
     x1, y1, x2, y2 = mark["cut_box"]
     points = " ".join(f"{x},{y}" for x, y in mark["outline"])
-    body = f'<polygon class="mk-cut" points="{points}" fill="{ORANGE}" fill-opacity=".26" stroke="{ORANGE}" stroke-width="2" vector-effect="non-scaling-stroke"/>'
+    body = f'<polygon class="mk-cut" points="{points}" fill="{color}" fill-opacity=".26" stroke="{color}" stroke-width="2" vector-effect="non-scaling-stroke"/>'
     body += f'<path class="mk-box" d="{corners(x1, y1, x2, y2)}" fill="none" stroke="#fff" stroke-width="2.5" vector-effect="non-scaling-stroke"/>'
     if number is not None:
         cx, cy = x2 + 8, y1 - 8
@@ -130,48 +137,86 @@ def mark_svg(mark: dict, at: float, number: int | None) -> str:
     return f'<g class="mk" data-at="{at:.3f}">{body}</g>'
 
 
-STEPS = [
-    (0.2, "00:12", "Remove the back glass"),
-    (0.46, "00:41", "Take out the 4 screws"),
-    (0.72, "01:05", "Lift the battery out"),
+# The center: four layers of one job, a gadget with two knobs and four screws, in its own units.
+KNOBS = [(-80, 0, 52), (80, 0, 52)]
+SCREWS = [(-150, -88), (150, -88), (-150, 88), (150, 88)]
+LAYERS = [
+    ("04", "Guide", "Muse Wonder"),
+    ("03", "Cut out", "SAM 3.1"),
+    ("02", "Point", "Muse Spark"),
+    ("01", "Video", "Muse Voice"),
 ]
+ISO = "matrix(0.5 0.29 -0.5 0.29 {x} {y})"
+INK = "#0b1020"
+SANS = "Inter Tight, Helvetica, Arial, sans-serif"
+
+
+def gadget() -> str:
+    body = '<rect x="-190" y="-120" width="380" height="240" rx="34" fill="#d9dde5"/>'
+    body += '<rect x="-190" y="-120" width="380" height="240" rx="34" fill="none" stroke="#fff" stroke-width="4" opacity=".6"/>'
+    body += "".join(
+        f'<circle cx="{x}" cy="{y}" r="{r}" fill="#3a4357"/><circle cx="{x}" cy="{y}" r="{r * 0.45:.0f}" fill="#58627a"/>'
+        for x, y, r in KNOBS
+    )
+    body += "".join(
+        f'<circle cx="{x}" cy="{y}" r="11" fill="#9aa3b5"/><path d="M{x - 6} {y}h12" stroke="#3a4357" stroke-width="3"/>'
+        for x, y in SCREWS
+    )
+    return body
+
+
+def layer(index: int) -> str:
+    """One plane drawn flat in -250..250 units; the iso matrix lays it down."""
+    if index == 3:
+        body = f'<rect x="-250" y="-250" width="500" height="500" rx="28" fill="{INK}"/>' + gadget()
+        body += '<path d="M-200 175 L-200 215 L-166 195 Z" fill="#fff"/><rect x="-140" y="190" width="330" height="10" rx="5" fill="#fff" opacity=".3"/><rect x="-140" y="190" width="150" height="10" rx="5" fill="#fff"/>'
+        body += "".join(
+            f'<rect x="{-200 + i * 14}" y="{-215 - h / 2:.0f}" width="7" height="{h:.0f}" rx="3" fill="{YELLOW}"/>'
+            for i, h in enumerate(10 + 28 * abs(((i * 37) % 11) - 5) / 5 for i in range(29))
+        )
+    elif index == 2:
+        body = '<rect x="-250" y="-250" width="500" height="500" rx="28" fill="#fff" fill-opacity=".1" stroke="#fff" stroke-width="3" stroke-dasharray="14 10"/>'
+        for x, y, r in KNOBS:
+            body += corners(x - r, y - r, x + r, y + r, pad=8).join(
+                ['<path d="', '" fill="none" stroke="#fff" stroke-width="7"/>']
+            )
+        for x, y in SCREWS:
+            body += f'<rect x="{x - 18}" y="{y - 18}" width="36" height="36" fill="none" stroke="#fff" stroke-width="5"/>'
+    elif index == 1:
+        body = '<rect x="-250" y="-250" width="500" height="500" rx="28" fill="#fff" fill-opacity=".1" stroke="#fff" stroke-width="3" stroke-dasharray="14 10"/>'
+        body += "".join(f'<circle cx="{x}" cy="{y}" r="{r}" fill="{ORANGE}"/>' for x, y, r in KNOBS)
+        body += "".join(f'<circle cx="{x}" cy="{y}" r="13" fill="{ORANGE}"/>' for x, y in SCREWS)
+    else:
+        body = '<rect x="-250" y="-250" width="500" height="500" rx="28" fill="#fff"/>'
+        for n in range(3):
+            y = -150 + n * 120
+            body += f'<circle cx="-170" cy="{y}" r="34" fill="{BLUE}"/><text x="-170" y="{y + 15}" text-anchor="middle" font-family="{MONO}" font-size="42" font-weight="700" fill="#fff">{n + 1}</text>'
+            body += f'<rect x="-110" y="{y - 26}" width="{250 - n * 40}" height="20" rx="10" fill="{INK}" opacity=".85"/><rect x="-110" y="{y + 8}" width="{170 - n * 30}" height="14" rx="7" fill="{INK}" opacity=".3"/>'
+            body += f'<circle cx="180" cy="{y}" r="30" fill="#1d7a3a"/><path d="M165 {y} l11 11 l20 -22" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>'
+    return body
 
 
 def guide_tile() -> str:
-    """The center: one video plays and each key moment becomes a checked guide step."""
-    left, right = 170, 900
-    span = right - left
+    """The center: one job as four layers that fan apart, one per Meta model."""
+    cx, gap = 650, 178
     body = f'<rect width="1000" height="1000" fill="{BLUE}"/>'
-    body += f'<text x="90" y="128" font-family="{MONO}" font-size="26" fill="#fff" opacity=".75">VIDEO · BATTERY SWAP · 01:24</text>'
-    body += '<path d="M90 196 L90 244 L130 220 Z" fill="#fff"/>'
-    body += (
-        f'<rect x="{left}" y="214" width="{span}" height="12" rx="6" fill="#fff" opacity=".28"/>'
-    )
-    body += f'<rect class="mk-progress" x="{left}" y="214" width="{span}" height="12" rx="6" fill="#fff"/>'
-    for n, (at, _, _) in enumerate(STEPS, start=1):
-        x = left + span * at
+    for index, (number, name, model) in reversed(list(enumerate(LAYERS))):
+        y = 200 + index * gap
+        spread = (index - 1.5) * 22
+        label_y = y + 4
         body += (
-            f'<g class="mk" data-at="{at:.3f}"><circle cx="{x:.0f}" cy="220" r="22" fill="{YELLOW}"/>'
-            f'<text x="{x:.0f}" y="229" text-anchor="middle" font-family="{MONO}" font-size="24" font-weight="700" fill="#111">{n}</text></g>'
+            f'<g class="lay" style="--from:{-spread:.0f}px;--to:{spread:.0f}px">'
+            f'<g transform="{ISO.format(x=cx, y=y)}">{layer(index)}</g>'
+            f'<path d="M{cx - 400} {y}H{cx - 262}" stroke="#fff" stroke-width="2" opacity=".5"/>'
+            f'<text x="56" y="{label_y}" font-family="{MONO}" font-size="24" fill="#fff" opacity=".7">{number}</text>'
+            f'<text x="100" y="{label_y}" font-family="{SANS}" font-size="34" font-weight="500" fill="#fff" letter-spacing="-0.02em">{name}</text>'
+            f'<text x="100" y="{label_y + 34}" font-family="{MONO}" font-size="21" fill="#fff" opacity=".75">{model}</text></g>'
         )
-    body += f'<g class="mk-head" data-span="{span}"><circle cx="{left}" cy="220" r="15" fill="#fff"/></g>'
-    for n, (at, stamp, words) in enumerate(STEPS, start=1):
-        y = 320 + (n - 1) * 140
-        body += (
-            f'<g class="mk" data-at="{at + 0.02:.3f}"><rect x="90" y="{y}" width="820" height="116" rx="22" fill="#fff"/>'
-            f'<circle cx="160" cy="{y + 58}" r="30" fill="{BLUE}"/>'
-            f'<text x="160" y="{y + 69}" text-anchor="middle" font-family="{MONO}" font-size="30" font-weight="700" fill="#fff">{n}</text>'
-            f'<text x="216" y="{y + 70}" font-family="Inter Tight, Helvetica, Arial, sans-serif" font-size="38" font-weight="500" fill="#0b1020" letter-spacing="-0.02em">{words}</text>'
-            f'<text x="800" y="{y + 68}" text-anchor="end" font-family="{MONO}" font-size="24" fill="#6b6b6b">{stamp}</text>'
-            f'<g class="mk-cut"><circle cx="856" cy="{y + 58}" r="24" fill="#1d7a3a"/>'
-            f'<path d="M844 {y + 58} l9 9 l16 -18" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></g></g>'
-        )
-    body += '<text x="90" y="854" font-family="Inter Tight, Helvetica, Arial, sans-serif" font-size="58" font-weight="500" fill="#fff" letter-spacing="-0.03em">One video, one guide.</text>'
-    body += f'<text x="90" y="910" font-family="{MONO}" font-size="26" fill="#fff" opacity=".75">every step proven by the video</text>'
+    body += f'<text x="56" y="964" font-family="{SANS}" font-size="44" font-weight="500" fill="#fff" letter-spacing="-0.03em">One video in, a proven guide out.</text>'
     return (
         '<figure class="mz-tile" data-center>'
         '<svg viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg" role="img" '
-        'aria-label="One video becomes a step-by-step guide: each key moment becomes a checked step">'
+        'aria-label="One job in four layers: the video, the parts Muse Spark points at, the cut-outs of SAM 3.1 and the guide Muse Wonder writes">'
         f"{body}</svg></figure>"
     )
 
@@ -186,10 +231,10 @@ def tile(name: str, title: str, short: str) -> str:
     body = []
     count = 0
     for i, mark in enumerate(marks):
-        fastener = part(mark["label"])[1]
+        fastener = part(mark["label"])[1] and not refused
         count += fastener
         at = 0.22 + i * min(0.08, 0.5 / max(1, len(marks)))
-        body.append(mark_svg(mark, at, count if fastener else None))
+        body.append(mark_svg(mark, at, count if fastener else None, RED if refused else ORANGE))
     stops = ";".join(
         f"{(m['cut_box'][0] + m['cut_box'][2]) // 2},{(m['cut_box'][1] + m['cut_box'][3]) // 2}"
         for m in marks
