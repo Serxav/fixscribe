@@ -23,11 +23,12 @@ from app.config import Settings
 from app.meta_client import BudgetExceeded, Detection, make_client
 from app.pipeline.analyze import guide_direction
 from app.pipeline.fasteners import (
-    _clean_phrase,
+    clean_phrase,
     fastener_concept,
     find_in_step,
     save_found,
     step_fastener,
+    step_fasteners,
 )
 from app.pipeline.ingest import find_original
 from app.pipeline.media import extract_still
@@ -83,7 +84,7 @@ def part_concepts(step: Step) -> list[str]:
     names = [step.sam_concept, step.target_part, *(step.removes or [])]
     found: list[str] = []
     for name in names:
-        phrase = _clean_phrase(name)
+        phrase = clean_phrase(name)
         if phrase is None:
             continue
         for candidate in (phrase, phrase.split()[-1]):
@@ -94,11 +95,11 @@ def part_concepts(step: Step) -> list[str]:
 
 def part_concept(target_part: str | None, removes: list[str]) -> str | None:
     """One short noun phrase for SAM, from the target part or what it removes."""
-    concept = _clean_phrase(target_part)
+    concept = clean_phrase(target_part)
     if concept is not None:
         return concept
     for item in removes or []:
-        concept = _clean_phrase(item)
+        concept = clean_phrase(item)
         if concept is not None:
             return concept
     return None
@@ -246,7 +247,7 @@ def _process_step(
                 settings.spark_model,
                 job_dir / "video.mp4",
                 step,
-                kind,
+                step_fasteners(step, fastener),
                 context,
                 adding,
                 work,

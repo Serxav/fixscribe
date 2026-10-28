@@ -123,6 +123,21 @@ def test_decide_building_keeps_what_appears_and_stays():
     assert fasteners.decide(frames, [1, 2, 3], 20, adding=True) == [1]
 
 
+def test_decide_keeps_a_clear_change_despite_a_few_early_false_sightings():
+    frames = _track({1: list(range(0, 2)) + list(range(10, 20)), 2: range(0, 20)})
+    assert fasteners.decide(frames, [1, 2], 20, adding=True) == [1]
+
+
+def test_unique_drops_a_second_id_on_the_same_fastener():
+    frames = {i: {1: (10, 10, 20, 20), 2: (11, 11, 19, 19), 3: (50, 50, 60, 60)} for i in range(5)}
+    assert fasteners.unique(frames, [1, 2, 3]) == [1, 3]
+
+
+def test_same_counts_a_box_inside_another():
+    assert fasteners.same((0, 0, 20, 30), (2, 15, 18, 28))
+    assert not fasteners.same((0, 0, 10, 10), (20, 20, 30, 30))
+
+
 def test_decide_taking_apart_keeps_what_disappears():
     frames = _track({1: range(0, 8), 2: range(0, 20)})
     assert fasteners.decide(frames, [1, 2], 20, adding=False) == [1]
@@ -137,7 +152,8 @@ def test_follow_drops_boxes_that_grew_into_a_hand(tmp_path):
             ]
             return [SimpleNamespace(frame=0, width=640, height=480, objects=objects)]
 
-    frames = fasteners.follow(Video(), tmp_path / "c.mp4", (1280, 960), [(1, 1, 2, 2)] * 2, 0)
+    seeds = [(0, (1, 1, 2, 2))] * 2
+    frames = fasteners.follow(Video(), tmp_path / "c.mp4", (1280, 960), seeds)
     assert frames == {0: {1: (20.0, 20.0, 40.0, 40.0)}}  # scaled to the clip, 2 dropped
 
 
@@ -162,3 +178,15 @@ def test_step_fastener_prefers_the_step_s_own_word():
     assert fasteners.step_fastener(step, "screw") == "allen bolts"
     plain = Step(index=1, title="t", instruction="i", start_s=0, end_s=1, removes=["cover"])
     assert fasteners.step_fastener(plain, "screw") == "screw"
+
+
+def test_twin_tracks_are_merged_into_one_box():
+    frames = {0: {1: (10, 20, 30, 40), 2: (8, 10, 32, 38)}}
+    assert fasteners.unique(frames, [1, 2]) == [1]
+    assert frames == {0: {1: (8, 10, 32, 40)}}
+
+
+def test_step_fasteners_lists_every_kind_the_step_names():
+    step = Step(index=1, title="t", instruction="i", start_s=0, end_s=1,
+                removes=["metal washer", "hex nut", "rail", "spring washer"])  # fmt: skip
+    assert fasteners.step_fasteners(step, "screw") == ["metal washer", "hex nut"]

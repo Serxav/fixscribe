@@ -25,7 +25,8 @@ def _det(box, confidence=0.9):
 
 class FakeMeta:
     """SAM finds the part on stills and the ``SPOTS`` on the whole-frame region; SAM video says
-    which fasteners are seen on each frame (``present(oid, frame, count)``)."""
+    which fasteners are seen on each frame (``present(spot, frame, count)``, spot 1..3 is the
+    fastener at that place, whatever id it was given)."""
 
     def __init__(self, present=None, fail_on_call=None, meta_fail_on_call=None):
         self.present = present or (lambda oid, frame, count: frame >= count // 2)  # put in
@@ -62,11 +63,20 @@ class FakeMeta:
                 objects=[
                     SimpleNamespace(object_id=oid, box=box)
                     for oid, _, box in boxes
-                    if self.present(oid, i, count)
+                    if self.present(_spot(box), i, count)
                 ],
             )
             for i in range(count)
         ]
+
+
+def _spot(box):
+    """1-based index of the SPOTS fastener nearest to ``box`` (clip pixels = video pixels)."""
+    cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+    centres = [((a + c) / 2, (b + d) / 2) for a, b, c, d in SPOTS]
+    return 1 + min(
+        range(len(SPOTS)), key=lambda n: (centres[n][0] - cx) ** 2 + (centres[n][1] - cy) ** 2
+    )
 
 
 def _step(index, start, end, screws=0, target="rail", removes=None):

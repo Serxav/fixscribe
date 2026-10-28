@@ -36,12 +36,15 @@ CLIP_FRAMES = 120  # SAM video bills per frame: a whole step in at most this man
 MAX_FPS = 10
 MIN_FPS = 2
 SEED_SHARE = 0.3  # the fasteners are chosen in the last 30 % of a build step (first, taking apart)
+LAST_SHARE = 0.1  # ...and again in its very last 10 %, where the finished state is
 MIN_CONFIDENCE = 0.3
 MAX_SIDE = 0.12  # a fastener box bigger than this share of the frame is not a fastener
-SAME = 0.5  # boxes overlapping more than this (IoU) are the same fastener
+SAME = 0.5  # boxes overlapping more than this (IoU) are the same fastener...
+INSIDE = 0.6  # ...and so are boxes when this share of the smaller one lies in the other
 STEADY = 0.5  # seen in at least half the frames of its end of the step
-ABSENT = 0.2  # seen in at most a fifth of the frames at the other end
+CHANGE = 0.5  # and in at least half more of them than at the other end (it really changed)
 ZOOM_SIDE = 1280  # every region is enlarged to this long side before SAM looks at it
+MAX_TRACKED = 16  # SAM video follows at most 16 prompted objects
 FASTENER_WORDS = ("screw", "bolt", "nut", "dowel", "pin", "washer", "clip", "rivet", "peg", "stud")
 
 Box = tuple[float, float, float, float]  # left, top, right, bottom in clip pixels
@@ -114,7 +117,7 @@ def load_found(job_dir: Path, index: int) -> Found | None:
         return None
 
 
-def _clean_phrase(text: str | None) -> str | None:
+def clean_phrase(text: str | None) -> str | None:
     if not text:
         return None
     cleaned = "".join(
@@ -140,11 +143,21 @@ def step_fastener(step: Step, default: str) -> str:
     The job-wide word ("screw") misses an assembly that uses bolts in one step and dowels in
     the next, so the step's own fastener name wins when it has one.
     """
+    return step_fasteners(step, default)[0]
+
+
+def step_fasteners(step: Step, default: str) -> list[str]:
+    """Every fastener the step names, at most two ("allen bolt", "washer"), else ``default``.
+
+    A step that puts in "metal washers and hex nuts" shows whichever ends up visible.
+    """
+    kinds: list[str] = []
     for name in step.removes or []:
-        phrase = _clean_phrase(name)
+        phrase = clean_phrase(name)
         if phrase and any(word in phrase.split()[-1] for word in FASTENER_WORDS):
-            return phrase
-    return default
+            if phrase not in kinds:
+                kinds.append(phrase)
+    return kinds[:2] or [default]
 
 
 # 1. PROPOSE ---------------------------------------------------------------------------------
@@ -168,6 +181,16 @@ def _iou(a: Box, b: Box) -> float:
     inter = ix * iy
     union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
     return inter / union if union > 0 else 0.0
+
+
+def same(a: Box, b: Box) -> bool:
+    """True when two boxes are the same fastener (overlapping or one inside the other)."""
+    if _iou(a, b) > SAME:
+        return True
+    ix = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
+    iy = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
+    smaller = min((a[2] - a[0]) * (a[3] - a[1]), (b[2] - b[0]) * (b[3] - b[1]))
+    return smaller > 0 and ix * iy / smaller >= INSIDE
 
 
 def _segment_region(
@@ -210,7 +233,7 @@ def propose(
                 continue
             if area is not None and not _inside(box, area):
                 continue
-            if all(_iou(box, other) <= SAME for _, other in kept):
+            if not any(same(box, other) for _, other in kept):
                 kept.append((confidence, box))
         if kept:
             return kept[:MAX_TILES]
@@ -298,11 +321,12 @@ def sharpest(frames: list[np.ndarray], first: int, last: int) -> int:
 
 
 def follow(
-    client: Any, clip: Path, size: tuple[int, int], boxes: list[Box], seed: int
+    client: Any, clip: Path, size: tuple[int, int], seeds: list[tuple[int, Box]]
 ) -> dict[int, dict[int, Box]]:
-    """SAM video follows each box from the seed frame: frame -> id -> box (clip pixels)."""
+    """SAM video follows each (frame, box) from its frame: frame -> id -> box (clip pixels)."""
     prompts = [
-        (oid, seed, tuple(int(round(v)) for v in box)) for oid, box in enumerate(boxes, start=1)
+        (oid, frame, tuple(int(round(v)) for v in box))
+        for oid, (frame, box) in enumerate(seeds, start=1)
     ]
     tracks = client.segment_video(clip, boxes=prompts, size=size)
     limit = MAX_SIDE * max(size)
@@ -324,7 +348,7 @@ def follow(
 def decide(
     frames: dict[int, dict[int, Box]], ids: list[int], count: int, adding: bool
 ) -> list[int]:
-    """The ids seen steadily at their end of the step and absent at the other end."""
+    """The ids seen steadily at their end of the step and clearly less at the other end."""
     window = max(1, round(count * SEED_SHARE))
     end = range(count - window, count)
     start = range(0, window)
@@ -333,7 +357,36 @@ def decide(
     def share(oid: int, span: range) -> float:
         return sum(1 for index in span if oid in frames.get(index, {})) / len(span)
 
-    return [oid for oid in ids if share(oid, here) >= STEADY and share(oid, there) <= ABSENT]
+    return [
+        oid
+        for oid in ids
+        if share(oid, here) >= STEADY and share(oid, here) - share(oid, there) >= CHANGE
+    ]
+
+
+def unique(frames: dict[int, dict[int, Box]], ids: list[int]) -> list[int]:
+    """Merge an id that SAM follows onto the same fastener as an earlier id in most frames.
+
+    The two masks are often two halves of one fastener (a bolt head and its washer), so the
+    earlier id takes the union of both boxes, frame by frame.
+    """
+    kept: list[int] = []
+    for oid in ids:
+        twin = None
+        for other in kept:
+            both = [boxes for boxes in frames.values() if oid in boxes and other in boxes]
+            if both and sum(same(b[oid], b[other]) for b in both) > len(both) / 2:
+                twin = other
+                break
+        if twin is None:
+            kept.append(oid)
+            continue
+        for boxes in frames.values():
+            if oid in boxes:
+                a = boxes.pop(oid)
+                b = boxes.get(twin, a)
+                boxes[twin] = (min(a[0], b[0]), min(a[1], b[1]), max(a[2], b[2]), max(a[3], b[3]))
+    return kept
 
 
 def reading_order(boxes: dict[int, Box], height: int) -> list[int]:
@@ -349,7 +402,7 @@ def find_in_step(
     model: str,
     video: Path,
     step: Step,
-    fastener: str,
+    kinds: list[str],
     context: str,
     adding: bool,
     work: Path,
@@ -367,24 +420,44 @@ def find_in_step(
     if len(frames) < 3:
         return None
     height, width = frames[0].shape[:2]
-    window = max(1, round(len(frames) * SEED_SHARE))
-    seed = (
-        sharpest(frames, len(frames) - window, len(frames))
-        if adding
-        else sharpest(frames, 0, window)
-    )
-    found = Found(fps=fps, start_s=step.start_s, size=(width, height), seed=seed)
-    candidates = propose(client, frames[seed], fastener, work)
-    chosen = choose(client, model, frames[seed], candidates, fastener, context)
+    count = len(frames)
+    window = max(1, round(count * SEED_SHARE))
+    last = max(1, round(count * LAST_SHARE))
+    if adding:  # the finished state: the end of the step, and its very last frames
+        seeds = [sharpest(frames, count - window, count), sharpest(frames, count - last, count)]
+    else:
+        seeds = [sharpest(frames, 0, window), sharpest(frames, 0, last)]
+    seeds = sorted(set(seeds))
+    chosen: list[tuple[float, int, Box]] = []  # confidence, frame, box
+    for n, (seed, kind) in enumerate((seed, kind) for seed in seeds for kind in kinds):
+        (work / f"try{n}").mkdir(exist_ok=True)
+        candidates = propose(client, frames[seed], kind, work / f"try{n}")
+        candidates = [
+            c for c in candidates if not any(same(c[1], b) for _, f, b in chosen if f == seed)
+        ]
+        for confidence, box in choose(client, model, frames[seed], candidates, kind, context):
+            chosen.append((confidence, seed, box))
+    found = Found(fps=fps, start_s=step.start_s, size=(width, height), seed=seeds[-1])
     if not chosen:
-        return found, frames[seed]
-    found.frames = follow(client, clip, (width, height), [box for _, box in chosen], seed)
-    ids = list(range(1, len(chosen) + 1))
-    kept = decide(found.frames, ids, len(frames), adding)
+        return found, frames[found.seed]
+    chosen = sorted(chosen, key=lambda item: -item[0])[:MAX_TRACKED]
+    found.frames = follow(client, clip, (width, height), [(f, box) for _, f, box in chosen])
+    ids = unique(found.frames, list(range(1, len(chosen) + 1)))
+    kept = decide(found.frames, ids, count, adding)
     if step.screws and step.screws.count:  # never more than the analysis counted
-        kept = sorted(kept, key=lambda oid: -chosen[oid - 1][0])[: step.screws.count]
-    at_seed = {oid: chosen[oid - 1][1] for oid in kept}
+        kept = kept[: step.screws.count]  # ids are in confidence order
+    for oid in kept:  # each one exactly where it was chosen, on its own frame
+        _, frame, box = chosen[oid - 1]
+        found.frames.setdefault(frame, {})[oid] = box
+    here = range(count - window, count) if adding else range(0, window)
+    found.seed = max(  # drawn on the frame of its end that shows the most of them
+        here, key=lambda i: (sum(oid in found.frames.get(i, {}) for oid in kept), i in seeds)
+    )
+    at_seed = {
+        oid: found.frames[found.seed][oid]
+        for oid in kept
+        if oid in found.frames.get(found.seed, {})
+    }
     found.kept = reading_order(at_seed, height)
     found.confidence = {oid: round(chosen[oid - 1][0], 2) for oid in found.kept}
-    found.frames.setdefault(seed, {}).update(at_seed)  # drawn exactly where it was chosen
-    return found, frames[seed]
+    return found, frames[found.seed]
