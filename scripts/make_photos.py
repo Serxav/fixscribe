@@ -88,6 +88,7 @@ SUBJECTS: dict[str, dict[str, str]] = {
         "tidy garage, the valve cover bolts clearly visible on top, the spark plug wells exposed, "
         "a socket wrench resting on the bench beside it.",
         "query": "each threaded stud sticking up from the top of the cylinder head",
+        "tiled": "yes",
         "inventory": "the cylinder head, the engine block, the engine stand, each intake port "
         "on the side and the socket wrench on the bench",
         "context": "A bare engine block with its cylinder head on a stand, being rebuilt.",
@@ -123,9 +124,8 @@ SUBJECTS: dict[str, dict[str, str]] = {
     "wheel": {
         "prompt": "Close view of a car wheel with five lug nuts while the car is raised on a jack "
         "in a driveway, a lug wrench resting against the tire.",
-        "query": "the wheel hub with its lug nuts",
-        "zoom_into": "hub",
-        "zoom_query": "each lug nut",
+        "query": "each lug nut",
+        "tiled": "yes",
         "context": "A car wheel being changed.",
     },
     "pc": {
@@ -435,6 +435,28 @@ def refine(
     return kept, lost
 
 
+QUADRANTS = [[0, 0, 560, 560], [440, 0, 1000, 560], [0, 440, 560, 1000], [440, 440, 1000, 1000]]
+
+
+def tiled(
+    client: MetaClient, photo: Path, query: str, context: str, min_fill: float
+) -> tuple[list[dict], list[dict]]:
+    """Search four enlarged quarters of the photo, so many small parts are each found up close."""
+    marks: list[dict] = []
+    dropped: list[dict] = []
+    with tempfile.TemporaryDirectory() as tmp:
+        for n, region in enumerate(QUADRANTS):
+            target = Path(tmp) / f"quarter{n}.png"
+            frame = zoom(photo, region, target)
+            found, lost = cut(client, target, query, context, frame, 8, min_fill)
+            for mark in found:
+                mark["zoom"] = True
+                if all(overlap(mark["cut_box"], other["cut_box"]) < 0.3 for other in marks):
+                    marks.append(mark)
+            dropped += lost
+    return marks, dropped
+
+
 def make(client: MetaClient, model: str, name: str, subject: dict[str, str], fresh: bool) -> dict:
     """Draw, ground, segment and check one subject; write its photo and marks."""
     photo = OUT / f"{name}.webp"
@@ -448,9 +470,12 @@ def make(client: MetaClient, model: str, name: str, subject: dict[str, str], fre
     dropped: list[dict] = []
     if subject["query"]:
         min_fill = float(subject.get("min_fill", MIN_FILL))
-        marks, dropped = cut(
-            client, photo, subject["query"], subject["context"], [0, 0, 1000, 1000], 8, min_fill
-        )
+        if subject.get("tiled") == "yes":
+            marks, dropped = tiled(client, photo, subject["query"], subject["context"], min_fill)
+        else:
+            marks, dropped = cut(
+                client, photo, subject["query"], subject["context"], [0, 0, 1000, 1000], 8, min_fill
+            )
         parent = subject.get("zoom_into", "")
         holder = next((m for m in marks if parent and parent in m["label"].lower()), None)
         if holder is not None:

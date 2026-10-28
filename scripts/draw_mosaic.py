@@ -44,7 +44,7 @@ TILES = [
     ("coffee", "Coffee machine", "coffee"),
     ("guitar", "Guitar", "guitar"),
     ("controller", "Game controller", "controller"),
-    ("shelf", "Bookshelf", "shelf"),
+    ("phone", "Smartphone", "phone"),
     ("lamp", "Desk lamp", "lamp"),
     ("aircon", "Air conditioner", "AC gas"),
     ("boiler", "Gas boiler", "gas boiler"),
@@ -55,6 +55,8 @@ CENTER = 10
 
 # What a grounded label is called on the page, and whether it is a fastener (gets a number).
 PARTS = [
+    ("propeller", "propeller", False),
+    ("drive wheel", "wheel", False),
     ("breaker", "breaker row", False),
     ("service valve", "service valve", False),
     ("gas valve", "gas valve", False),
@@ -104,7 +106,9 @@ def part(label: str) -> tuple[str, bool]:
 
 
 def plural(name: str, count: int) -> str:
-    return name if count == 1 else name + "s"
+    if count == 1:
+        return name
+    return name + ("es" if name.endswith(("sh", "ch", "s")) else "s")
 
 
 def chip_text(short: str, marks: list[dict], refused: bool) -> str:
@@ -223,9 +227,44 @@ def guide_tile() -> str:
     )
 
 
+# A tile may show only part of its photo (left, top, side on the 0..1000 grid), so that every
+# fastener left in view is one the pipeline found.
+CROPS = {"laptop": (150, 360, 640)}
+
+
+def framed(mark: dict, crop: tuple[int, int, int]) -> dict:
+    """``mark`` with its box and outline moved into the tile's crop."""
+    left, top, side = crop
+
+    def move(x: float, y: float) -> list[int]:
+        return [round((x - left) * 1000 / side), round((y - top) * 1000 / side)]
+
+    x1, y1, x2, y2 = mark["cut_box"]
+    return {
+        **mark,
+        "cut_box": move(x1, y1) + move(x2, y2),
+        "outline": [move(x, y) for x, y in mark["outline"]],
+    }
+
+
+def overlap(a: list[int], b: list[int]) -> float:
+    w = min(a[2], b[2]) - max(a[0], b[0])
+    h = min(a[3], b[3]) - max(a[1], b[1])
+    if w <= 0 or h <= 0:
+        return 0.0
+    return w * h / max(1, min((a[2] - a[0]) * (a[3] - a[1]), (b[2] - b[0]) * (b[3] - b[1])))
+
+
 def tile(name: str, title: str, short: str) -> str:
     data = json.loads((PHOTOS / f"{name}.json").read_text(encoding="utf-8"))
     marks, refused = data["marks"], data.get("refused", False)
+    for extra in data.get("inventory", []):
+        x1, y1, x2, y2 = extra["cut_box"]
+        small = (x2 - x1) * (y2 - y1) < 200_000
+        if small and all(overlap(extra["cut_box"], m["cut_box"]) < 0.5 for m in marks):
+            marks = marks + [extra]
+    if name in CROPS:
+        marks = [framed(m, CROPS[name]) for m in marks]
     href = f"/static/photos/{name}-s.webp"
     marks = sorted(
         marks, key=lambda m: (part(m["label"])[1], m["cut_box"][1] // 60, m["cut_box"][0])
@@ -277,6 +316,13 @@ def small_copies() -> None:
         if name == "guide":
             continue
         image = cv2.imread(str(PHOTOS / f"{name}.webp"))
+        if name in CROPS:
+            left, top, side = CROPS[name]
+            h, w = image.shape[:2]
+            image = image[
+                top * h // 1000 : (top + side) * h // 1000,
+                left * w // 1000 : (left + side) * w // 1000,
+            ]
         small = cv2.resize(image, (SMALL, SMALL), interpolation=cv2.INTER_AREA)
         cv2.imwrite(str(PHOTOS / f"{name}-s.webp"), small, [cv2.IMWRITE_WEBP_QUALITY, 84])
 

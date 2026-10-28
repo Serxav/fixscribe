@@ -369,8 +369,8 @@ details.proof[open] summary::after { content: "–"; }
 .live-shot { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity .6s var(--ease); }
 .live-shot.on { opacity: 1; }
 .lv-part, .lv-row { opacity: 0; }
-.live-shot.on .lv-part { animation: lvIn .5s var(--ease) both; animation-delay: calc(.8s + var(--i) * .45s); }
-.live-shot.on .lv-row { animation: lvIn .5s var(--ease) both; animation-delay: calc(.9s + var(--i) * .45s); }
+.live-shot.on .lv-part { animation: lvIn .5s var(--ease) both; animation-delay: calc(.5s + var(--i) * .22s); }
+.live-shot.on .lv-row { animation: lvIn .5s var(--ease) both; animation-delay: calc(.6s + var(--i) * .22s); }
 @keyframes lvIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .live-shot.on .lv-scan { animation: lvScan 1.4s ease-in-out .1s both; }
 @keyframes lvScan { from { transform: translateY(0); } to { transform: translateY(980px); } }

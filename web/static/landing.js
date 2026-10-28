@@ -52,7 +52,7 @@
     };
     new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
-        if (entry.isIntersecting && !timer) timer = window.setInterval(turn, 9000);
+        if (entry.isIntersecting && !timer) timer = window.setInterval(turn, 5200);
         if (!entry.isIntersecting && timer) { window.clearInterval(timer); timer = null; }
       });
     }, { threshold: 0.3 }).observe(live);
