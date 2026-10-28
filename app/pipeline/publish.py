@@ -17,6 +17,7 @@ from app.schemas import (
     Frames,
     Guide,
     Identity,
+    IngestInfo,
     Motion,
     Narration,
     Perception,
@@ -184,6 +185,24 @@ def build_guide(
     )
 
 
+SHARP_SIDE = 1080  # below this short side a few-pixel screw is hard to see
+
+
+def filming_note(ingest: IngestInfo | None, steps: list[Step]) -> str | None:
+    """A plain warning when the video is too small for the fasteners the guide counts."""
+    if ingest is None or ingest.source is None:
+        return None
+    if not any(step.screws and step.screws.count for step in steps):
+        return None
+    short = min(ingest.source.width, ingest.source.height)
+    if short >= SHARP_SIDE:
+        return None
+    return (
+        f"The video is {short}p: small fasteners may not be found. For the best result, film "
+        f"in {SHARP_SIDE}p or more, close to the part, and show each fastener for a second."
+    )
+
+
 def run(job_dir: Path, settings: Any) -> Guide:
     guide = build_guide(
         artifacts.load(job_dir, Plan),
@@ -195,5 +214,8 @@ def run(job_dir: Path, settings: Any) -> Guide:
         artifacts.load_optional(job_dir, Motion),
         artifacts.load_optional(job_dir, Narration),
     )
+    note = filming_note(artifacts.load_optional(job_dir, IngestInfo), guide.steps)
+    if note:
+        guide.checks.append(note)
     artifacts.save(job_dir, guide)
     return guide

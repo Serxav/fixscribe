@@ -84,27 +84,62 @@ def test_propose_drops_huge_and_weak_boxes_and_falls_back_to_the_last_word(tmp_p
 class Spark:
     def __init__(self, reject):
         self.reject = reject
+        self.images = 0
 
     def respond(self, **kwargs):
-        text = kwargs["input"][0]["content"][0]["text"]
-        assert "green frame" in text  # numbered candidates, never coordinates
+        content = kwargs["input"][0]["content"]
+        assert "green frame" in content[0]["text"]  # numbered candidates, never coordinates
+        self.images = len(content) - 1
         tiles = [{"n": n, "real": n not in self.reject, "why": "t"} for n in range(1, 17)]
         return SimpleNamespace(output_text=json.dumps({"tiles": tiles}))
 
 
-def test_choose_keeps_only_the_numbers_spark_confirms():
-    image = np.zeros((100, 100, 3), dtype=np.uint8)
-    candidates = [(0.9, (10, 10, 14, 14)), (0.8, (50, 50, 54, 54)), (0.7, (80, 10, 84, 14))]
-    kept = fasteners.choose(Spark({2}), "muse-spark-1.3", image, candidates, "screw", "ctx")
-    assert kept == [candidates[0], candidates[2]]
+def test_choose_tracks_shows_each_candidate_on_several_frames():
+    frames = [np.full((100, 100, 3), i * 20, dtype=np.uint8) for i in range(10)]
+    tracks = {i: {1: (10, 10, 14, 14), 2: (50, 50, 54, 54)} for i in range(10)}
+    proposed = [(0.9, 9, (10, 10, 14, 14), "screw"), (0.8, 9, (50, 50, 54, 54), "screw")]
+    spark = Spark({2})
+    kept = fasteners.choose_tracks(spark, "muse-spark-1.3", frames, tracks, [1, 2], range(7, 10),
+                                   proposed, "ctx")  # fmt: skip
+    assert kept == [1]
+    assert spark.images == 2  # one image per candidate, its views side by side
 
 
-def test_choose_without_spark_keeps_everything():
-    image = np.zeros((100, 100, 3), dtype=np.uint8)
-    candidates = [(0.9, (10, 10, 14, 14))]
-    assert (
-        fasteners.choose(object(), "muse-spark-1.3", image, candidates, "screw", "") == candidates
-    )
+def test_choose_tracks_without_spark_keeps_everything():
+    assert fasteners.choose_tracks(object(), "m", [], {}, [1, 2], range(0), [], "") == [1, 2]
+
+
+def test_work_area_surrounds_the_candidates_and_is_at_least_half_the_frame():
+    area = fasteners.work_area([(100, 100, 110, 110), (150, 120, 160, 130)], 1000, 500)
+    assert area[2] - area[0] == 500 and area[3] - area[1] == 250
+    assert area[0] <= 100 and area[2] >= 160 and area[1] <= 100 and area[3] >= 130
+
+
+def test_follow_moves_prompts_into_the_zoomed_clip_and_answers_back(tmp_path):
+    class Video:
+        def segment_video(self, clip, boxes=(), size=None):
+            self.prompts, self.size = boxes, size
+            ((_, frame, box),) = boxes
+            return [SimpleNamespace(frame=frame, width=size[0], height=size[1],
+                                    objects=[SimpleNamespace(object_id=1, box=box)])]  # fmt: skip
+
+    video = Video()
+    frames = fasteners.follow(video, tmp_path / "z.mp4", (1000, 500), [(3, (110, 60, 120, 70))],
+                              area=(100, 50, 600, 300), scale=2.0)  # fmt: skip
+    assert video.prompts == [(1, 3, (20, 20, 40, 40))] and video.size == (1000, 500)
+    assert frames == {3: {1: (110.0, 60.0, 120.0, 70.0)}}
+
+
+def test_cut_zoom_enlarges_the_work_area(tmp_path):
+    import subprocess
+
+    clip = tmp_path / "c.mp4"
+    subprocess.run(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i",
+                    "testsrc=size=320x240:rate=5", "-t", "1", "-pix_fmt", "yuv420p", str(clip)],
+                   check=True)  # fmt: skip
+    scale = fasteners.cut_zoom(clip, (0, 0, 160, 120), tmp_path / "z.mp4")
+    zoomed = fasteners.read_window(tmp_path / "z.mp4", 0, 1)
+    assert scale == pytest.approx(8.0) and zoomed[0].shape[:2] == (960, 1280)
 
 
 def _track(present):

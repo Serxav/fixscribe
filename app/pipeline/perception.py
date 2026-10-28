@@ -30,7 +30,7 @@ from app.pipeline.fasteners import (
     step_fastener,
     step_fasteners,
 )
-from app.pipeline.ingest import find_original
+from app.pipeline.ingest import IngestError, color_filter, find_original
 from app.pipeline.media import extract_still
 from app.pipeline.overlay import draw_part, draw_screws, save_jpeg
 from app.schemas import (
@@ -205,6 +205,16 @@ def _make_overlay(job_dir: Path, step: Step, image: np.ndarray, sp: StepPercepti
     return relative
 
 
+def _best_video(job_dir: Path, ingest: IngestInfo | None) -> tuple[Path, str]:
+    """The original upload and its colour conversion; the 720p working copy if it is gone."""
+    if ingest is not None and ingest.source is not None:
+        try:
+            return find_original(job_dir), color_filter(ingest.source)
+        except IngestError:
+            pass
+    return job_dir / "video.mp4", ""
+
+
 def _find_part(client: Any, keyframe: Path, step: Step, sp: StepPerception) -> None:
     concepts = part_concepts(step)
     for concept in concepts:  # plain words first, then shorter fallbacks
@@ -242,16 +252,18 @@ def _process_step(
         context = f"{object_name or plan.device}. Step: {step.title}. {step.instruction}"
         work = job_dir / "steps" / f"{step.index:02d}_work"
         try:
+            video, prefilter = _best_video(job_dir, ingest)
             result = find_in_step(
                 client,
                 settings.spark_model,
-                job_dir / "video.mp4",
+                video,
                 step,
                 step_fasteners(step, fastener),
                 context,
                 adding,
                 work,
                 plan.duration_s,
+                prefilter,
             )
         finally:
             shutil.rmtree(work, ignore_errors=True)

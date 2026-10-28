@@ -43,21 +43,26 @@ close. Record `boundary_source` per step and raise or lower confidence:
 Comparing one frame before and one after a step fails on hand-held video (the camera moves, a hand
 covers the part, the light changes), and asking a language model for coordinates of a few-pixel
 screw gives boxes beside it. The method follows what works in the literature instead:
-1. **Propose (sliced inference, SAHI).** On the sharpest frame of the step's end (start, when taking
-   apart), SAM 3.1 searches the fastener word on the whole frame and on four overlapping enlarged
-   quarters. Weak and oversized boxes are dropped, duplicates merged.
-2. **Choose (set-of-mark prompting).** Muse Spark sees every candidate numbered on a zoomed contact
-   sheet and only answers which numbers really are that fastener. It never gives coordinates.
-3. **Follow (SAM 3.1 video).** Each chosen fastener is followed through the whole step clip
-   (at most 120 frames, 2–10 fps).
-4. **Decide (votes over time).** A fastener counts only if it is seen in at least half the frames of
-   its end of the step and in at most a fifth at the other end: put in when building, taken out
-   when taking apart. Never more than the analysis counted.
+1. **Propose (sliced inference, SAHI).** The step clip is cut from the original upload at up to
+   1080p (the 720p working copy is too small for a screw). On two sharp frames of the step's end
+   (start, when taking apart) SAM 3.1 searches every fastener word the step names on the whole
+   frame and on four overlapping enlarged quarters. Weak and oversized boxes are dropped.
+2. **Follow (SAM 3.1 video, zoomed).** Every candidate is followed through the whole step clip
+   (at most 120 frames, 2–10 fps), on a copy cropped and enlarged around the work area: small
+   objects are tracked far better when they are bigger.
+3. **Decide (votes over time).** A candidate stays only if it is seen in at least half the frames
+   of its end of the step and in at least half more of them than at the other end: put in when
+   building, taken out when taking apart. Two tracks on one fastener are merged.
+4. **Choose (set-of-mark prompting, several views).** Muse Spark sees each remaining candidate
+   numbered, on up to three frames of the video (one image per candidate), and answers which
+   numbers really are that fastener. It never gives coordinates. Never more than the analysis
+   counted.
 A fastener the video does not clearly show is never invented; the step keeps the analysis count and
-says how many were seen. Each kept fastener gets a numbered marker S1, S2, … drawn on the frame it
-was chosen on; the motion stage draws the same tracks on its clip. Reassembly uses the ledger in
-reverse. The method is measured with `python -m eval.video_score` against fastener positions marked
-by hand on frames of a real video (`eval/video_key.json`).
+says how many were seen, and the guide warns when the video is below 1080p. Each kept fastener gets a
+numbered marker S1, S2, … drawn on the frame of its end that shows the most of them; the motion
+stage draws the same tracks on its clip. Reassembly uses the ledger in reverse. The method is
+measured with `python -m eval.video_score` against fastener positions marked by hand on frames of
+a real video (`eval/video_key.json`).
 
 ## 4. Keyframe v2
 Candidates = top 5 sharpest frames in the window. Rerank with SAM: prefer the frame where the target

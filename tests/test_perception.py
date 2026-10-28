@@ -19,6 +19,12 @@ W, H = 320, 240
 SPOTS = [(60, 60, 70, 70), (200, 60, 210, 70), (60, 160, 70, 170)]  # fasteners, video pixels
 
 
+@pytest.fixture(autouse=True)
+def whole_frame(monkeypatch):
+    """Track on the whole clip: the fake SAM video below knows fasteners by their place."""
+    monkeypatch.setattr(fasteners, "MIN_AREA", 1.0)
+
+
 def _det(box, confidence=0.9):
     return SimpleNamespace(box=box, confidence=confidence)
 
@@ -54,7 +60,7 @@ class FakeMeta:
 
     def segment_video(self, clip, boxes=(), size=None):
         self._count("follow")
-        count = len(fasteners.read_frames(clip))
+        count = fasteners.frame_count(clip)
         return [
             SimpleNamespace(
                 frame=i,
@@ -147,6 +153,19 @@ def test_taking_apart_keeps_the_fasteners_that_disappear(tmp_path):
     client = FakeMeta(present=lambda oid, f, c: oid != 1 or f < c // 2)
     step = perception.run(tmp_path, settings, client=client).steps[0]
     assert len(step.removed) == 1
+
+
+class CheckingMeta(FakeMeta):
+    def respond(self, **kwargs):
+        content = kwargs["input"][0]["content"]
+        tiles = [{"n": n, "real": n != 2, "why": "t"} for n in range(1, len(content))]
+        return SimpleNamespace(output_text=json.dumps({"tiles": tiles}))
+
+
+def test_spark_drops_a_followed_candidate_that_is_not_a_fastener(tmp_path):
+    settings = _job(tmp_path, [_step(1, 0.0, 4.0, screws=3)], task="assemble")
+    step = perception.run(tmp_path, settings, client=CheckingMeta()).steps[0]
+    assert len(step.removed) == 2
 
 
 def test_never_more_fasteners_than_the_analysis_counted(tmp_path):

@@ -2,13 +2,16 @@
 
 One method, used by the perception stage (guides) and the step check (user photos):
 
-1. PROPOSE: SAM 3.1 looks for the fastener word on the whole frame and on four overlapping,
-   enlarged quarters of it (sliced inference, so a few-pixel screw becomes visible).
-2. CHOOSE: Muse Spark never gives coordinates. It sees every candidate numbered on a zoomed
-   contact sheet and only says which numbers really are that fastener (set-of-mark prompting).
-3. FOLLOW: SAM 3.1 video follows each chosen fastener through the whole step clip.
-4. DECIDE: a fastener counts only if the track sees it steadily where it was chosen, and it was
-   absent at the other end of the step (put in when building, taken out when taking apart).
+1. PROPOSE: SAM 3.1 looks for each fastener word on the whole frame and on four overlapping,
+   enlarged quarters of it (sliced inference, so a few-pixel screw becomes visible), on two
+   frames of the step's end (its start, when taking apart).
+2. FOLLOW: SAM 3.1 video follows every candidate through the step, on a clip cropped and
+   enlarged around the work area (small objects are tracked far better when bigger).
+3. DECIDE: a candidate stays only if the track sees it steadily at its end of the step and
+   clearly less at the other end (put in when building, taken out when taking apart).
+4. CHOOSE: Muse Spark never gives coordinates. It sees each remaining candidate numbered, on
+   up to three frames of the video, and says which numbers really are that fastener
+   (set-of-mark prompting, several views per candidate).
 
 A fastener that is not clearly visible is never invented: the count then comes from the
 analysis alone and the guide says so.
@@ -26,7 +29,7 @@ import numpy as np
 from app import artifacts
 from app.domains import profile_for
 from app.pipeline.ingest import run_ffmpeg
-from app.pipeline.verify import MAX_TILES, confirm
+from app.pipeline.verify import MAX_TILES, confirm_tracks
 from app.schemas import Identity, Step
 from app.text import ARTICLES
 
@@ -43,7 +46,11 @@ SAME = 0.5  # boxes overlapping more than this (IoU) are the same fastener...
 INSIDE = 0.6  # ...and so are boxes when this share of the smaller one lies in the other
 STEADY = 0.5  # seen in at least half the frames of its end of the step
 CHANGE = 0.5  # and in at least half more of them than at the other end (it really changed)
+SCALE_1080 = "scale=w='if(gt(iw,ih),-2,min(1080,iw))':h='if(gt(iw,ih),min(1080,ih),-2)'"
 ZOOM_SIDE = 1280  # every region is enlarged to this long side before SAM looks at it
+MIN_AREA = 0.5  # the tracked work area is at least half the frame on each side...
+AREA_MARGIN = 0.15  # ...and the candidates plus this share of the frame around them
+VIEWS = 3  # frames of each candidate Spark sees
 MAX_TRACKED = 16  # SAM video follows at most 16 prompted objects
 FASTENER_WORDS = ("screw", "bolt", "nut", "dowel", "pin", "washer", "clip", "rivet", "peg", "stud")
 
@@ -245,38 +252,7 @@ def _inside(box: Box, area: Box) -> bool:
     return area[0] <= cx <= area[2] and area[1] <= cy <= area[3]
 
 
-# 2. CHOOSE ----------------------------------------------------------------------------------
-
-
-def choose(
-    client: Any,
-    model: str,
-    image: np.ndarray,
-    candidates: list[tuple[float, Box]],
-    fastener: str,
-    context: str,
-) -> list[tuple[float, Box]]:
-    """Spark picks, by number, the candidates that really are ``fastener``."""
-    if not candidates or not model or not hasattr(client, "respond"):
-        return candidates
-    height, width = image.shape[:2]
-    marks = [
-        {
-            "label": fastener,
-            "cut_box": [
-                round(box[0] * 1000 / width),
-                round(box[1] * 1000 / height),
-                round(box[2] * 1000 / width),
-                round(box[3] * 1000 / height),
-            ],
-        }
-        for _, box in candidates
-    ]
-    checked = confirm(client, model, image, marks, context)
-    return [item for item, mark in zip(candidates, checked, strict=True) if mark["checked"]]
-
-
-# 3. FOLLOW ----------------------------------------------------------------------------------
+# 2. FOLLOW ----------------------------------------------------------------------------------
 
 
 def clip_fps(length_s: float) -> float:
@@ -286,30 +262,52 @@ def clip_fps(length_s: float) -> float:
     return float(min(MAX_FPS, max(MIN_FPS, CLIP_FRAMES / length_s)))
 
 
-def cut_step_clip(video: Path, start_s: float, end_s: float, fps: float, dst: Path) -> None:
-    """The whole step at ``fps``, full size: the exact frames SAM sees and we draw on."""
+def cut_step_clip(
+    video: Path, start_s: float, end_s: float, fps: float, dst: Path, prefilter: str = ""
+) -> None:
+    """The whole step at ``fps``, up to 1080p: the exact frames SAM sees and we draw on.
+
+    ``video`` should be the original upload (the working copy is only 720p, too little for a
+    small screw); ``prefilter`` is its colour conversion, if any.
+    """
+    chain = ",".join(part for part in (prefilter, f"fps={fps:g}", SCALE_1080) if part)
     with artifacts.atomic_path(dst) as tmp:
         run_ffmpeg(
             ["ffmpeg", "-y", "-v", "error", "-ss", f"{start_s:.3f}", "-to", f"{end_s:.3f}",
-             "-i", str(video), "-an", "-vf", f"fps={fps:g}",
+             "-i", str(video), "-an", "-vf", chain,
              "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p",
              str(tmp)]
         )  # fmt: skip
 
 
-def read_frames(path: Path) -> list[np.ndarray]:
+def read_window(path: Path, first: int, last: int) -> dict[int, np.ndarray]:
+    """The clip's frames in [first, last); only those stay in memory."""
     capture = cv2.VideoCapture(str(path))
-    frames = []
+    kept: dict[int, np.ndarray] = {}
+    index = 0
     while True:
         ok, frame = capture.read()
         if not ok:
             break
-        frames.append(frame)
+        if first <= index < last:
+            kept[index] = frame
+        index += 1
+        if index >= last:
+            break
     capture.release()
-    return frames
+    return kept
 
 
-def sharpest(frames: list[np.ndarray], first: int, last: int) -> int:
+def frame_count(path: Path) -> int:
+    capture = cv2.VideoCapture(str(path))
+    count = 0
+    while capture.grab():
+        count += 1
+    capture.release()
+    return count
+
+
+def sharpest(frames: Any, first: int, last: int) -> int:
     """The least blurry frame in [first, last)."""
     best, best_score = first, -1.0
     for index in range(first, max(first + 1, last)):
@@ -320,29 +318,75 @@ def sharpest(frames: list[np.ndarray], first: int, last: int) -> int:
     return best
 
 
+def work_area(boxes: list[Box], width: int, height: int) -> tuple[int, int, int, int]:
+    """The region to track: around all candidates, at least MIN_AREA of the frame per side."""
+    x1, y1 = min(b[0] for b in boxes), min(b[1] for b in boxes)
+    x2, y2 = max(b[2] for b in boxes), max(b[3] for b in boxes)
+    w = min(width, max(x2 - x1 + 2 * AREA_MARGIN * width, MIN_AREA * width))
+    h = min(height, max(y2 - y1 + 2 * AREA_MARGIN * height, MIN_AREA * height))
+    w, h = int(w) // 2 * 2, int(h) // 2 * 2  # even sides for the video encoder
+    left = int(min(max((x1 + x2) / 2 - w / 2, 0), width - w))
+    top = int(min(max((y1 + y2) / 2 - h / 2, 0), height - h))
+    return left, top, left + w, top + h
+
+
+def cut_zoom(clip: Path, area: tuple[int, int, int, int], dst: Path) -> float:
+    """The clip cropped to ``area`` and enlarged to ZOOM_SIDE; returns the enlargement."""
+    x1, y1, x2, y2 = area
+    scale = max(1.0, ZOOM_SIDE / max(x2 - x1, y2 - y1))
+    w, h = int((x2 - x1) * scale) // 2 * 2, int((y2 - y1) * scale) // 2 * 2
+    with artifacts.atomic_path(dst) as tmp:
+        run_ffmpeg(
+            ["ffmpeg", "-y", "-v", "error", "-i", str(clip),
+             "-vf", f"crop={x2 - x1}:{y2 - y1}:{x1}:{y1},scale={w}:{h}:flags=bicubic",
+             "-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p",
+             str(tmp)]
+        )  # fmt: skip
+    return (w / (x2 - x1) + h / (y2 - y1)) / 2
+
+
 def follow(
-    client: Any, clip: Path, size: tuple[int, int], seeds: list[tuple[int, Box]]
+    client: Any,
+    clip: Path,
+    size: tuple[int, int],
+    seeds: list[tuple[int, Box]],
+    area: tuple[int, int, int, int] | None = None,
+    scale: float = 1.0,
 ) -> dict[int, dict[int, Box]]:
-    """SAM video follows each (frame, box) from its frame: frame -> id -> box (clip pixels)."""
+    """SAM video follows each (frame, box) from its frame: frame -> id -> box (clip pixels).
+
+    With ``area``, ``clip`` is the step clip cropped to it and enlarged by ``scale``: the
+    prompts are moved into the zoomed clip and the answers moved back.
+    """
+    ox, oy = (area[0], area[1]) if area else (0, 0)
+    zoomed = (round(size[0] * scale), round(size[1] * scale))
+    if area:
+        zoomed = (round((area[2] - area[0]) * scale), round((area[3] - area[1]) * scale))
     prompts = [
-        (oid, frame, tuple(int(round(v)) for v in box))
+        (oid, frame, tuple(int(round(v)) for v in ((box[0] - ox) * scale, (box[1] - oy) * scale,
+                                                    (box[2] - ox) * scale, (box[3] - oy) * scale)))
         for oid, (frame, box) in enumerate(seeds, start=1)
-    ]
-    tracks = client.segment_video(clip, boxes=prompts, size=size)
+    ]  # fmt: skip
+    tracks = client.segment_video(clip, boxes=prompts, size=zoomed)
     limit = MAX_SIDE * max(size)
     frames: dict[int, dict[int, Box]] = {}
     for frame in tracks:
-        sx = size[0] / frame.width if frame.width else 1.0
-        sy = size[1] / frame.height if frame.height else 1.0
+        sx = zoomed[0] / frame.width if frame.width else 1.0
+        sy = zoomed[1] / frame.height if frame.height else 1.0
         for obj in frame.objects:
             x1, y1, x2, y2 = obj.box
-            box = (x1 * sx, y1 * sy, x2 * sx, y2 * sy)
+            box = (
+                ox + x1 * sx / scale,
+                oy + y1 * sy / scale,
+                ox + x2 * sx / scale,
+                oy + y2 * sy / scale,
+            )
             if 0 < box[2] - box[0] <= limit and 0 < box[3] - box[1] <= limit:
                 frames.setdefault(frame.frame, {})[obj.object_id] = box
     return frames
 
 
-# 4. DECIDE ----------------------------------------------------------------------------------
+# 3. DECIDE ----------------------------------------------------------------------------------
 
 
 def decide(
@@ -407,6 +451,7 @@ def find_in_step(
     adding: bool,
     work: Path,
     duration_s: float,
+    prefilter: str = "",
 ) -> tuple[Found, np.ndarray] | None:
     """Run the four stages on one step. Returns what was kept and the seed frame, or None."""
     end_s = min(step.end_s, duration_s) if duration_s else step.end_s
@@ -415,41 +460,47 @@ def find_in_step(
     fps = clip_fps(end_s - step.start_s)
     work.mkdir(parents=True, exist_ok=True)
     clip = work / "clip.mp4"
-    cut_step_clip(video, step.start_s, end_s, fps, clip)
-    frames = read_frames(clip)
-    if len(frames) < 3:
+    cut_step_clip(video, step.start_s, end_s, fps, clip, prefilter)
+    count = frame_count(clip)
+    if count < 3:
         return None
-    height, width = frames[0].shape[:2]
-    count = len(frames)
     window = max(1, round(count * SEED_SHARE))
+    # only the frames of the step's end are kept in memory (start, when taking apart)
+    frames = read_window(clip, count - window, count) if adding else read_window(clip, 0, window)
+    height, width = next(iter(frames.values())).shape[:2]
     last = max(1, round(count * LAST_SHARE))
     if adding:  # the finished state: the end of the step, and its very last frames
         seeds = [sharpest(frames, count - window, count), sharpest(frames, count - last, count)]
     else:
         seeds = [sharpest(frames, 0, window), sharpest(frames, 0, last)]
     seeds = sorted(set(seeds))
-    chosen: list[tuple[float, int, Box]] = []  # confidence, frame, box
+    proposed: list[tuple[float, int, Box, str]] = []  # confidence, frame, box, kind
     for n, (seed, kind) in enumerate((seed, kind) for seed in seeds for kind in kinds):
         (work / f"try{n}").mkdir(exist_ok=True)
-        candidates = propose(client, frames[seed], kind, work / f"try{n}")
-        candidates = [
-            c for c in candidates if not any(same(c[1], b) for _, f, b in chosen if f == seed)
-        ]
-        for confidence, box in choose(client, model, frames[seed], candidates, kind, context):
-            chosen.append((confidence, seed, box))
+        for confidence, box in propose(client, frames[seed], kind, work / f"try{n}"):
+            if not any(same(box, b) for _, f, b, _ in proposed if f == seed):
+                proposed.append((confidence, seed, box, kind))
     found = Found(fps=fps, start_s=step.start_s, size=(width, height), seed=seeds[-1])
-    if not chosen:
+    if not proposed:
         return found, frames[found.seed]
-    chosen = sorted(chosen, key=lambda item: -item[0])[:MAX_TRACKED]
-    found.frames = follow(client, clip, (width, height), [(f, box) for _, f, box in chosen])
-    ids = unique(found.frames, list(range(1, len(chosen) + 1)))
-    kept = decide(found.frames, ids, count, adding)
+    proposed = sorted(proposed, key=lambda item: -item[0])[:MAX_TRACKED]
+    area = work_area([box for _, _, box, _ in proposed], width, height)
+    if area == (0, 0, width, height):
+        found.frames = follow(client, clip, (width, height), [(f, b) for _, f, b, _ in proposed])
+    else:
+        scale = cut_zoom(clip, area, work / "zoom.mp4")
+        found.frames = follow(
+            client, work / "zoom.mp4", (width, height),
+            [(f, b) for _, f, b, _ in proposed], area, scale,
+        )  # fmt: skip
+    for oid, (_, frame, box, _) in enumerate(proposed, start=1):  # exactly where it was found
+        found.frames.setdefault(frame, {})[oid] = box
+    ids = unique(found.frames, list(range(1, len(proposed) + 1)))
+    steady = decide(found.frames, ids, count, adding)
+    here = range(count - window, count) if adding else range(0, window)
+    kept = choose_tracks(client, model, frames, found.frames, steady, here, proposed, context)
     if step.screws and step.screws.count:  # never more than the analysis counted
         kept = kept[: step.screws.count]  # ids are in confidence order
-    for oid in kept:  # each one exactly where it was chosen, on its own frame
-        _, frame, box = chosen[oid - 1]
-        found.frames.setdefault(frame, {})[oid] = box
-    here = range(count - window, count) if adding else range(0, window)
     found.seed = max(  # drawn on the frame of its end that shows the most of them
         here, key=lambda i: (sum(oid in found.frames.get(i, {}) for oid in kept), i in seeds)
     )
@@ -459,5 +510,36 @@ def find_in_step(
         if oid in found.frames.get(found.seed, {})
     }
     found.kept = reading_order(at_seed, height)
-    found.confidence = {oid: round(chosen[oid - 1][0], 2) for oid in found.kept}
+    found.confidence = {oid: round(proposed[oid - 1][0], 2) for oid in found.kept}
     return found, frames[found.seed]
+
+
+# 4. CHOOSE ----------------------------------------------------------------------------------
+
+
+def choose_tracks(
+    client: Any,
+    model: str,
+    frames: dict[int, np.ndarray],
+    tracks: dict[int, dict[int, Box]],
+    ids: list[int],
+    here: range,
+    proposed: list[tuple[float, int, Box, str]],
+    context: str,
+) -> list[int]:
+    """Spark keeps, by number, the followed candidates that really are fasteners (VIEWS views)."""
+    if not ids or not model or not hasattr(client, "respond"):
+        return ids
+    marks = []
+    for oid in ids:
+        seen = [i for i in here if oid in tracks.get(i, {})]
+        picks = [seen[round(k * (len(seen) - 1) / max(1, VIEWS - 1))] for k in range(VIEWS)]
+        views = []
+        for index in dict.fromkeys(picks):
+            image = frames[index]
+            h, w = image.shape[:2]
+            x1, y1, x2, y2 = tracks[index][oid]
+            views.append((image, [x1 * 1000 / w, y1 * 1000 / h, x2 * 1000 / w, y2 * 1000 / h]))
+        marks.append({"label": proposed[oid - 1][3], "views": views})
+    checked = confirm_tracks(client, model, marks, context)
+    return [oid for oid, mark in zip(ids, checked, strict=True) if mark["checked"]]

@@ -200,3 +200,20 @@ def test_unverified_note_names_the_fastener_kind():
     assert unverified_note("bolt").startswith("The bolts count comes from the video analysis")
     assert unverified_note("glass").startswith("The glasses count")
     assert UNVERIFIED_SCREWS == unverified_note("screw")
+
+
+def test_filming_note_only_for_small_videos_with_fasteners():
+    from app.pipeline.publish import filming_note
+    from app.schemas import IngestInfo, ScrewMap, SourceVideo, Step
+
+    def ingest(width, height):
+        source = SourceVideo(filename="original.mp4", width=width, height=height, duration_s=60)
+        return IngestInfo.model_construct(source=source)
+
+    screws = [Step(index=1, title="t", instruction="i", start_s=0, end_s=1,
+                   screws=ScrewMap(count=2))]  # fmt: skip
+    plain = [Step(index=1, title="t", instruction="i", start_s=0, end_s=1)]
+    assert "720p" in filming_note(ingest(1280, 720), screws)
+    assert filming_note(ingest(1920, 1080), screws) is None
+    assert filming_note(ingest(1280, 720), plain) is None
+    assert filming_note(None, screws) is None
