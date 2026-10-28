@@ -30,7 +30,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "web" / "static" / "photos"
 CHECK_PROMPT = ROOT / "prompts" / "check_marks_v1.md"
 
-MIN_CONFIDENCE = 0.3
+MIN_CONFIDENCE = 0.15  # weaker cut-outs still go to the check, which sees their exact shape
 SMALL_PART = 100  # boxes narrower than this (0..1000 grid) are found again on a close-up
 MIN_FILL = 0.2
 TILE = 300
@@ -236,7 +236,9 @@ def contact_sheet(image: np.ndarray, marks: list[dict]) -> np.ndarray:
         bx1, by1, bx2, by2 = mark["cut_box"]
         x1, y1 = bx1 * width / 1000, by1 * height / 1000
         x2, y2 = bx2 * width / 1000, by2 * height / 1000
-        side = min(max(x2 - x1, y2 - y1, 0.02 * min(width, height)) * 3, max(width, height) * 1.4)
+        size = max(x2 - x1, y2 - y1, 0.02 * min(width, height))
+        # small parts get room around them; big parts fill the tile so they stay recognisable
+        side = min(max(size * 1.4, min(size * 3, 0.25 * max(width, height))), max(width, height))
         cx, cy = (x1 + x2) / 2 + pad, (y1 + y2) / 2 + pad
         left, top = max(0, int(cx - side / 2)), max(0, int(cy - side / 2))
         crop = padded[top : top + int(side), left : left + int(side)]
@@ -312,6 +314,15 @@ def confirm(
     return marks
 
 
+def padded(box: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
+    """A small grounded box with a margin: Spark is often half a part off on tiny parts."""
+    x1, y1, x2, y2 = box
+    if max(x2 - x1, y2 - y1) >= SMALL_PART // 2:
+        return box
+    mx, my = max(6, (x2 - x1) // 2), max(6, (y2 - y1) // 2)
+    return (max(0, x1 - mx), max(0, y1 - my), min(1000, x2 + mx), min(1000, y2 + my))
+
+
 def cut(
     client: MetaClient,
     image_path: Path,
@@ -342,7 +353,7 @@ def cut(
     boxes = client.ground(image_path, query, context=context, max_boxes=max_boxes)
     if not boxes:
         return marks, dropped
-    detections, sent = client.segment_boxes(image_path, [b.box for b in boxes])
+    detections, sent = client.segment_boxes(image_path, [padded(b.box) for b in boxes])
     by_index = {int(d.object_id) - 1: d for d in detections if d.object_id.isdigit()}
     for index, ground_box in enumerate(boxes):
         detection = by_index.get(index)
@@ -498,6 +509,74 @@ def count(client: MetaClient, model: str, photo: Path, query: str, context: str)
         return 0
 
 
+def concept_of(query: str) -> str:
+    """The short noun SAM can search by itself: "each screw on the bottom panel" -> "screw"."""
+    words = re.sub(r"^(each|every|all|the)\s+", "", query.strip(), flags=re.I)
+    words = re.split(r"\s+(?:on|in|at|of|from|sticking|with|that|over)\s+|\s*\(", words)[0]
+    words = re.sub(r"[,;+]", " ", words).strip()
+    return "" if words.lower() in {"row", "rows", "set", "group", "pair", "line"} else words
+
+
+def sam_find(
+    client: MetaClient, photo: Path, concept: str, min_fill: float
+) -> tuple[list[dict], list[dict]]:
+    """SAM 3.1 looks for ``concept`` by itself on four enlarged quarters (exact outlines)."""
+    marks: list[dict] = []
+    with tempfile.TemporaryDirectory() as tmp:
+        for n, region in enumerate(QUADRANTS):
+            target = Path(tmp) / f"sam{n}.png"
+            frame = zoom(photo, region, target)
+            image = cv2.imread(str(target))
+            detections, sent = client.segment(target, concept)
+            fx, fy = frame[0], frame[1]
+            sx, sy = (frame[2] - frame[0]) / 1000, (frame[3] - frame[1]) / 1000
+            for detection in detections:
+                mask = full_mask(detection, sent, image.shape)
+                if mask is None or not mask.any() or (detection.confidence or 0) < MIN_CONFIDENCE:
+                    continue
+                points = [[round(fx + x * sx), round(fy + y * sy)] for x, y in outline(mask)]
+                xs, ys = [x for x, _ in points], [y for _, y in points]
+                box = [min(xs), min(ys), max(xs), max(ys)]
+                fill = cv2.contourArea(np.array(points, np.float32)) / max(
+                    1, (box[2] - box[0]) * (box[3] - box[1])
+                )
+                if fill < min_fill:
+                    continue
+                mark = {
+                    "label": concept,
+                    "box": box,
+                    "cut_box": box,
+                    "outline": points,
+                    "confidence": round(detection.confidence or 0, 2),
+                    "zoom": True,
+                }
+                marks = merge(marks, [mark])
+    return marks, []
+
+
+def area(mark: dict) -> int:
+    x1, y1, x2, y2 = mark["cut_box"]
+    return (x2 - x1) * (y2 - y1)
+
+
+def carve(marks: list[dict]) -> list[dict]:
+    """Take a smaller part of another kind out of a bigger cut-out that swallowed it."""
+    for big in marks:
+        for small in marks:
+            if small is big or small["label"] == big["label"]:
+                continue
+            if area(small) >= area(big) or overlap(small["cut_box"], big["cut_box"]) < 0.5:
+                continue
+            canvas = np.zeros((1000, 1000), np.uint8)
+            cv2.fillPoly(canvas, [np.array(big["outline"], np.int32)], 1)
+            cv2.fillPoly(canvas, [np.array(small["outline"], np.int32)], 0)
+            points = outline(canvas.astype(bool))
+            if points:
+                xs, ys = [x for x, _ in points], [y for _, y in points]
+                big["outline"], big["cut_box"] = points, [min(xs), min(ys), max(xs), max(ys)]
+    return marks
+
+
 def merge(marks: list[dict], more: list[dict]) -> list[dict]:
     """Add the marks of ``more`` that are not already in ``marks``."""
     out = list(marks)
@@ -554,6 +633,9 @@ def make(client: MetaClient, model: str, name: str, subject: dict[str, str], fre
                 if len(found) < expected:
                     more, missed = tiled(client, photo, query, subject["context"], min_fill)
                     found, lost = merge(found, more), lost + missed
+                if len(found) < expected and concept_of(query):
+                    more, _ = sam_find(client, photo, concept_of(query), min_fill)
+                    found = merge(found, more)
             marks, dropped = merge(marks, found), dropped + lost
         parent = subject.get("zoom_into", "")
         holder = next((m for m in marks if parent and parent in m["label"].lower()), None)
@@ -568,7 +650,7 @@ def make(client: MetaClient, model: str, name: str, subject: dict[str, str], fre
         marks, dropped = refine(client, photo, marks, dropped, subject["context"])
         checked = confirm(client, model, image, marks, subject["context"])
         dropped += [mark for mark in checked if not mark["checked"]]
-        marks = [mark for mark in checked if mark["checked"]]
+        marks = carve([mark for mark in checked if mark["checked"]])
     data = {
         "name": name,
         "width": width,
