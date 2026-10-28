@@ -1,0 +1,58 @@
+{
+ "name": "coffee",
+ "width": 1600,
+ "height": 1600,
+ "query": "the removed water tank",
+ "refused": false,
+ "dropped": [],
+ "marks": [
+  {
+   "label": "the removed water tank",
+   "box": [
+    140,
+    555,
+    430,
+    843
+   ],
+   "cut_box": [
+    166,
+    550,
+    435,
+    843
+   ],
+   "outline": [
+    [
+     435,
+     581
+    ],
+    [
+     346,
+     550
+    ],
+    [
+     166,
+     578
+    ],
+    [
+     178,
+     807
+    ],
+    [
+     239,
+     843
+    ],
+    [
+     276,
+     841
+    ],
+    [
+     429,
+     807
+    ]
+   ],
+   "confidence": 0.99,
+   "checked": true,
+   "why": "Clear transparent rectangular tank sitting on counter in front of machine, clearly visible inside frame as the removed water tank"
+  }
+ ]
+}

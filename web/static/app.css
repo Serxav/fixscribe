@@ -340,28 +340,19 @@ details.proof[open] summary::after { content: "–"; }
 @keyframes mzRing { 0% { opacity: 0; transform: scale(.3); } 14% { opacity: 1; transform: scale(1.18); } 24%, 80% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1); } }
 .mz-lift { animation: mzLift var(--cycle) var(--ease) infinite; animation-delay: var(--mz-delay, 0s); }
 @keyframes mzLift { 0%, 36% { transform: translateY(0); } 58%, 82% { transform: translateY(-24px); } 100% { transform: translateY(0); } }
-.mz-slide { animation: mzSlide var(--cycle) var(--ease) infinite; animation-delay: calc(var(--mz-delay, 0s) + var(--i, 0) * .2s); }
-@keyframes mzSlide { 0% { transform: translateX(-40px); opacity: 0; } 25%, 85% { transform: none; opacity: 1; } 100% { opacity: 0; } }
 .mz-in { opacity: 1; }
 .in .mz-in, .screen.on .mz-in { animation: mzIn .7s var(--ease) both; animation-delay: calc(.25s + var(--i, 0) * .16s); }
 @keyframes mzIn { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
-.mz-spin { transform-box: fill-box; transform-origin: center; animation: mzSpin 5s linear infinite; }
-@keyframes mzSpin { to { transform: rotate(360deg); } }
-.mz-drip { animation: mzDrip 1.6s ease-in infinite; }
-@keyframes mzDrip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(70px); opacity: 0; } }
-.mz-drift { animation: mzDrift 2.2s ease-in-out infinite alternate; }
-@keyframes mzDrift { to { transform: translate(-6px, 5px); } }
 .mz-glow { animation: mzGlow 2.4s ease-in-out infinite alternate; }
 @keyframes mzGlow { from { opacity: .35; } to { opacity: 1; } }
 .mz-level { transform-box: fill-box; transform-origin: 50% 100%; animation: mzLevel var(--cycle) ease-in-out infinite; }
 @keyframes mzLevel { 50% { transform: scaleY(.35); } }
-.mz-chain { animation: mzChain .8s linear infinite; }
-@keyframes mzChain { to { stroke-dashoffset: -12; } }
-.mz-pro { animation: mzPro 1.8s steps(2, jump-none) infinite; }
-@keyframes mzPro { 50% { opacity: .55; } }
 .mz-grow { transform-box: fill-box; transform-origin: 0 50%; animation: mzGrow 4s var(--ease) infinite; }
 @keyframes mzGrow { 0% { transform: scaleX(.2); } 70%, 100% { transform: scaleX(1); } }
-.mz-detail { opacity: var(--detail, 0); }
+.mz-tile image { image-rendering: auto; }
+.mk-scan, .mk-aim { opacity: 0; }
+.mk-aim { transform-box: view-box; }
+.mk-progress { transform-box: fill-box; transform-origin: 0 50%; }
 @media (prefers-reduced-motion: reduce) {
   .mosaic { height: auto; padding-block: 40px; } .mosaic-stick { position: static; height: auto; }
   .mz-tile *, .screen *, .tile * { animation: none !important; } .js .mosaic-caption { opacity: 1; }

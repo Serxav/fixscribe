@@ -1,0 +1,286 @@
+{
+ "name": "vacuum",
+ "width": 1600,
+ "height": 1600,
+ "query": "the main roller brush and each side brush",
+ "refused": false,
+ "dropped": [],
+ "marks": [
+  {
+   "label": "main roller brush",
+   "box": [
+    215,
+    445,
+    765,
+    532
+   ],
+   "cut_box": [
+    265,
+    444,
+    721,
+    527
+   ],
+   "outline": [
+    [
+     721,
+     504
+    ],
+    [
+     690,
+     460
+    ],
+    [
+     696,
+     449
+    ],
+    [
+     681,
+     444
+    ],
+    [
+     644,
+     446
+    ],
+    [
+     602,
+     461
+    ],
+    [
+     495,
+     446
+    ],
+    [
+     374,
+     459
+    ],
+    [
+     287,
+     449
+    ],
+    [
+     265,
+     484
+    ],
+    [
+     272,
+     523
+    ],
+    [
+     288,
+     527
+    ],
+    [
+     706,
+     524
+    ]
+   ],
+   "confidence": 0.92,
+   "checked": true,
+   "why": "Green frame clearly shows the central cylindrical main roller brush with bristles mounted in the vacuum underside."
+  },
+  {
+   "label": "side brush",
+   "box": [
+    188,
+    552,
+    375,
+    756
+   ],
+   "cut_box": [
+    191,
+    552,
+    391,
+    754
+   ],
+   "outline": [
+    [
+     352,
+     566
+    ],
+    [
+     300,
+     552
+    ],
+    [
+     263,
+     558
+    ],
+    [
+     248,
+     566
+    ],
+    [
+     238,
+     581
+    ],
+    [
+     227,
+     582
+    ],
+    [
+     217,
+     592
+    ],
+    [
+     202,
+     618
+    ],
+    [
+     199,
+     640
+    ],
+    [
+     192,
+     648
+    ],
+    [
+     191,
+     669
+    ],
+    [
+     193,
+     686
+    ],
+    [
+     204,
+     700
+    ],
+    [
+     206,
+     712
+    ],
+    [
+     236,
+     743
+    ],
+    [
+     272,
+     754
+    ],
+    [
+     288,
+     752
+    ],
+    [
+     294,
+     746
+    ],
+    [
+     303,
+     749
+    ],
+    [
+     316,
+     746
+    ],
+    [
+     340,
+     734
+    ],
+    [
+     378,
+     693
+    ],
+    [
+     391,
+     654
+    ],
+    [
+     391,
+     623
+    ],
+    [
+     378,
+     592
+    ]
+   ],
+   "confidence": 0.97,
+   "checked": true,
+   "why": "Green frame clearly shows the left circular radial side brush attached to the vacuum underside."
+  },
+  {
+   "label": "side brush",
+   "box": [
+    613,
+    553,
+    830,
+    754
+   ],
+   "cut_box": [
+    594,
+    555,
+    794,
+    749
+   ],
+   "outline": [
+    [
+     656,
+     558
+    ],
+    [
+     626,
+     573
+    ],
+    [
+     609,
+     592
+    ],
+    [
+     601,
+     609
+    ],
+    [
+     594,
+     642
+    ],
+    [
+     610,
+     694
+    ],
+    [
+     637,
+     722
+    ],
+    [
+     666,
+     742
+    ],
+    [
+     712,
+     749
+    ],
+    [
+     749,
+     738
+    ],
+    [
+     792,
+     686
+    ],
+    [
+     794,
+     668
+    ],
+    [
+     789,
+     624
+    ],
+    [
+     771,
+     592
+    ],
+    [
+     739,
+     566
+    ],
+    [
+     702,
+     555
+    ]
+   ],
+   "confidence": 0.96,
+   "checked": true,
+   "why": "Green frame clearly shows the right circular radial side brush attached to the vacuum underside."
+  }
+ ]
+}

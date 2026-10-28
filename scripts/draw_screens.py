@@ -8,9 +8,8 @@ live coach, film) plus one marked "coming next" (replace a part). Every photo in
 the same opened phone as the mosaic, and every mark sits on its real screws and battery.
 """
 
+import json
 from pathlib import Path
-
-from scripts.draw_mosaic import ORANGE, RED, SCREWS, YELLOW, phone_parts, ring
 
 OUT = Path(__file__).resolve().parents[1] / "web" / "templates" / "art" / "screens.html"
 W, H = 360, 760
@@ -21,7 +20,51 @@ CARD = "#ecebe5"
 GREEN = "#1d7a3a"
 FONT = "Inter Tight, Helvetica, Arial, sans-serif"
 MONO = "JetBrains Mono, ui-monospace, Menlo, monospace"
-BATTERY = (136, 158, 264, 296)  # the battery in the phone drawing's own coordinates
+ORANGE = "#ff5a1f"
+YELLOW = "#ffd60a"
+RED = "#e5202e"
+LINE = "#0b1020"
+
+# The real phone photo (the mosaic's center) and the marks Spark and SAM 3.1 found on it.
+PHOTO = json.loads(
+    (Path(__file__).resolve().parents[1] / "web" / "static" / "photos" / "phone.json").read_text(
+        encoding="utf-8"
+    )
+)
+HREF = "/static/photos/phone.webp"
+# The photo region shown as "the phone": its frame is (109, 16)-(291, 346) in screen units at k=1.
+VIEW = (148, 0, 551, 1000)
+FRAME = (109, 16, 182, 330)
+
+
+def from_photo(gx: float, gy: float) -> tuple[float, float]:
+    """A point on the photo's 0..1000 grid -> the phone frame's own units."""
+    return (
+        FRAME[0] + (gx - VIEW[0]) * FRAME[2] / VIEW[2],
+        FRAME[1] + (gy - VIEW[1]) * FRAME[3] / VIEW[3],
+    )
+
+
+def _marks(word: str) -> list[dict]:
+    return [m for m in PHOTO["marks"] if word in m["label"].lower().split(" on ")[0]]
+
+
+_BATTERY = _marks("battery")[0]
+BATTERY = (*from_photo(*_BATTERY["box"][:2]), *from_photo(*_BATTERY["box"][2:]))
+SCREWS = [
+    from_photo((m["cut_box"][0] + m["cut_box"][2]) / 2, (m["cut_box"][1] + m["cut_box"][3]) / 2)
+    for m in sorted(_marks("screw"), key=lambda m: (m["cut_box"][1] // 25, m["cut_box"][0]))
+]
+_ids = iter(range(1, 1000))
+
+
+def ring(x, y, n, r=11) -> str:
+    """A numbered fastener ring (mz-ring pulses in turn by --i)."""
+    return (
+        f'<g class="mz-ring" style="--i:{n}"><circle cx="{x}" cy="{y}" r="{r}" fill="none" stroke="{YELLOW}" stroke-width="3.5"/>'
+        f'<circle cx="{x + r}" cy="{y - r}" r="9" fill="{YELLOW}"/>'
+        f'<text x="{x + r}" y="{y - r + 4.5}" text-anchor="middle" font-family="{MONO}" font-size="12" fill="{LINE}">{n}</text></g>'
+    )
 
 
 def t(x, y, s, size=15, fill=INK, mono=False, weight=400, anchor="start", opacity=1.0) -> str:
@@ -53,8 +96,25 @@ class Phone:
         return self.x + (px - 109) * self.k, self.y + (py - 16) * self.k
 
     def draw(self, battery_class: str = "") -> str:
+        """The photo of the opened phone; with ``battery_class`` its battery cut-out moves on top."""
         tx, ty = self.x - 109 * self.k, self.y - 16 * self.k
-        return f'<g transform="translate({tx:.1f} {ty:.1f}) scale({self.k})">{phone_parts(battery_class)}</g>'
+        n = next(_ids)
+        x, y, w, h = FRAME
+        view = " ".join(str(v) for v in VIEW)
+        battery = ""
+        if battery_class:
+            points = " ".join(f"{px},{py}" for px, py in _BATTERY["outline"])
+            battery = (
+                f'<clipPath id="bat{n}"><polygon points="{points}"/></clipPath>'
+                f'<g class="{battery_class}"><image href="{HREF}" width="1000" height="1000" clip-path="url(#bat{n})"/>'
+                f'<polygon points="{points}" fill="none" stroke="#fff" stroke-width="1.5" vector-effect="non-scaling-stroke"/></g>'
+            )
+        return (
+            f'<g transform="translate({tx:.1f} {ty:.1f}) scale({self.k})">'
+            f'<clipPath id="ph{n}"><rect x="{x}" y="{y}" width="{w}" height="{h}" rx="22"/></clipPath>'
+            f'<g clip-path="url(#ph{n})"><svg x="{x}" y="{y}" width="{w}" height="{h}" viewBox="{view}" preserveAspectRatio="none">'
+            f'<image href="{HREF}" width="1000" height="1000"/>{battery}</svg></g></g>'
+        )
 
     def battery_box(self, pad: float = 5, tag: str = "1") -> str:
         (x0, y0), (x1, y1) = self.at(BATTERY[0], BATTERY[1]), self.at(BATTERY[2], BATTERY[3])
@@ -94,8 +154,6 @@ def record() -> str:
     )
     phone = Phone(100, 150, 0.88)
     b += '<ellipse cx="180" cy="452" rx="92" ry="10" fill="#000" opacity=".18"/>' + phone.draw()
-    tip_x, tip_y = phone.at(*SCREWS[3])
-    b += f'<g transform="translate({tip_x:.1f} {tip_y:.1f}) rotate(38)"><rect x="-2" y="-96" width="4" height="96" fill="#c9ced6" stroke="{INK}" stroke-width="1"/><rect x="-11" y="-180" width="22" height="88" rx="10" fill="#f2b33d" stroke="{INK}" stroke-width="1.6"/><rect x="-11" y="-150" width="22" height="20" fill="{INK}" opacity=".85"/></g>'
     b += corners(28, 96, 332, 520)
     b += f'<rect x="124" y="56" width="112" height="30" rx="15" fill="{RED}"/><circle class="mz-glow" cx="142" cy="71" r="5" fill="#fff"/>'
     b += t(186, 76, "REC 00:42", 13, "#fff", mono=True, anchor="middle")

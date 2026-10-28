@@ -40,8 +40,63 @@
     }
   }
 
+  var CYCLE = 7000;
+  var play = function (svg, index) {
+    var delay = -((index * 1370) % CYCLE);
+    var loop = { duration: CYCLE, iterations: Infinity, delay: delay, easing: "linear" };
+    svg.querySelectorAll(".mk").forEach(function (mark) {
+      var at = parseFloat(mark.getAttribute("data-at")) || 0.2;
+      mark.animate([
+        { opacity: 0, offset: 0 }, { opacity: 0, offset: at }, { opacity: 1, offset: at + 0.03 },
+        { opacity: 1, offset: 0.88 }, { opacity: 0, offset: 0.95 }, { opacity: 0, offset: 1 }
+      ], loop);
+      var cut = mark.querySelector(".mk-cut");
+      if (cut) cut.animate([
+        { opacity: 0, offset: 0 }, { opacity: 0, offset: Math.min(0.86, at + 0.05) },
+        { opacity: 1, offset: Math.min(0.87, at + 0.1) }, { opacity: 1, offset: 1 }
+      ], loop);
+    });
+    var scan = svg.querySelector(".mk-scan");
+    if (scan) scan.animate([
+      { transform: "translateY(0)", opacity: 1, offset: 0 },
+      { transform: "translateY(1120px)", opacity: 1, offset: 0.2 },
+      { transform: "translateY(1120px)", opacity: 0, offset: 1 }
+    ], { duration: CYCLE, iterations: Infinity, delay: delay, easing: "ease-in-out" });
+    var bar = svg.querySelector(".mk-progress");
+    if (bar) bar.animate([
+      { transform: "scaleX(0)", offset: 0 }, { transform: "scaleX(0)", offset: 0.04 },
+      { transform: "scaleX(1)", offset: 0.86 }, { transform: "scaleX(1)", offset: 1 }
+    ], loop);
+    var head = svg.querySelector(".mk-head");
+    if (head) {
+      var span = head.getAttribute("data-span") + "px";
+      head.animate([
+        { transform: "translateX(0)", offset: 0 }, { transform: "translateX(0)", offset: 0.04 },
+        { transform: "translateX(" + span + ")", offset: 0.86 }, { transform: "translateX(" + span + ")", offset: 1 }
+      ], loop);
+    }
+    var aim = svg.querySelector(".mk-aim");
+    if (!aim) return;
+    var stops = aim.getAttribute("data-stops").split(";").map(function (s) { return s.split(","); });
+    var frames = [{ transform: "translate(500px,500px) scale(1.6)", opacity: 0, offset: 0 },
+      { transform: "translate(500px,500px) scale(1.6)", opacity: 0, offset: 0.16 }];
+    svg.querySelectorAll(".mk").forEach(function (mark, i) {
+      var at = parseFloat(mark.getAttribute("data-at")) || 0.2;
+      var to = "translate(" + stops[i][0] + "px," + stops[i][1] + "px) scale(1)";
+      frames.push({ transform: to, opacity: 1, offset: Math.max(frames[frames.length - 1].offset + 0.001, at - 0.02) });
+      frames.push({ transform: to, opacity: 1, offset: at + 0.01 });
+    });
+    var last = frames[frames.length - 1];
+    frames.push({ transform: last.transform, opacity: 0, offset: Math.min(0.99, last.offset + 0.06) });
+    frames.push({ transform: last.transform, opacity: 0, offset: 1 });
+    aim.animate(frames, { duration: CYCLE, iterations: Infinity, delay: delay, easing: "ease-in-out" });
+  };
+
   var stage = document.querySelector("[data-mosaic-stage]");
   var grid = stage && stage.querySelector("[data-mosaic]");
+  if (grid && !reduce && grid.animate) {
+    Array.prototype.forEach.call(grid.querySelectorAll(".mz-tile svg"), play);
+  }
   if (!grid || reduce) return;
   var stick = stage.querySelector(".mosaic-stick");
   var caption = stage.querySelector(".mosaic-caption");
@@ -76,7 +131,6 @@
     var shrink = ease(clamp((p - 0.1) / 0.4));
     var scale = startScale + (1 - startScale) * shrink;
     art.style.transform = "scale(" + (scale / startScale).toFixed(4) + ")";
-    center.style.setProperty("--detail", clamp(1 - shrink * 2.2).toFixed(2));
     tiles.forEach(function (tile) {
       if (tile === center) return;
       var start = 0.24 + 0.1 * (tile.ring - 1);
