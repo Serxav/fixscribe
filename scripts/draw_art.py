@@ -11,6 +11,9 @@ import json
 import math
 from pathlib import Path
 
+import cv2
+import numpy as np
+
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "web" / "templates" / "art"
 PHOTOS = ROOT / "web" / "static" / "photos"
@@ -89,17 +92,26 @@ def view_for(
     return x, y, w, h
 
 
-def centre(mark: dict) -> tuple[float, float]:
-    """The centre of SAM's cut-out (area centroid of its outline), where a ring belongs."""
-    pts = mark["outline"]
-    pairs = list(zip(pts, pts[1:] + pts[:1], strict=True))
-    area = sum(x1 * y2 - x2 * y1 for (x1, y1), (x2, y2) in pairs) / 2
-    if abs(area) < 1:
+def core(mark: dict) -> tuple[float, float, float]:
+    """The middle of the widest round part of SAM's cut-out, and its radius (0..1000 grid).
+
+    It is the point farthest from the outline, so a ring lands on a motor bell or a screw head
+    and never on a thin leg or arm that the cut-out also took in.
+    """
+    mask = np.zeros((1000, 1000), dtype=np.uint8)
+    cv2.fillPoly(mask, [np.array(mark["outline"], dtype=np.int32)], 1)
+    if not mask.any():
         x1, y1, x2, y2 = mark["cut_box"]
-        return (x1 + x2) / 2, (y1 + y2) / 2
-    cx = sum((x1 + x2) * (x1 * y2 - x2 * y1) for (x1, y1), (x2, y2) in pairs) / (6 * area)
-    cy = sum((y1 + y2) * (x1 * y2 - x2 * y1) for (x1, y1), (x2, y2) in pairs) / (6 * area)
-    return cx, cy
+        return (x1 + x2) / 2, (y1 + y2) / 2, max(4.0, min(x2 - x1, y2 - y1) / 2)
+    distance = cv2.distanceTransform(mask, cv2.DIST_L2, 5)
+    y, x = np.unravel_index(int(np.argmax(distance)), distance.shape)
+    return float(x), float(y), float(distance[y, x])
+
+
+def centre(mark: dict) -> tuple[float, float]:
+    """Where a ring belongs on a part: see ``core``."""
+    x, y, _ = core(mark)
+    return x, y
 
 
 def points(mark: dict) -> str:
@@ -223,17 +235,21 @@ def tile_point() -> str:
     motors = [m for m in marks if "motor" in m["label"].lower()]
     view = view_for(marks, top=0.8, pad=30)
     body = ""
+    boxes = []
     for m in motors:
-        x1, y1, x2, y2 = m["box"]
+        cx, cy, r = core(m)
+        r *= 1.35
+        boxes.append([round(cx - r), round(cy - r), round(cx + r), round(cy + r)])
+    for m, (x1, y1, x2, y2) in zip(motors, boxes, strict=True):
         body += f'<rect class="mz-box" x="{x1}" y="{y1}" width="{x2 - x1}" height="{y2 - y1}" fill="none" stroke="{ORANGE}" stroke-width="3.5" {THIN} pathLength="100"/>'
         cx, cy = centre(m)
         body += f'<path d="M{cx - 10} {cy}h20M{cx} {cy - 10}v20" stroke="{ORANGE}" stroke-width="2.5" {THIN}/>'
     tags = ""
-    for n, m in enumerate(motors, start=1):
-        tx, ty = to_tile(view, m["box"][0], m["box"][1])
+    for n, box in enumerate(boxes, start=1):
+        tx, ty = to_tile(view, box[0], box[1])
         tag, _ = pill(round(tx), round(ty) - 40, str(n), fill=ORANGE, size=15)
         tags += f'<g class="mz-tag">{tag}</g>'
-    x1, y1, x2, y2 = motors[0]["box"]
+    x1, y1, x2, y2 = boxes[0]
     rows = text(84, 868, f"motor  [{x1}, {y1}, {x2}, {y2}]", 23, INK, mono=True)
     rows += text(716, 868, "MUSE SPARK", 14, "#6b6b6b", mono=True, anchor="end")
     rows += text(84, 906, "the round motor bell only, not the leg below it", 18, "#5c5c5c")

@@ -499,7 +499,12 @@ def make(client: MetaClient, model: str, name: str, subject: dict[str, str], fre
         "dropped": dropped,
         "marks": marks,
     }
-    (OUT / f"{name}.json").write_text(json.dumps(data, indent=1), encoding="utf-8")
+    path = OUT / f"{name}.json"
+    if path.exists():
+        kept = json.loads(path.read_text(encoding="utf-8")).get("inventory")
+        if kept:
+            data["inventory"] = kept
+    path.write_text(json.dumps(data, indent=1), encoding="utf-8")
     return data
 
 

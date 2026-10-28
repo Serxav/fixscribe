@@ -280,7 +280,7 @@ def reverse() -> str:
 def check() -> str:
     b = '<rect x="0" y="0" width="360" height="760" fill="#2b2b2b"/>'
     motors = sorted(marks_of("drone", "motor"), key=lambda m: m["cut_box"][0])
-    shot = Shot("drone", 0, 96, 360, 548, motors, pad=60, radius=0)
+    shot = Shot("drone", 0, 130, 360, 420, motors, pad=90, radius=0)
     b += shot.draw()
     for i, mark in enumerate(motors):
         x, y = shot.at(*centre(mark))
