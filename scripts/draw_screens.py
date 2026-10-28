@@ -178,7 +178,7 @@ def recognize() -> str:
         128, 158, "electronics · repair", 13, MUTED, mono=True
     )
     x = 128
-    for chip in ("lithium battery", "propellers"):
+    for chip in ("LiPo battery", "propellers"):
         width = 16 + len(chip) * 7.4
         b += (
             f'<rect x="{x}" y="174" width="{width:.0f}" height="24" rx="12" fill="#fff4e5" stroke="#a35a00" stroke-opacity=".45"/>'
