@@ -438,8 +438,11 @@ def _keyframe_still(
     return _still_at(job_dir, ingest, middle, dst, duration_s)
 
 
-def _make_overlay(job_dir: Path, step: Step, keyframe_path: Path, sp: StepPerception) -> str:
-    image = _read_image(keyframe_path)
+def _make_overlay(
+    job_dir: Path, step: Step, still_path: Path, sp: StepPerception, with_part: bool = True
+) -> str:
+    """Draw on the still the boxes were found on: the keyframe, or the screw still."""
+    image = _read_image(still_path)
     height, width = image.shape[:2]
     longest = max(width, height)
     if longest > 1600:
@@ -451,7 +454,7 @@ def _make_overlay(job_dir: Path, step: Step, keyframe_path: Path, sp: StepPercep
         )
         height, width = image.shape[:2]
     result = image
-    if sp.part is not None:
+    if sp.part is not None and with_part:
         box = sp.part.box
         detection = Detection(
             object_id="part",
@@ -505,6 +508,7 @@ def _process_step(
         sp.part = _pointed_part(client, keyframe_path, concepts[0], context)
     if concepts and sp.part is None:
         sp.notes.append(f"No part found for '{concepts[0]}'.")
+    screws_still: Path | None = None
     if _screw_count(step) > 0:
         roi = roi_of(sp.part)
         name = f"{step.index:02d}"
@@ -544,6 +548,7 @@ def _process_step(
         base, other_side = (after, before) if adding else (before, after)
         base_image = after_for_screws if adding else before_image
         base = checked_fasteners(client, base_image, base, settings.spark_model, context, fastener)
+        screws_still = after_path if adding and not aligned else before_path
         diagonal = math.hypot(key_w, key_h)
         limit = SAME_SCREW * diagonal
         removed: list[tuple[NormBox, float | None]] = []
@@ -580,7 +585,11 @@ def _process_step(
                 f"SAM found {len(records)} {plural(fastener)} {'put in' if adding else 'removed'}, "
                 f"the analysis counted {_screw_count(step)}."
             )
-    sp.overlay = _make_overlay(job_dir, step, keyframe_path, sp)
+    if screws_still is not None and sp.removed:
+        # screw boxes are on the before still (or the after one, when it could not be aligned)
+        sp.overlay = _make_overlay(job_dir, step, screws_still, sp, with_part=False)
+    else:
+        sp.overlay = _make_overlay(job_dir, step, keyframe_path, sp)
     return next_number
 
 
