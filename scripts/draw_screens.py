@@ -11,7 +11,7 @@ from the landing photos, and every mark sits where Muse Spark and SAM 3.1 found 
 import json
 from pathlib import Path
 
-from scripts.draw_art import centre
+from scripts.draw_art import centre, keys
 
 OUT = Path(__file__).resolve().parents[1] / "web" / "templates" / "art" / "screens.html"
 W, H = 360, 760
@@ -301,7 +301,7 @@ def check() -> str:
 
 def live() -> str:
     b = '<rect x="0" y="0" width="360" height="760" fill="#24302b"/>'
-    pegs = marks_of("guitar", "peg")
+    pegs = keys(marks_of("guitar", "peg"))
     shot = Shot("guitar", 0, 96, 360, 400, pegs, pad=40, radius=0)
     b += shot.draw()
     for i, mark in enumerate(pegs, start=1):

@@ -92,14 +92,22 @@ def view_for(
     return x, y, w, h
 
 
-def core(mark: dict) -> tuple[float, float, float]:
+def core(mark: dict, end: str = "") -> tuple[float, float, float]:
     """The middle of the widest round part of SAM's cut-out, and its radius (0..1000 grid).
 
     It is the point farthest from the outline, so a ring lands on a motor bell or a screw head
-    and never on a thin leg or arm that the cut-out also took in.
+    and never on a thin leg or arm that the cut-out also took in. ``end`` ("top" or "bottom")
+    looks only at that third of the part, for parts held by one end such as a tuning peg's key.
     """
     mask = np.zeros((1000, 1000), dtype=np.uint8)
     cv2.fillPoly(mask, [np.array(mark["outline"], dtype=np.int32)], 1)
+    if end:
+        _, y1, _, y2 = mark["cut_box"]
+        third = (y2 - y1) // 3
+        keep = np.zeros_like(mask)
+        rows = slice(y1, y1 + third) if end == "top" else slice(y2 - third, y2 + 1)
+        keep[rows] = mask[rows]
+        mask = keep
     if not mask.any():
         x1, y1, x2, y2 = mark["cut_box"]
         return (x1 + x2) / 2, (y1 + y2) / 2, max(4.0, min(x2 - x1, y2 - y1) / 2)
@@ -110,8 +118,17 @@ def core(mark: dict) -> tuple[float, float, float]:
 
 def centre(mark: dict) -> tuple[float, float]:
     """Where a ring belongs on a part: see ``core``."""
-    x, y, _ = core(mark)
+    x, y, _ = core(mark, mark.get("end", ""))
     return x, y
+
+
+def keys(pegs: list[dict]) -> list[dict]:
+    """Tuning pegs, each marked to ring its key: the end away from the middle of the headstock."""
+    middle = sum((p["cut_box"][1] + p["cut_box"][3]) / 2 for p in pegs) / len(pegs)
+    return [
+        {**p, "end": "top" if (p["cut_box"][1] + p["cut_box"][3]) / 2 < middle else "bottom"}
+        for p in pegs
+    ]
 
 
 def points(mark: dict) -> str:
@@ -313,11 +330,11 @@ def tile_check() -> str:
 
 
 def tile_build() -> str:
-    pegs = marks_of("guitar")
-    view = view_for(pegs, top=0.55, pad=50, place=0.36)
+    pegs = keys(marks_of("guitar"))
+    view = view_for(pegs, top=0.62, pad=40, place=0.32)
     rings = "".join(ring(m, n, 34) for n, m in enumerate(pegs, start=1))
     body = photo("guitar", view, rings, dim=0.15)
-    body += '<rect x="0" y="560" width="800" height="440" fill="url(#buildfade)"/>'
+    body += '<rect x="0" y="690" width="800" height="310" fill="url(#buildfade)"/>'
     body += '<defs><linearGradient id="buildfade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1020" stop-opacity="0"/><stop offset=".45" stop-color="#0b1020" stop-opacity=".92"/></linearGradient></defs>'
     body += text(70, 120, "3", 72, WHITE, weight=500) + text(
         118, 120, "/ 7", 32, WHITE, opacity=0.7

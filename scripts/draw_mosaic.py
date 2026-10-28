@@ -14,7 +14,7 @@ from pathlib import Path
 
 import cv2
 
-from scripts.draw_art import centre
+from scripts.draw_art import centre, keys
 
 ROOT = Path(__file__).resolve().parents[1]
 PHOTOS = ROOT / "web" / "static" / "photos"
@@ -263,6 +263,8 @@ def tile(name: str, title: str, short: str) -> str:
         small = (x2 - x1) * (y2 - y1) < 200_000
         if small and all(overlap(extra["cut_box"], m["cut_box"]) < 0.5 for m in marks):
             marks = marks + [extra]
+    if name == "guitar":
+        marks = keys(marks)
     if name in CROPS:
         marks = [framed(m, CROPS[name]) for m in marks]
     href = f"/static/photos/{name}-s.webp"
