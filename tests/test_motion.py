@@ -10,6 +10,7 @@ import pytest
 from app import artifacts
 from app.config import Settings
 from app.pipeline import motion
+from app.pipeline.fasteners import Found, save_found
 from app.schemas import Motion, Plan, ScrewMap, Step
 
 
@@ -40,18 +41,6 @@ def test_held_mask_fades_over_skipped_frames():
     assert motion.held_mask(track, 10, (4, 4))[1] == 1.0
     assert 0 < motion.held_mask(track, 12, (4, 4))[1] < 1.0
     assert motion.held_mask(track, 10 + motion.HOLD_FRAMES + 1, (4, 4))[1] == 0.0
-
-
-def test_only_fasteners_that_disappear_are_numbered():
-    boxes = {1: (10, 10, 14, 14), 2: (30, 10, 34, 14), 3: (10, 40, 14, 44)}
-    objects = {i: dict(boxes) for i in range(20)}
-    for i in range(8, 20):
-        objects[i].pop(2)  # fastener 2 comes out at frame 8
-    track = motion.Track(masks={}, objects=objects)
-    removed = motion.removed_fasteners(track, 20)
-    assert removed == {2: 7}
-    assert motion.fastener_numbers(track, set(removed)) == {2: 1}
-    assert motion.fastener_numbers(track) == {1: 1, 2: 2, 3: 3}  # reading order
 
 
 def test_render_frame_dims_the_scene_and_keeps_the_part():
@@ -143,14 +132,16 @@ def job(tmp_path):
     return tmp_path
 
 
-def test_run_renders_clips_cutout_and_counts_the_removed_fastener(job):
+def test_run_renders_clips_cutout_and_draws_perception_fasteners(job):
+    # Perception kept fastener 2 (it comes out at 1.0 s); fastener 1 stays in.
+    frames = {i: {1: (10, 10, 20, 20), 2: (40, 10, 50, 20)} for i in range(10)}
+    frames.update({i: {1: (10, 10, 20, 20)} for i in range(10, 23)})
+    found = Found(fps=10, start_s=0.2, size=(320, 240), seed=0, frames=frames, kept=[2])
+    save_found(job, 1, found)
     sam = FakeSam()
     result = motion.run(job, Settings(), client=sam)
-    # Find the part, follow that box; find the fasteners around it, follow those boxes.
-    # Step 2 has no part: skipped.
-    assert sam.calls == [
-        ("find", "back cover"), ("follow", [1]), ("find", "screw"), ("follow", [1, 2])
-    ]  # fmt: skip
+    # Find the part and follow it; the fasteners are not searched again. Step 2 has no part.
+    assert sam.calls == [("find", "back cover"), ("follow", [1])]
     step = result.steps[0]
     assert step.fasteners_tracked == 1  # only the one that came out
     for path in (step.clip, step.clip_reverse, step.cutout):
@@ -221,19 +212,6 @@ def test_add_voice_puts_the_real_sound_of_that_moment_on_the_clip(tmp_path):
     silent = tmp_path / "silent.mp4"
     clip.rename(silent)
     assert motion.add_voice(tmp_path / "nothing.mp4", 0, 1, silent) is False
-
-
-def test_building_counts_the_fasteners_that_appear():
-    objects = {i: {1: (10, 10, 14, 14)} for i in range(20)}
-    for i in range(9, 20):
-        objects[i][2] = (30, 10, 34, 14)  # screwed in at frame 9
-    assert motion.added_fasteners(motion.Track(masks={}, objects=objects)) == {2: 9}
-
-
-def test_lost_tracks_that_grow_to_a_hand_are_dropped():
-    track = motion.Track(masks={}, objects={0: {1: (10, 10, 20, 20), 2: (0, 0, 300, 200)}})
-    kept = motion.drop_lost(track, (720, 1280))
-    assert list(kept.objects[0]) == [1]
 
 
 def test_rings_never_grow_bigger_than_a_fastener_should():

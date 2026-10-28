@@ -12,7 +12,7 @@ video ──────┼─ motion / scene signal (OpenCV) ──► visual c
                                                                               ▼
                         Muse Spark pass 2 (one clip per uncertain step) ─► refined step
                                                                               │
-             SAM 3.1: part mask · screws before/after · hand occlusion ─► screw ledger,
+     SAM 3.1: part mask · fasteners propose→choose→follow→decide ─► fastener ledger,
                                                                          keyframe, overlay
                                                                               │
                         checks ─► Muse Wonder inspector (tools: segment, set_keyframe,
@@ -29,7 +29,7 @@ video ──────┼─ motion / scene signal (OpenCV) ──► visual c
 | Draft steps | Spark pass 1 on the whole video, with voice and visual candidates as hints | `analysis.json` | understands actions and parts |
 | Refined step | Spark pass 2 on a short clip of one step (±2 s) | per-step fields | precise times, screw count, warnings |
 | Part mask | SAM 3.1 concept = target part, on the keyframe | box + mask, overlay image | shows *what* to touch |
-| Screws before/after | SAM 3.1 concept "screw" on a frame just before and just after the step | boxes | counts and locates removed screws |
+| Fasteners | SAM 3.1 sliced search on the step clip, Spark picks by number, SAM video follows | tracks | counts and locates fasteners put in / taken out |
 | Hand occlusion | SAM 3.1 concept "hand" on keyframe candidates | boxes | picks a frame where the part is visible |
 
 ## 2. Boundary fusion (pure logic, `app/pipeline/fusion.py`)
@@ -39,15 +39,25 @@ close. Record `boundary_source` per step and raise or lower confidence:
 `confidence = spark_confidence × agreement`, where agreement is 1.0 when voice and vision agree,
 0.8 with one signal, 0.6 with Spark alone. Steps below 0.5 go to pass 2 and are marked "Check this step".
 
-## 3. Screw ledger (the screw counter and verifier)
-1. For a step with screws, take a frame ~0.5 s **before** it starts and ~0.5 s **after** it ends.
-2. SAM "screw" on both. A screw present before and missing after (no box within 4 % of the frame
-   diagonal) was **removed in this step**. Its box becomes a numbered marker S1, S2, … on the map.
-3. Each removed screw gets an identity: `{id, step, position (normalized), size_class}`; `size_class`
-   comes from the box area relative to the others (short/long screws are a real cause of damage).
-4. Count check: Spark count vs SAM count. Disagreement → check + inspector.
-5. Reassembly uses the ledger in reverse: "Screw S3 (long) goes back at position 3 of the back cover".
-   The UI keeps a **screw tray**: screws land in it when a step is done and leave it when they go back.
+## 3. Fastener ledger (`app/pipeline/fasteners.py`)
+Comparing one frame before and one after a step fails on hand-held video (the camera moves, a hand
+covers the part, the light changes), and asking a language model for coordinates of a few-pixel
+screw gives boxes beside it. The method follows what works in the literature instead:
+1. **Propose (sliced inference, SAHI).** On the sharpest frame of the step's end (start, when taking
+   apart), SAM 3.1 searches the fastener word on the whole frame and on four overlapping enlarged
+   quarters. Weak and oversized boxes are dropped, duplicates merged.
+2. **Choose (set-of-mark prompting).** Muse Spark sees every candidate numbered on a zoomed contact
+   sheet and only answers which numbers really are that fastener. It never gives coordinates.
+3. **Follow (SAM 3.1 video).** Each chosen fastener is followed through the whole step clip
+   (at most 120 frames, 2–10 fps).
+4. **Decide (votes over time).** A fastener counts only if it is seen in at least half the frames of
+   its end of the step and in at most a fifth at the other end: put in when building, taken out
+   when taking apart. Never more than the analysis counted.
+A fastener the video does not clearly show is never invented; the step keeps the analysis count and
+says how many were seen. Each kept fastener gets a numbered marker S1, S2, … drawn on the frame it
+was chosen on; the motion stage draws the same tracks on its clip. Reassembly uses the ledger in
+reverse. The method is measured with `python -m eval.video_score` against fastener positions marked
+by hand on frames of a real video (`eval/video_key.json`).
 
 ## 4. Keyframe v2
 Candidates = top 5 sharpest frames in the window. Rerank with SAM: prefer the frame where the target

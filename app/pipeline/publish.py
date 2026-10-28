@@ -11,7 +11,7 @@ from app import artifacts
 from app.domains import profile_for
 from app.pipeline.analyze import guide_direction
 from app.pipeline.assembly import build_reassembly
-from app.pipeline.perception import step_fastener
+from app.pipeline.fasteners import step_fastener
 from app.schemas import (
     Box,
     Frames,

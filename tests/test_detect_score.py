@@ -39,3 +39,12 @@ def test_summary():
         "perfect": 1,
         "photos": 2,
     }
+
+
+def test_video_score_counts_found_and_false_marks():
+    from eval.video_score import score_step
+
+    answer = {"find": [[50, 50]], "optional": [[200, 200]]}
+    marks = [(40, 40, 60, 60), (195, 195, 205, 205), (500, 500, 510, 510)]
+    assert score_step(marks, answer) == {"expected": 1, "found": 1, "marks": 3, "false": 1}
+    assert score_step([], {"find": []}) == {"expected": 0, "found": 0, "marks": 0, "false": 0}

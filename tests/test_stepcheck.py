@@ -14,8 +14,8 @@ from app.jobs import create_job
 from app.main import app
 from app.meta_client import BudgetExceeded, Detection
 from app.pipeline import stepcheck
-from app.pipeline.perception import AFTER_S
 from app.pipeline.stepcheck import (
+    AFTER_S,
     MAX_CHECKS_PER_JOB,
     MAX_PHOTO_BYTES,
     StepCheckError,
@@ -49,7 +49,7 @@ def _det(box, confidence=0.9):
 
 
 class FakeClient:
-    """Fake SAM: sees a fixed number of fasteners on whatever crop it is sent."""
+    """Fake SAM: sees a fixed number of fasteners on the whole-photo view, none on the quarters."""
 
     def __init__(self, count=0, fail_budget=False):
         self.count = count
@@ -63,6 +63,8 @@ class FakeClient:
         self.calls.append((image_path.name, concept))
         if self.fail_budget:
             raise BudgetExceeded("budget reached")
+        if image_path.name != "region0.png":
+            return [], (width, height)
         boxes = [_det((10.0, 10.0 + 40.0 * i, 34.0, 34.0 + 40.0 * i)) for i in range(self.count)]
         return boxes, (width, height)
 
@@ -133,7 +135,7 @@ def test_done_when_nothing_left(tmp_path, monkeypatch):
     assert result.found == 0
     assert result.boxes == []
     assert result.aligned is True
-    assert result.sam_calls == 1
+    assert result.sam_calls == 5
     assert (tmp_path / "checks" / "step_01_1.json").is_file()
 
     again = check_step(tmp_path, settings, 1, _photo_bytes(), client=fake)
