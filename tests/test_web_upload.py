@@ -160,3 +160,14 @@ def test_job_that_cannot_start_is_marked_failed(tmp_path, monkeypatch):
     assert response.status_code == 500
     (job,) = (tmp_path / "jobs").iterdir()
     assert read_status(job.name, tmp_path / "jobs").state == "failed"
+
+
+def test_privacy_and_terms_pages_are_linked_from_every_page(jobs_tmp, no_start):
+    client = TestClient(app)
+    home = client.get("/").text
+    assert 'href="/privacy"' in home and 'href="/terms"' in home
+    privacy = client.get("/privacy")
+    assert privacy.status_code == 200 and "Meta Model API" in privacy.text
+    assert "Delete" in privacy.text
+    terms = client.get("/terms")
+    assert terms.status_code == 200 and "professional" in terms.text

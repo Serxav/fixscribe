@@ -130,7 +130,9 @@ def shot(index: int, name: str, title: str, task: str) -> str:
             f'<rect x="{lx:.0f}" y="{ly - 14:.0f}" width="{width:.0f}" height="28" rx="14" fill="rgba(10,12,20,.82)"/>'
             f'<text x="{lx + 12:.0f}" y="{ly + 5:.0f}" font-family="{MONO}" font-size="15" fill="#fff">{label}</text></g>'
         )
-    body += '<rect class="lv-scan" x="0" y="-60" width="900" height="60" fill="url(#lvscan)"/>'
+    body += (
+        f'<rect class="lv-scan" x="0" y="-60" width="900" height="60" fill="url(#lvscan{index})"/>'
+    )
     body += f'<g><rect x="24" y="24" width="112" height="34" rx="17" fill="rgba(10,12,20,.75)"/><circle class="mz-glow" cx="46" cy="41" r="6" fill="#ff3b30"/><text x="60" y="47" font-family="{MONO}" font-size="15" fill="#fff">LIVE</text></g>'
     panel = f'<rect x="{SIDE}" width="700" height="900" fill="#0b1020"/>'
     panel += f'<text x="{SIDE + 56}" y="92" font-family="{MONO}" font-size="16" fill="#fff" opacity=".6">MUSE SPARK · SAM 3.1</text>'
@@ -151,7 +153,7 @@ def shot(index: int, name: str, title: str, task: str) -> str:
     return (
         f'<svg class="live-shot{" on" if index == 0 else ""}" data-i="{index}" viewBox="0 0 1600 900" preserveAspectRatio="xMinYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" '
         f'aria-label="Live view of a {title.lower()}: {len(parts)} parts found, named and cut out">'
-        '<defs><linearGradient id="lvscan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fb2ff" stop-opacity="0"/><stop offset="1" stop-color="#0866ff" stop-opacity=".8"/></linearGradient></defs>'
+        f'<defs><linearGradient id="lvscan{index}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fb2ff" stop-opacity="0"/><stop offset="1" stop-color="#0866ff" stop-opacity=".8"/></linearGradient></defs>'
         f"{body}{panel}</svg>"
     )
 

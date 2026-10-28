@@ -19,6 +19,20 @@
     items.forEach(function (el) { seen.observe(el); });
   }
 
+  document.querySelectorAll("[data-delete-job]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      if (!window.confirm("Delete this video, its guide and every file made from it? This cannot be undone.")) return;
+      button.disabled = true;
+      fetch("/api/jobs/" + button.getAttribute("data-delete-job") + "/delete", { method: "POST" })
+        .then(function (response) {
+          if (response.ok) { window.location.href = "/"; return; }
+          button.disabled = false;
+          button.textContent = response.status === 409 ? "Still working — try again when it stops" : "Could not delete — try again";
+        })
+        .catch(function () { button.disabled = false; });
+    });
+  });
+
   var steps = document.querySelectorAll(".story-step");
   var screens = document.querySelectorAll(".device-screen .screen");
   var dots = document.querySelectorAll(".story-dots span");

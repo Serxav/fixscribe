@@ -173,12 +173,6 @@ SUBJECTS: dict[str, dict[str, str]] = {
         "the ribbon cable and the tweezers",
         "context": "A game controller with stick drift being repaired.",
     },
-    "shelf": {
-        "prompt": "Flat-pack bookshelf side panel lying on a living room floor, round metal cam "
-        "locks set in their holes along the edge, wooden dowels and an Allen key next to it.",
-        "query": "each metal cam bolt standing up from the panel",
-        "context": "A flat-pack bookshelf being assembled.",
-    },
     "lamp": {
         "prompt": "Desk lamp on a desk with the bulb removed and lying beside it, the empty bulb "
         "socket clearly visible inside the shade.",

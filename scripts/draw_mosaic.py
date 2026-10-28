@@ -68,8 +68,6 @@ PARTS = [
     ("bracket", "bracket", False),
     ("socket", "bulb socket", False),
     ("lug nut", "lug nut", True),
-    ("cam lock", "cam lock", True),
-    ("cam bolt", "cam bolt", True),
     ("screw", "screw", True),
     ("bolt", "bolt", True),
     ("stud", "stud", True),
@@ -230,6 +228,8 @@ def guide_tile() -> str:
 # A tile may show only part of its photo (left, top, side on the 0..1000 grid), so that every
 # fastener left in view is one the pipeline found.
 CROPS = {"laptop": (150, 360, 640)}
+# Parts the pipeline found only some of on a photo: left out of its tile rather than shown half done.
+PARTIAL = {"table": "leg"}
 
 
 def framed(mark: dict, crop: tuple[int, int, int]) -> dict:
@@ -263,6 +263,8 @@ def tile(name: str, title: str, short: str) -> str:
         small = (x2 - x1) * (y2 - y1) < 200_000
         if small and all(overlap(extra["cut_box"], m["cut_box"]) < 0.5 for m in marks):
             marks = marks + [extra]
+    if name in PARTIAL:
+        marks = [m for m in marks if PARTIAL[name] not in m["label"].lower()]
     if name == "guitar":
         marks = keys(marks)
     if name in CROPS:

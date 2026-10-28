@@ -333,16 +333,12 @@ details.proof[open] summary::after { content: "–"; }
 .mosaic-caption { max-width: 40em; text-align: center; padding-inline: var(--margin); font-size: clamp(20px, 2vw, 30px); }
 .js .mosaic-caption { opacity: 0; }
 
-.mz-scan { animation: mzScan var(--cycle) linear infinite; animation-delay: var(--mz-delay, 0s); }
-@keyframes mzScan { from { transform: translateY(0); } to { transform: translateY(500px); } }
 .mz-box { stroke-dasharray: 100; animation: mzBox var(--cycle) var(--ease) infinite; animation-delay: var(--mz-delay, 0s); }
 @keyframes mzBox { 0% { stroke-dashoffset: 100; opacity: 1; } 35%, 82% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
 .mz-tag { animation: mzTag var(--cycle) infinite; animation-delay: var(--mz-delay, 0s); }
 @keyframes mzTag { 0%, 28% { opacity: 0; } 36%, 82% { opacity: 1; } 100% { opacity: 0; } }
 .mz-ring { transform-box: fill-box; transform-origin: center; animation: mzRing var(--cycle) var(--ease) infinite; animation-delay: calc(var(--mz-delay, 0s) + var(--i, 0) * .22s); }
 @keyframes mzRing { 0% { opacity: 0; transform: scale(.3); } 14% { opacity: 1; transform: scale(1.18); } 24%, 80% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1); } }
-.mz-lift { animation: mzLift var(--cycle) var(--ease) infinite; animation-delay: var(--mz-delay, 0s); }
-@keyframes mzLift { 0%, 36% { transform: translateY(0); } 58%, 82% { transform: translateY(-24px); } 100% { transform: translateY(0); } }
 .mz-in { opacity: 1; }
 .in .mz-in, .screen.on .mz-in { animation: mzIn .7s var(--ease) both; animation-delay: calc(.25s + var(--i, 0) * .16s); }
 @keyframes mzIn { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
@@ -439,7 +435,7 @@ details.proof[open] summary::after { content: "–"; }
 .footer-rows li:last-child a { border-bottom: 1px solid rgba(255,255,255,.12); }
 .footer-rows a:hover { color: #fff; }
 .footer-bottom { display: grid; gap: 24px; margin-top: 72px; color: rgba(255,255,255,.55); }
-@media (min-width: 900px) { .footer-bottom { grid-template-columns: 1fr 1fr 1fr; } }
+@media (min-width: 900px) { .footer-bottom { grid-template-columns: repeat(4, 1fr); } }
 .footer-bottom p { margin: 0; line-height: 1.5; }
 .footer-bottom b { color: #fff; font-weight: 500; }
 
@@ -454,3 +450,19 @@ details.proof[open] summary::after { content: "–"; }
 #job { padding: 24px 0 40px; row-gap: 40px; }
 #job .progress-ring { margin: 6px 0 24px; }
 .repair-top .close { width: auto; height: 44px; padding: 0 16px; font-size: 15px; border-radius: 2px; }
+
+.ready-grid { display: grid; gap: var(--gutter); }
+@media (min-width: 900px) { .ready-grid { grid-template-columns: repeat(3, 1fr); } }
+.ready-card { background: #efeee8; border-radius: var(--r-lg); padding: 28px; }
+.ready-num { margin: 0; font-size: 13px; color: var(--ink-3); }
+.ready-card h3 { margin: 14px 0 0; font-size: 24px; font-weight: 600; letter-spacing: -0.03em; }
+.ready-card ul { margin: 16px 0 0; padding-left: 18px; display: grid; gap: 10px; }
+.ready-card li { font-size: 15.5px; line-height: 1.45; color: var(--ink-2); }
+.ready-start { margin-top: 8px; }
+
+.legal { max-width: 46em; padding: 64px 0 40px; }
+.legal .title { margin: 12px 0 0; font-weight: 500; letter-spacing: -0.03em; }
+.legal h2 { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; margin: 44px 0 10px; }
+.legal p, .legal li { font-size: 17px; line-height: 1.55; color: var(--ink-2); }
+.legal ul { padding-left: 20px; margin: 0; }
+.legal a, .note a, .footer-bottom a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
