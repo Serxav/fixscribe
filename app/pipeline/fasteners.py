@@ -28,6 +28,7 @@ import numpy as np
 
 from app import artifacts
 from app.domains import profile_for
+from app.meta_client import MetaError
 from app.pipeline.ingest import run_ffmpeg
 from app.pipeline.verify import MAX_TILES, confirm_tracks
 from app.schemas import Identity, Step
@@ -556,5 +557,9 @@ def choose_tracks(
             x1, y1, x2, y2 = tracks[index][oid]
             views.append((image, [x1 * 1000 / w, y1 * 1000 / h, x2 * 1000 / w, y2 * 1000 / h]))
         marks.append({"label": proposed[oid - 1][3], "views": views})
-    checked = confirm_tracks(client, model, marks, context)
+    try:
+        checked = confirm_tracks(client, model, marks, context)
+    except MetaError as exc:  # the vote over time already decided them: keep those
+        logger.warning("fastener check failed, keeping the decided tracks: %s", exc)
+        return ids
     return [oid for oid, mark in zip(ids, checked, strict=True) if mark["checked"]]

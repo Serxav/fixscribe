@@ -15,10 +15,10 @@ video ──────┼─ motion / scene signal (OpenCV) ──► visual c
      SAM 3.1: part mask · fasteners propose→choose→follow→decide ─► fastener ledger,
                                                                          keyframe, overlay
                                                                               │
-                        checks ─► Muse Wonder inspector (tools: segment, set_keyframe,
-                                  update_step) only where a check failed
-                                                                              ▼
                                                      guide.json + eval metrics + cost
+                                                                              │
+                        Muse Wonder agent (after the guide: look, point, add_part, add_step,
+                                  ask_person, submit_guide) ─► record, question, sign-off
 ```
 
 ## 1. Signals
@@ -68,10 +68,15 @@ a real video (`eval/video_key.json`).
 Candidates = top 5 sharpest frames in the window. Rerank with SAM: prefer the frame where the target
 part box is large and the hand boxes overlap it least.
 
-## 5. Inspector (Muse Wonder, agentic)
-Runs only on steps that failed a check (max 5 steps, max 6 tool calls each). Tools:
-`segment(step, concept, t)`, `set_keyframe(step, t)`, `update_step(step, fields)`. Every tool call
-is logged in `guide.inspector_log` and shown in the UI as "Verified by the inspector".
+## 5. Agent (Muse Wonder)
+Starts by itself when a guide is finished (`app/pipeline/runner.py` main, unless
+`ENABLE_INSPECTOR=false`), in its own background process, with `AGENT_BUDGET_USD` on top of the
+job's budget. One tool per turn, at most 30 turns: `look` (a frame), `point` (Spark grounding on
+that frame), `add_part` (SAM cuts the part out of the box; refused when the cut-out barely fills
+it), `add_step`, `ask_person` (one question on the exact frame) and `submit_guide`. Code checks
+every tool call; refusals go back to the agent. Every turn is saved (`agent/turns.jsonl`,
+`agent/record.json`) and shown live in the console (`/jobs/<id>/console`); the guide page says
+what the agent is doing and links to it. The person signs off or sends notes back.
 
 ## 6. Cost and latency control
 - Per-job budget (default 1 $) on top of the global budget; a job stops cleanly when it would pass it.

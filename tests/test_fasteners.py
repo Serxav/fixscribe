@@ -225,3 +225,17 @@ def test_step_fasteners_lists_every_kind_the_step_names():
     step = Step(index=1, title="t", instruction="i", start_s=0, end_s=1,
                 removes=["metal washer", "hex nut", "rail", "spring washer"])  # fmt: skip
     assert fasteners.step_fasteners(step, "screw") == ["metal washer", "hex nut"]
+
+
+def test_choose_tracks_keeps_the_decided_ones_when_the_check_fails():
+    from app.meta_client import MetaError
+
+    class Down:
+        def respond(self, **kwargs):
+            raise MetaError("503")
+
+    frames = [np.zeros((100, 100, 3), dtype=np.uint8) for _ in range(10)]
+    tracks = {i: {1: (10, 10, 14, 14)} for i in range(10)}
+    proposed = [(0.9, 9, (10, 10, 14, 14), "screw")]
+    kept = fasteners.choose_tracks(Down(), "m", frames, tracks, [1], range(7, 10), proposed, "c")
+    assert kept == [1]

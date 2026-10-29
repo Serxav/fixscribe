@@ -46,10 +46,18 @@ failure; required stages fail the job. A stage's owned artifact is deleted befor
 | 9 | plan | `plan.json` | no | none | final steps and times; every change logged in checks |
 | 10 | safety | `safety.json` | no | none | rules-only `evaluate` over plan + speech + domain hazards |
 | 11 | frames | `frames.json` | yes | none | sharpest keyframe, step still/clip (`stills/`, `steps/`) |
-| 12 | perception | `perception.json` | yes | sam | part highlight + fastener ledger (propose, choose, follow, decide) and overlay |
-| 13 | proof | `proof.json` | yes | none | every claim graded with its sources |
-| 14 | publish | `guide.json` | no | none | plan + media + perception + reassembly; pro-only redaction |
-| 15 | learn | `profile_suggestions.json` | yes | none | new vocabulary the profile does not know yet |
+| 12 | perception | `perception.json` | yes | sam, spark | part highlight + fastener ledger (propose, follow, decide, Spark check on 3 views; Spark's fastener moment and place from the narration) and overlay |
+| 13 | motion | `motion.json` | yes | sam | SAM 3.1 video tracks the part through each step: lit clip, reverse clip, cut-out |
+| 14 | proof | `proof.json` | yes | none | every claim graded with its sources |
+| 15 | narrate | `narration.json` | yes | spark | the spoken script of the instruction film |
+| 16 | publish | `guide.json` | no | none | plan + media + perception + reassembly; pro-only redaction |
+| 17 | learn | `profile_suggestions.json` | yes | none | new vocabulary the profile does not know yet |
+
+After a guide is finished, the Muse Wonder agent starts in the background (see
+`docs/ALGORITHM.md` §5). While a job runs, the progress page polls `/api/jobs/<id>`, whose
+`story` (`app/progress.py`) carries each finished stage's real findings: the video, what was
+identified, the narration, the steps, the stills and SAM's marks. `?replay=1` replays a finished
+job stage by stage.
 
 Attempt jobs (`attempt_stages()` in `app/pipeline/runner.py`: a user's own repair video vs a reference guide):
 
