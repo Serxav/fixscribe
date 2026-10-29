@@ -154,7 +154,7 @@ def test_overlay_images_match_the_media_rule():
     assert not _MEDIA_RE.fullmatch("../guide.json")
 
 
-def test_guide_page_has_3d_views_proof_and_repair_mode(tmp_path):
+def test_step_views_proof_and_repair_mode(tmp_path):
     from app.routes.guides import step_views
     from app.schemas import Box, Claim, Proof, ScrewMap, StepProof
 
@@ -254,3 +254,16 @@ def test_live_page(jobs_tmp):
     )
     assert f"/guides/{job_id}/live" in TestClient(app).get(f"/guides/{job_id}").text
     assert TestClient(app).get("/guides/nothere/live").status_code == 404
+
+
+def test_guide_page_says_what_the_agent_does(jobs_tmp):
+    from app.agent import record as agent_record
+    from app.agent.record import AgentRecord
+
+    job_id = _write_guide(jobs_tmp, _guide())
+    page = TestClient(app).get(f"/guides/{job_id}").text
+    assert "agent-note" not in page  # the agent never ran
+    agent_record.save_record(jobs_tmp / job_id, AgentRecord(status="needs_input"))
+    page = TestClient(app).get(f"/guides/{job_id}").text
+    assert "Muse Wonder has a question for you" in page
+    assert f'href="/jobs/{job_id}/console"' in page

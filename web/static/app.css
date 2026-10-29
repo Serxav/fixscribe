@@ -580,3 +580,10 @@ mark.cut { background: var(--accent); color: #fff; padding: 0 5px; border-radius
   .run-scan-line, .run-live, .run-shimmer, .run-reveal, .run-tag, .run-found, .run-done-sheet, .run-done-card { animation: none !important; }
   .run-step-media img, .run-bar i { transition: none !important; }
 }
+
+/* guide page: what the Muse Wonder agent is doing */
+.agent-note { display: flex; align-items: center; gap: 10px; margin-top: 18px; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 10px; font-size: 15px; transition: border-color .2s var(--ease); }
+.agent-note:hover { border-color: var(--ink); }
+.agent-note span { flex: 1; min-width: 0; }
+.agent-note b { font-weight: 500; white-space: nowrap; }
+.agent-note.needs_input { border-color: var(--accent); background: var(--accent-soft); }

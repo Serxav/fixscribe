@@ -15,6 +15,7 @@ import logging
 import os
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -244,7 +245,9 @@ def run(
 ) -> AgentRecord:
     """Run the agent until it stops. Always leaves a saved record behind."""
     job_dir = Path(job_dir)
-    client = client or make_client(settings, job_dir)
+    # the agent works after the guide pipeline: it gets its own allowance on top of the job's
+    budget = settings.job_budget_usd + settings.agent_budget_usd
+    client = client or make_client(replace(settings, job_budget_usd=budget), job_dir)
     info = artifacts.load(job_dir, IngestInfo)
     record = rec.load_record(job_dir)
     state = load_state(job_dir) if resume else {}

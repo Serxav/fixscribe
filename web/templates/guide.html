@@ -40,6 +40,9 @@
       <div class="stat"><b>{% if guide.estimated_minutes %}~{{ guide.estimated_minutes }}{% else %}–{% endif %}</b><span>minutes</span></div>
       <div class="stat"><b>{{ guide.difficulty|capitalize }}</b><span>difficulty</span></div>
     </div>
+    {% if agent %}
+    <a class="agent-note {{ agent.status }}" href="/jobs/{{ job_id }}/console"><i class="dot {{ 'running' if agent.status in ('running', 'needs_input') else ('done' if agent.status in ('done', 'awaiting_signoff') else 'skipped') }}"></i><span>{{ agent.text }}</span><b>{{ agent.link }} →</b></a>
+    {% endif %}
     <div class="guide-actions">
       <a class="btn btn-primary" href="/guides/{{ job_id }}/film">Watch the film</a>
       {% if not pro %}<a class="btn btn-glass" href="/guides/{{ job_id }}/live">Live coach</a>{% endif %}
