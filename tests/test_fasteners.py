@@ -210,7 +210,7 @@ def test_clip_fps_fits_a_step_in_the_frame_budget():
 def test_step_fastener_prefers_the_step_s_own_word():
     step = Step(index=1, title="t", instruction="i", start_s=0, end_s=1,
                 removes=["side rail", "Allen bolts"])  # fmt: skip
-    assert fasteners.step_fastener(step, "screw") == "allen bolts"
+    assert fasteners.step_fastener(step, "screw") == "allen bolt"  # singular: "2 allen bolts"
     plain = Step(index=1, title="t", instruction="i", start_s=0, end_s=1, removes=["cover"])
     assert fasteners.step_fastener(plain, "screw") == "screw"
 

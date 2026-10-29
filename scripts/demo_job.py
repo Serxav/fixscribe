@@ -355,6 +355,8 @@ class FakeMeta:
             "repair_identity": IDENTITY,
             "refined_step": unsure,
             "film_narration": NARRATION,
+            # the fastener check: every candidate shown is confirmed
+            "check": {"tiles": [{"n": n, "real": True, "why": "demo"} for n in range(1, 17)]},
         }
         name = kwargs["text"]["format"]["name"]
         if name not in answers:

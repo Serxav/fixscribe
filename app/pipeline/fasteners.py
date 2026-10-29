@@ -32,7 +32,7 @@ from app.meta_client import MetaError
 from app.pipeline.ingest import run_ffmpeg
 from app.pipeline.verify import MAX_TILES, confirm_tracks
 from app.schemas import Identity, Step
-from app.text import ARTICLES
+from app.text import ARTICLES, singular
 
 logger = logging.getLogger(__name__)
 
@@ -162,6 +162,7 @@ def step_fasteners(step: Step, default: str) -> list[str]:
     kinds: list[str] = []
     for name in step.removes or []:
         phrase = clean_phrase(name)
+        phrase = singular(phrase) if phrase else phrase
         if phrase and any(word in phrase.split()[-1] for word in FASTENER_WORDS):
             if phrase not in kinds:
                 kinds.append(phrase)

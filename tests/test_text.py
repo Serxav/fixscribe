@@ -29,3 +29,21 @@ def test_drop_article():
     assert drop_article("The back cover") == "back cover"
     assert drop_article("an o-ring") == "o-ring"
     assert drop_article("theme panel") == "theme panel"
+
+
+@pytest.mark.parametrize(
+    ("noun", "expected"),
+    [
+        ("screws", "screw"),
+        ("bottom screws", "bottom screw"),
+        ("hex nuts", "hex nut"),
+        ("batteries", "battery"),
+        ("boxes", "box"),
+        ("glass", "glass"),
+        ("screw", "screw"),
+    ],
+)
+def test_singular(noun, expected):
+    from app.text import singular
+
+    assert singular(noun) == expected

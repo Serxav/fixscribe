@@ -19,6 +19,21 @@ def plural(noun: str, count: int = 2) -> str:
     return noun + "s"
 
 
+def singular(noun: str) -> str:
+    """'screws' -> 'screw', 'hex nuts' -> 'hex nut', 'batteries' -> 'battery'; 'glass' stays.
+
+    Only the last word changes, so a plural name never gets pluralized twice ('screwses').
+    """
+    head, _, last = noun.rpartition(" ")
+    if last.endswith("ies") and len(last) > 4:
+        last = last[:-3] + "y"
+    elif last.endswith(("ches", "shes", "xes", "sses", "zes")):
+        last = last[:-2]
+    elif last.endswith("s") and not last.endswith(("ss", "us")) and len(last) > 3:
+        last = last[:-1]
+    return f"{head} {last}" if head else last
+
+
 def drop_article(text: str) -> str:
     """Remove one leading 'a', 'an' or 'the'."""
     words = text.split()
