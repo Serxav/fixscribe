@@ -1,25 +1,71 @@
 {% extends "base.html" %}
 {% block title %}Making your guide · FixScribe{% endblock %}
 {% block content %}
-<section id="job" data-job-id="{{ job_id }}" class="grid12" style="margin-top:20px">
-  <div class="col-l">
-    <p class="kicker mono">Job {{ job_id }}</p>
-    <h1 class="title" style="margin-top:8px" id="headline">Making your guide</h1>
-    <p class="lede" style="margin-top:16px" id="stage-label">{{ status.stage or "Starting" }}</p>
-    <p class="muted small" id="state-label">{{ status.state }}</p>
-    <div id="error" class="warn {% if not status.error %}hidden{% endif %}" style="margin-top:12px">{{ status.error or "" }}</div>
-    <div class="stack" style="margin-top:18px">
-      <a id="guide-link" href="/guides/{{ job_id }}" class="btn btn-primary btn-lg btn-block hidden">Open the guide</a>
-      <a id="console-link" href="/jobs/{{ job_id }}/console" class="btn btn-glass btn-lg btn-block">Agent console</a>
-      <button id="resume-button" type="button" class="btn btn-primary btn-lg btn-block hidden">Try again from where it stopped</button>
-      <a id="retry-link" href="/" class="btn btn-glass btn-lg btn-block hidden">Try another video</a>
-      <button type="button" class="btn btn-glass btn-lg btn-block" data-delete-job="{{ job_id }}">Delete this video</button>
+<section id="job" data-job-id="{{ job_id }}" class="run">
+  <header class="run-head">
+    <p class="kicker mono">Job {{ job_id }}<span id="replay-tag" class="hidden"> · replay</span></p>
+    <h1 class="run-title" id="headline">Making your guide</h1>
+    <div class="run-status">
+      <span class="live" id="live"></span>
+      <span id="stage-label">{{ status.stage or "Starting" }}</span>
+      <span class="run-percent mono tabular" id="percent">{{ (status.progress * 100)|round|int }}%</span>
     </div>
+    <div class="run-bar"><i id="bar" style="width: {{ (status.progress * 100)|round|int }}%"></i></div>
+    <div id="error" class="warn {% if not status.error %}hidden{% endif %}" style="margin-top:12px">{{ status.error or "" }}</div>
+  </header>
+
+  <div class="run-grid">
+    <div class="run-main">
+      <figure class="scan" id="scan">
+        <video id="scan-video" muted loop playsinline preload="auto"></video>
+        <div class="scan-empty" id="scan-empty"><span class="mono">Preparing your video</span></div>
+        <i class="scan-line" aria-hidden="true"></i>
+        <i class="scan-corner tl"></i><i class="scan-corner tr"></i><i class="scan-corner bl"></i><i class="scan-corner br"></i>
+        <div class="scan-tags">
+          <span class="tag tag-ident hidden" id="tag-ident"></span>
+          <span class="tag tag-safety hidden" id="tag-safety"></span>
+        </div>
+        <figcaption class="scan-caption mono" id="scan-caption">Waiting</figcaption>
+      </figure>
+
+      <div class="run-timeline" id="timeline" aria-label="Steps on the video timeline">
+        <i class="playhead" id="playhead"></i>
+      </div>
+      <div class="run-timeline-scale mono"><span>0:00</span><span id="duration"></span></div>
+
+      <section class="run-block">
+        <div class="run-block-head"><h2>Steps</h2><span class="muted small" id="steps-note">They appear as FixScribe watches the repair.</span></div>
+        <ol class="step-cards" id="step-cards"></ol>
+      </section>
+    </div>
+
+    <aside class="run-side">
+      <section class="run-block">
+        <div class="run-block-head"><h2>What it heard</h2><span class="muted small" id="heard-note">Muse Voice</span></div>
+        <ol class="heard" id="heard"><li class="heard-empty muted small">Listening…</li></ol>
+      </section>
+      <section class="run-block">
+        <div class="run-block-head"><h2>Pipeline</h2><span class="muted small">Optional stages can fail without stopping your guide.</span></div>
+        <ul class="stages" id="stage-list"><li class="waiting"><i class="dot waiting"></i><span>Loading…</span><span></span></li></ul>
+      </section>
+      <div class="stack" style="margin-top:18px">
+        <a id="guide-link" href="/guides/{{ job_id }}" class="btn btn-primary btn-lg btn-block hidden">Open the guide</a>
+        <button id="resume-button" type="button" class="btn btn-primary btn-lg btn-block hidden">Try again from where it stopped</button>
+        <a id="retry-link" href="/" class="btn btn-glass btn-lg btn-block hidden">Try another video</a>
+        <a id="console-link" href="/jobs/{{ job_id }}/console" class="btn btn-glass btn-lg btn-block">Agent console</a>
+        <button type="button" class="btn btn-glass btn-lg btn-block" data-delete-job="{{ job_id }}">Delete this video</button>
+      </div>
+    </aside>
   </div>
-  <div class="col-r">
-    <div class="progress-ring" id="ring" style="--p: {{ (status.progress * 100)|round|int }}"><b id="percent">{{ (status.progress * 100)|round|int }}%</b></div>
-    <p class="muted small" style="margin:0 0 12px">Optional steps can fail without stopping your guide.</p>
-    <ul class="stages" id="stage-list"><li class="waiting"><i class="dot waiting"></i><span>Loading…</span><span></span></li></ul>
+
+  <div class="done-sheet hidden" id="done" role="dialog" aria-labelledby="done-title">
+    <div class="done-card">
+      <p class="kicker mono">Your guide is ready</p>
+      <h2 class="done-title" id="done-title"></h2>
+      <dl class="done-stats" id="done-stats"></dl>
+      <a href="/guides/{{ job_id }}" class="btn btn-primary btn-lg btn-block" id="done-open">Open the guide</a>
+      <button type="button" class="btn btn-glass btn-block" id="done-stay">Stay on this page</button>
+    </div>
   </div>
 </section>
 <script src="/static/job.js"></script>

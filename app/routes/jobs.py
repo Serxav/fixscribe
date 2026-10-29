@@ -10,6 +10,7 @@ from app.agent import loop as agent_loop
 from app.config import Settings
 from app.jobs import JobStatus, update_status
 from app.pipeline.runner import check_stale, is_running, stage_overview, start_job
+from app.progress import story
 from app.routes.common import job_folder
 from app.routes.upload import settings_dep, templates
 
@@ -28,6 +29,7 @@ def api_job_status(
         return JSONResponse({"detail": "job not found"}, status_code=404)
     data = _status_adapter.dump_python(status)
     data["stages"] = stage_overview(status, settings.jobs_dir / job_id)
+    data["story"] = story(settings.jobs_dir / job_id, job_id)
     return data
 
 
