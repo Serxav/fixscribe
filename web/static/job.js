@@ -65,7 +65,7 @@
     var tag = $("tag-safety");
     tag.textContent = SAFETY[safety.level] || safety.level;
     tag.title = (safety.reasons || []).join(" ");
-    tag.classList.add("safety-" + safety.level);
+    tag.classList.add("run-safety-" + safety.level);
     tag.classList.remove("hidden");
   }
 
@@ -75,14 +75,14 @@
     var list = $("heard");
     if (heard.mode === "silent" || !heard.turns.length) {
       $("heard-note").textContent = "Silent video";
-      list.innerHTML = '<li class="heard-empty muted small">No narration: FixScribe works from the picture alone.</li>';
+      list.innerHTML = '<li class="run-heard-empty muted small">No narration: FixScribe works from the picture alone.</li>';
       shown.turns = -1;
       return;
     }
     if (shown.turns === 0) list.innerHTML = "";
     heard.turns.slice(shown.turns).forEach(function (turn, k) {
       var li = document.createElement("li");
-      li.className = "heard-line reveal";
+      li.className = "run-heard-line run-reveal";
       li.style.animationDelay = k * 90 + "ms";
       li.innerHTML = '<span class="mono t">' + clock(turn.t) + "</span><span>" + markCuts(turn.text) + "</span>";
       list.appendChild(li);
@@ -103,7 +103,7 @@
         if (!segment) {
           segment = document.createElement("button");
           segment.type = "button";
-          segment.className = "segment reveal";
+          segment.className = "run-segment run-reveal";
           segment.style.animationDelay = k * 60 + "ms";
           segment.addEventListener("click", function () { seek(segment.dataset.start); });
           timeline.appendChild(segment);
@@ -119,11 +119,11 @@
       var card = shown.cards[key];
       if (!card) {
         card = document.createElement("li");
-        card.className = "step-card reveal";
+        card.className = "run-step-card run-reveal";
         card.style.animationDelay = k * 70 + "ms";
-        card.innerHTML = '<button type="button" class="step-media"><span class="shimmer"></span></button>' +
-          '<div class="step-text"><span class="mono n"></span><b></b><span class="muted small meta"></span></div>';
-        card.querySelector(".step-media").addEventListener("click", function () { seek(card.dataset.start); });
+        card.innerHTML = '<button type="button" class="run-step-media"><span class="run-shimmer"></span></button>' +
+          '<div class="run-step-text"><span class="mono n"></span><b></b><span class="muted small meta"></span></div>';
+        card.querySelector(".run-step-media").addEventListener("click", function () { seek(card.dataset.start); });
         cards.appendChild(card);
         shown.cards[key] = card;
       }
@@ -139,7 +139,7 @@
   }
 
   function setImage(card, step) {
-    var media = card.querySelector(".step-media");
+    var media = card.querySelector(".run-step-media");
     var src = step.overlay || step.image;
     if (!src || media.dataset.src === src) return;
     var img = new Image();
@@ -149,12 +149,12 @@
       media.appendChild(img);
       requestAnimationFrame(function () { img.classList.add("in"); });
       if (old) setTimeout(function () { old.remove(); }, 600);
-      var shimmer = media.querySelector(".shimmer");
+      var shimmer = media.querySelector(".run-shimmer");
       if (shimmer) shimmer.remove();
       if (step.overlay) {
         card.classList.add("seen");
-        var badge = media.querySelector(".found") || document.createElement("span");
-        badge.className = "found";
+        var badge = media.querySelector(".run-found") || document.createElement("span");
+        badge.className = "run-found";
         badge.textContent = step.found ? step.found + " found by SAM" : step.part ? "Part found" : "Checked";
         if (step.found || step.part) badge.classList.add("hit");
         media.appendChild(badge);
@@ -197,7 +197,7 @@
       : data.state === "failed" ? "Stopped" : running ? running.label + "…" : "Starting…";
     $("stage-label").textContent = label;
     $("scan-caption").textContent = running ? running.label : data.state === "done" ? "Done" : label;
-    $("live").className = "live " + data.state;
+    $("live").className = "run-live " + data.state;
     root.classList.toggle("is-done", data.state === "done");
     $("error").textContent = data.error || "";
     $("error").classList.toggle("hidden", !data.error);
