@@ -3,7 +3,7 @@ import json
 import pytest
 
 from app import artifacts
-from app.jobs import create_job, read_status
+from app.jobs import create_job, read_status, update_status
 from app.pipeline.runner import JobAlreadyRunning, Stage, is_running, job_lock, run_job
 from app.schemas import Manifest
 
@@ -317,3 +317,19 @@ def test_a_stage_that_writes_an_invalid_file_counts_as_failed(tmp_path):
     )
     assert status.warnings[1] == "lazy failed: invalid output: did not write lazy.json"
     assert not (settings.jobs_dir / job_id / "identity.json").exists()  # later stages see "missing"
+
+
+def test_cli_starts_the_agent_after_a_finished_guide(tmp_path, monkeypatch):
+    from app.agent import loop as agent_loop
+    from app.pipeline import runner
+
+    job_id = create_job(tmp_path).job_id
+    started = []
+    monkeypatch.setattr(agent_loop, "launch", lambda folder, resume=False: started.append(folder))
+
+    def finish(job_id, settings, jobs_dir=None, resume=False):
+        return update_status(job_id, jobs_dir, state="done", progress=1.0)
+
+    monkeypatch.setattr(runner, "run_job", finish)
+    assert runner.main([job_id, str(tmp_path)]) == 0
+    assert started == [tmp_path / job_id]

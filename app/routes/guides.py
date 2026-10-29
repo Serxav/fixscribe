@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import FileResponse, HTMLResponse
 
 from app import artifacts
+from app.agent import loop as agent_loop
+from app.agent import record as agent_record
 from app.artifacts import ArtifactError
 from app.config import Settings
 from app.routes.common import job_folder, load_guide
@@ -206,8 +208,33 @@ def guide_page(
             "fasteners_total": f"{total} {plural(kind, total)}" if total else "",
             "proof_percent": round(guide.proof.score * 100) if guide.proof else None,
             "level": guide.safety.level if guide.safety else "normal",
+            "agent": agent_view(folder),
         },
     )
+
+
+AGENT_NOTES = {
+    "running": ("Muse Wonder is checking this guide", "Watch it work"),
+    "needs_input": ("Muse Wonder has a question for you", "Answer it"),
+    "awaiting_signoff": ("Muse Wonder filed its findings", "Review and sign off"),
+    "done": ("Signed off: Muse Wonder checked this guide", "See how"),
+    "paused": ("Muse Wonder stopped before the end", "Open the console"),
+    "failed": ("Muse Wonder stopped before the end", "Open the console"),
+}
+
+
+def agent_view(folder: Path) -> dict | None:
+    """What the guide page says about the agent: one line and a link to its console."""
+    try:
+        status = agent_record.load_record(folder).status
+    except (ArtifactError, ValueError, OSError):
+        return None
+    if agent_loop.is_running(folder):
+        status = "running"
+    note = AGENT_NOTES.get(status)
+    if note is None:
+        return None
+    return {"status": status, "text": note[0], "link": note[1]}
 
 
 @router.get("/guides/{job_id}/film", response_class=HTMLResponse)

@@ -398,6 +398,12 @@ def main(argv: list[str] | None = None) -> int:
         print(exc)
         return 1
     print(f"job {status.job_id}: {status.state}")
+    if status.state == "done" and status.kind == "guide" and settings.enable_inspector:
+        # The Muse Wonder agent investigates the finished guide in its own background process;
+        # the guide page and the console show what it does and any question it asks.
+        from app.agent import loop as agent_loop
+
+        agent_loop.launch(jobs_dir / status.job_id)
     if status.state == "failed":
         print(f"failed at stage '{status.stage}': {status.error}")
         print(f"fix it, then: python -m app.pipeline.runner {status.job_id} --resume")
