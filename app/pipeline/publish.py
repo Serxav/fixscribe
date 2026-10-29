@@ -11,11 +11,13 @@ from app import artifacts
 from app.domains import profile_for
 from app.pipeline.analyze import guide_direction
 from app.pipeline.assembly import build_reassembly
+from app.pipeline.fasteners import step_fastener
 from app.schemas import (
     Box,
     Frames,
     Guide,
     Identity,
+    IngestInfo,
     Motion,
     Narration,
     Perception,
@@ -104,9 +106,16 @@ def with_motion(steps: list[Step], motion: Motion | None) -> list[Step]:
 
 
 def with_kind(steps: list[Step], kind: str) -> list[Step]:
-    """Label every screw map with the domain fastener kind (screws, bolts, ...)."""
+    """Label every fastener map with what the step handles ("pin", "bolt", "dowel"...),
+    else the domain fastener kind (screws, bolts, ...)."""
     return [
-        step.model_copy(update={"screws": step.screws.model_copy(update={"kind": kind})})
+        step.model_copy(
+            update={
+                "screws": step.screws.model_copy(
+                    update={"kind": step_fastener(step, kind).split()[-1]}
+                )
+            }
+        )
         if step.screws
         else step
         for step in steps
@@ -176,6 +185,24 @@ def build_guide(
     )
 
 
+SHARP_SIDE = 1080  # below this short side a few-pixel screw is hard to see
+
+
+def filming_note(ingest: IngestInfo | None, steps: list[Step]) -> str | None:
+    """A plain warning when the video is too small for the fasteners the guide counts."""
+    if ingest is None or ingest.source is None:
+        return None
+    if not any(step.screws and step.screws.count for step in steps):
+        return None
+    short = min(ingest.source.width, ingest.source.height)
+    if short >= SHARP_SIDE:
+        return None
+    return (
+        f"The video is {short}p: small fasteners may not be found. For the best result, film "
+        f"in {SHARP_SIDE}p or more, close to the part, and show each fastener for a second."
+    )
+
+
 def run(job_dir: Path, settings: Any) -> Guide:
     guide = build_guide(
         artifacts.load(job_dir, Plan),
@@ -187,5 +214,8 @@ def run(job_dir: Path, settings: Any) -> Guide:
         artifacts.load_optional(job_dir, Motion),
         artifacts.load_optional(job_dir, Narration),
     )
+    note = filming_note(artifacts.load_optional(job_dir, IngestInfo), guide.steps)
+    if note:
+        guide.checks.append(note)
     artifacts.save(job_dir, guide)
     return guide

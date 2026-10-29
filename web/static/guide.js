@@ -10,6 +10,44 @@
     if (crumb) crumb.classList.toggle("show", window.scrollY > 260);
   }, { passive: true });
 
+  // Tap the step photo: a missing fastener is added (SAM follows the point), a wrong one removed.
+  document.querySelectorAll("img[data-tap-step]").forEach(function (img) {
+    var markers = JSON.parse(img.getAttribute("data-markers") || "[]");
+    var hint = img.parentNode.querySelector("[data-tap-hint]");
+    var busy = false;
+    img.addEventListener("click", function (event) {
+      if (busy || !img.naturalWidth) return;
+      var rect = img.getBoundingClientRect();
+      var scale = Math.min(rect.width / img.naturalWidth, rect.height / img.naturalHeight);
+      var shownW = img.naturalWidth * scale, shownH = img.naturalHeight * scale;
+      var x = (event.clientX - rect.left - (rect.width - shownW) / 2) / shownW;
+      var y = (event.clientY - rect.top - (rect.height - shownH) / 2) / shownH;
+      if (x < 0 || x > 1 || y < 0 || y > 1) return;
+      var hit = markers.filter(function (m) {
+        return x >= m.x - 0.02 && x <= m.x + m.w + 0.02 && y >= m.y - 0.02 && y <= m.y + m.h + 0.02;
+      })[0];
+      var base = "/guides/" + jobId + "/steps/" + img.dataset.tapStep + "/fasteners";
+      var ask = hit ? "Remove marker " + hit.number + "?" : "Add a fastener here? SAM will follow it through the step.";
+      if (!window.confirm(ask)) return;
+      busy = true;
+      if (hint) hint.textContent = hit ? "Removing…" : "SAM is following it…";
+      fetch(hit ? base + "/" + hit.number + "/remove" : base, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: hit ? null : JSON.stringify({ x: x, y: y })
+      }).then(function (response) {
+        return response.json().then(function (data) { return { ok: response.ok, data: data }; });
+      }).then(function (answer) {
+        if (answer.ok) { window.location.reload(); return; }
+        busy = false;
+        if (hint) hint.textContent = answer.data.error || "Could not change the map — try again";
+      }).catch(function () {
+        busy = false;
+        if (hint) hint.textContent = "Could not change the map — try again";
+      });
+    });
+  });
+
   function showView(stage, name) {
     stage.querySelectorAll("[data-view]").forEach(function (b) {
       b.setAttribute("aria-pressed", String(b.dataset.view === name));

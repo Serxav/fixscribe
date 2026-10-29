@@ -8,6 +8,7 @@ uses, and answer "done" / "not_yet" / "unclear". Each answer is saved as
 """
 
 import io
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -19,18 +20,14 @@ from app import artifacts
 from app.artifacts import ArtifactError
 from app.config import Settings
 from app.meta_client import BudgetExceeded, make_client
+from app.pipeline.fasteners import fastener_concept, propose
 from app.pipeline.ingest import IngestError, find_original
 from app.pipeline.media import extract_still
-from app.pipeline.perception import (
-    AFTER_S,
-    align_after_to_before,
-    fastener_concept,
-    fasteners_on_still,
-    roi_of,
-)
-from app.schemas import Guide, IngestInfo, Perception, Step, StepCheck, StepPerception
+from app.pipeline.perception import Counted, roi_of
+from app.schemas import Guide, IngestInfo, NormBox, Perception, Step, StepCheck, StepPerception
 from app.text import plural
 
+AFTER_S = 0.5
 MAX_PHOTO_BYTES = 15 * 1024**2
 MAX_CHECKS_PER_JOB = 20
 
@@ -41,6 +38,56 @@ class StepCheckError(Exception):
 
 class CheckLimitReached(StepCheckError):
     """This job already answered MAX_CHECKS_PER_JOB photos (protects the Meta budget)."""
+
+
+_ALIGN_MAX_SIDE = 1280
+_MIN_INLIERS = 15
+
+
+def _gray_small(image: Any) -> tuple[Any, float]:
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if image.ndim == 3 else image
+    height, width = gray.shape[:2]
+    longest = max(width, height)
+    scale = min(1.0, _ALIGN_MAX_SIDE / longest) if longest > 0 else 1.0
+    if scale >= 1.0:
+        return gray, scale
+    small = cv2.resize(
+        gray,
+        (max(1, int(round(width * scale))), max(1, int(round(height * scale)))),
+        interpolation=cv2.INTER_AREA,
+    )
+    return small, scale
+
+
+def align_after_to_before(before_img: Any, after_img: Any) -> np.ndarray | None:
+    """Similarity transform mapping after-still pixels into before-still pixels.
+
+    Returns the full-size 2x3 matrix, or ``None`` when there are fewer than
+    15 RANSAC inliers (too little texture to trust the alignment).
+    """
+    if before_img is None or after_img is None:
+        return None
+    before_small, before_scale = _gray_small(before_img)
+    after_small, after_scale = _gray_small(after_img)
+    orb = cv2.ORB_create(2000)
+    before_kp, before_des = orb.detectAndCompute(before_small, None)
+    after_kp, after_des = orb.detectAndCompute(after_small, None)
+    if before_des is None or after_des is None:
+        return None
+    if len(before_kp) < _MIN_INLIERS or len(after_kp) < _MIN_INLIERS:
+        return None
+    matches = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True).match(after_des, before_des)
+    if len(matches) < _MIN_INLIERS:
+        return None
+    src = np.float32([after_kp[match.queryIdx].pt for match in matches]).reshape(-1, 1, 2)
+    dst = np.float32([before_kp[match.trainIdx].pt for match in matches]).reshape(-1, 1, 2)
+    matrix, inliers = cv2.estimateAffinePartial2D(src, dst, method=cv2.RANSAC)
+    if matrix is None or inliers is None or int(inliers.sum()) < _MIN_INLIERS:
+        return None
+    full = matrix.astype(np.float64, copy=True)
+    full[:, :2] *= after_scale / before_scale
+    full[:, 2] /= before_scale
+    return full
 
 
 def load_photo(data: bytes) -> np.ndarray:
@@ -147,13 +194,26 @@ def check_step(
     photo_path.parent.mkdir(parents=True, exist_ok=True)
     if not cv2.imwrite(str(photo_path), photo_img):
         raise StepCheckError("could not save the photo")
-    calls = StepPerception(index=step.index)
+    counted = Counted(client)
+    height, width = probe_img.shape[:2]
+    area = (
+        region[0] * width,
+        region[1] * height,
+        (region[0] + region[2]) * width,
+        (region[1] + region[3]) * height,
+    )
+    work = checks_dir / f"work_{number}"
+    work.mkdir(parents=True, exist_ok=True)
     try:
-        found = fasteners_on_still(
-            client, calls, photo_path, region, image=probe_img, fastener=kind
-        )
+        candidates = propose(counted, probe_img, kind, work, area)
     except BudgetExceeded as exc:
         raise StepCheckError("budget reached") from exc
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    found = [
+        NormBox(x=x1 / width, y=y1 / height, w=(x2 - x1) / width, h=(y2 - y1) / height)
+        for _, (x1, y1, x2, y2) in candidates
+    ]
     expected = step_perception.screws_after if step_perception else None
     count = len(found)
     result = StepCheck(
@@ -163,9 +223,9 @@ def check_step(
         fastener_kind=kind,
         expected_left=expected,
         found=count,
-        boxes=[box for box, _ in found],
+        boxes=found,
         aligned=aligned,
-        sam_calls=calls.sam_calls,
+        sam_calls=counted.sam_calls,
     )
     if expected is None or not aligned:
         if aligned:

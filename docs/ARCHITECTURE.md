@@ -46,7 +46,7 @@ failure; required stages fail the job. A stage's owned artifact is deleted befor
 | 9 | plan | `plan.json` | no | none | final steps and times; every change logged in checks |
 | 10 | safety | `safety.json` | no | none | rules-only `evaluate` over plan + speech + domain hazards |
 | 11 | frames | `frames.json` | yes | none | sharpest keyframe, step still/clip (`stills/`, `steps/`) |
-| 12 | perception | `perception.json` | yes | sam | part highlight + before/after fastener ledger and overlay |
+| 12 | perception | `perception.json` | yes | sam | part highlight + fastener ledger (propose, choose, follow, decide) and overlay |
 | 13 | proof | `proof.json` | yes | none | every claim graded with its sources |
 | 14 | publish | `guide.json` | no | none | plan + media + perception + reassembly; pro-only redaction |
 | 15 | learn | `profile_suggestions.json` | yes | none | new vocabulary the profile does not know yet |

@@ -11,6 +11,7 @@ from app.routes import console as console_routes
 from app.routes import export as export_routes
 from app.routes import guides as guides_routes
 from app.routes import jobs as jobs_routes
+from app.routes import taps as taps_routes
 from app.routes import tray as tray_routes
 from app.routes import upload as upload_routes
 
@@ -23,6 +24,7 @@ app.include_router(jobs_routes.router)
 app.include_router(guides_routes.router)
 app.include_router(export_routes.router)
 app.include_router(checks_routes.router)
+app.include_router(taps_routes.router)
 app.include_router(ask_routes.router)
 app.include_router(tray_routes.router)
 app.include_router(console_routes.router)

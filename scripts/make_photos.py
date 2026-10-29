@@ -14,6 +14,7 @@ import argparse
 import base64
 import dataclasses
 import json
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -24,42 +25,20 @@ import numpy as np
 from app.agent.tools import full_mask
 from app.config import get_settings
 from app.meta_client import BudgetExceeded, MetaClient, MetaError
+from app.pipeline.verify import confirm
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "web" / "static" / "photos"
-CHECK_PROMPT = ROOT / "prompts" / "check_marks_v1.md"
 
-MIN_CONFIDENCE = 0.3
+MIN_CONFIDENCE = 0.15  # weaker cut-outs still go to the check, which sees their exact shape
 SMALL_PART = 100  # boxes narrower than this (0..1000 grid) are found again on a close-up
 MIN_FILL = 0.2
-TILE = 300
 
 STYLE = (
     "Realistic documentary photograph taken in a real repair workshop. Natural soft daylight, "
     "true colors, sharp focus, shallow depth of field, slight film grain. Shot on a 35mm lens. "
     "No text, no captions, no watermarks, no brand logos, no faces."
 )
-
-CHECK_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "tiles": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "n": {"type": "integer"},
-                    "real": {"type": "boolean"},
-                    "why": {"type": "string"},
-                },
-                "required": ["n", "real", "why"],
-                "additionalProperties": False,
-            },
-        }
-    },
-    "required": ["tiles"],
-    "additionalProperties": False,
-}
 
 # "refused": the safety rules give no steps for this job; its marks show the hazards found.
 SUBJECTS: dict[str, dict[str, str]] = {
@@ -225,84 +204,13 @@ def outline(mask: np.ndarray) -> list[list[int]]:
     return [[round(x * 1000 / width), round(y * 1000 / height)] for x, y in simple[:, 0, :]]
 
 
-def contact_sheet(image: np.ndarray, marks: list[dict]) -> np.ndarray:
-    """One zoomed, numbered tile per mark with the cut-out framed in green, checked one by one."""
-    height, width = image.shape[:2]
-    pad = max(height, width) // 4
-    padded = cv2.copyMakeBorder(image, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=(40, 40, 40))
-    tiles = []
-    for n, mark in enumerate(marks, start=1):
-        bx1, by1, bx2, by2 = mark["cut_box"]
-        x1, y1 = bx1 * width / 1000, by1 * height / 1000
-        x2, y2 = bx2 * width / 1000, by2 * height / 1000
-        side = min(max(x2 - x1, y2 - y1, 0.02 * min(width, height)) * 3, max(width, height) * 1.4)
-        cx, cy = (x1 + x2) / 2 + pad, (y1 + y2) / 2 + pad
-        left, top = max(0, int(cx - side / 2)), max(0, int(cy - side / 2))
-        crop = padded[top : top + int(side), left : left + int(side)]
-        scale = TILE / crop.shape[1]
-        tile = cv2.resize(crop, (TILE, TILE), interpolation=cv2.INTER_CUBIC)
-        corner1 = (int((x1 + pad - left) * scale) - 3, int((y1 + pad - top) * scale) - 3)
-        corner2 = (int((x2 + pad - left) * scale) + 3, int((y2 + pad - top) * scale) + 3)
-        cv2.rectangle(tile, corner1, corner2, (0, 220, 0), 2)
-        caption = np.full((34, TILE, 3), 255, dtype=np.uint8)
-        cv2.putText(caption, f"{n}: {mark['label']}"[:28], (6, 24), 0, 0.62, (0, 0, 0), 2)
-        tiles.append(np.vstack([tile, caption]))
-    columns = min(4, len(tiles))
-    blank = np.full_like(tiles[0], 255)
-    while len(tiles) % columns:
-        tiles.append(blank)
-    rows = [np.hstack(tiles[i : i + columns]) for i in range(0, len(tiles), columns)]
-    return np.vstack(rows)
-
-
-def confirm(
-    client: MetaClient, model: str, image: np.ndarray, marks: list[dict], context: str
-) -> list[dict]:
-    """Ask Spark to check each mark on a zoomed contact sheet; keep the confirmed ones."""
-    if not marks:
-        return marks
-    ok, buffer = cv2.imencode(".jpg", contact_sheet(image, marks), [cv2.IMWRITE_JPEG_QUALITY, 90])
-    if not ok:
-        raise MetaError("cannot encode the contact sheet")
-    data_url = "data:image/jpeg;base64," + base64.b64encode(buffer.tobytes()).decode("ascii")
-    labels = ", ".join(sorted({mark["label"] for mark in marks}))
-    prompt = (
-        CHECK_PROMPT.read_text(encoding="utf-8")
-        .replace("<<CONTEXT>>", context)
-        .replace("<<LABELS>>", labels)
-    )
-    response = client.respond(
-        model=model,
-        input=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "input_text", "text": prompt},
-                    {"type": "input_image", "image_url": data_url},
-                ],
-            }
-        ],
-        text={
-            "format": {
-                "type": "json_schema",
-                "name": "check",
-                "schema": CHECK_SCHEMA,
-                "strict": True,
-            }
-        },
-        reasoning={"effort": "medium"},
-        max_output_tokens=4000,
-    )
-    try:
-        answers = json.loads(response.output_text)["tiles"]
-    except (ValueError, TypeError, KeyError):
-        raise MetaError("the check returned invalid JSON") from None
-    verdicts = {a["n"]: a for a in answers if isinstance(a, dict) and isinstance(a.get("n"), int)}
-    for n, mark in enumerate(marks, start=1):
-        verdict = verdicts.get(n, {})
-        mark["checked"] = verdict.get("real") is True
-        mark["why"] = str(verdict.get("why", "not answered"))
-    return marks
+def padded(box: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
+    """A small grounded box with a margin: Spark is often half a part off on tiny parts."""
+    x1, y1, x2, y2 = box
+    if max(x2 - x1, y2 - y1) >= SMALL_PART // 2:
+        return box
+    mx, my = max(6, (x2 - x1) // 2), max(6, (y2 - y1) // 2)
+    return (max(0, x1 - mx), max(0, y1 - my), min(1000, x2 + mx), min(1000, y2 + my))
 
 
 def cut(
@@ -335,7 +243,7 @@ def cut(
     boxes = client.ground(image_path, query, context=context, max_boxes=max_boxes)
     if not boxes:
         return marks, dropped
-    detections, sent = client.segment_boxes(image_path, [b.box for b in boxes])
+    detections, sent = client.segment_boxes(image_path, [padded(b.box) for b in boxes])
     by_index = {int(d.object_id) - 1: d for d in detections if d.object_id.isdigit()}
     for index, ground_box in enumerate(boxes):
         detection = by_index.get(index)
@@ -429,6 +337,145 @@ def refine(
     return kept, lost
 
 
+COUNT_SCHEMA = {
+    "type": "object",
+    "properties": {"count": {"type": "integer"}, "why": {"type": "string"}},
+    "required": ["count", "why"],
+    "additionalProperties": False,
+}
+
+
+def split_query(query: str) -> list[str]:
+    """One query per kind of part: "the battery and each screw" -> ["the battery", "each screw"].
+
+    Grounding several kinds at once often drops one of them; each kind on its own does not.
+    """
+    parts = re.split(r"\s+and\s+(?=(?:the|each|every|all)\b)", query.strip())
+    return [part.strip() for part in parts if part.strip()]
+
+
+def repeated(query: str) -> bool:
+    """True when the query asks for every one of several alike parts."""
+    return re.match(r"(each|every|all)\b", query.strip().lower()) is not None
+
+
+def count(client: MetaClient, model: str, photo: Path, query: str, context: str) -> int:
+    """Ask Spark how many of ``query`` it can see, so a short search can be detected."""
+    image = cv2.imread(str(photo))
+    ok, buffer = cv2.imencode(".jpg", image, [cv2.IMWRITE_JPEG_QUALITY, 90])
+    if not ok:
+        raise MetaError(f"cannot encode {photo}")
+    data_url = "data:image/jpeg;base64," + base64.b64encode(buffer.tobytes()).decode("ascii")
+    prompt = (
+        f"Context: {context}\nCount in this photo: {query}.\nCount only the ones you can "
+        "really see, one by one, including small, partly hidden or out of focus ones. "
+        "Do not count loose spare parts lying around unless the query asks for them."
+    )
+    response = client.respond(
+        model=model,
+        input=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": prompt},
+                    {"type": "input_image", "image_url": data_url},
+                ],
+            }
+        ],
+        text={
+            "format": {
+                "type": "json_schema",
+                "name": "count",
+                "schema": COUNT_SCHEMA,
+                "strict": True,
+            }
+        },
+        reasoning={"effort": "medium"},
+        max_output_tokens=4000,
+    )
+    try:
+        return max(0, int(json.loads(response.output_text)["count"]))
+    except (ValueError, TypeError, KeyError):
+        return 0
+
+
+def concept_of(query: str) -> str:
+    """The short noun SAM can search by itself: "each screw on the bottom panel" -> "screw"."""
+    words = re.sub(r"^(each|every|all|the)\s+", "", query.strip(), flags=re.I)
+    words = re.split(r"\s+(?:on|in|at|of|from|sticking|with|that|over)\s+|\s*\(", words)[0]
+    words = re.sub(r"[,;+]", " ", words).strip()
+    return "" if words.lower() in {"row", "rows", "set", "group", "pair", "line"} else words
+
+
+def sam_find(
+    client: MetaClient, photo: Path, concept: str, min_fill: float
+) -> tuple[list[dict], list[dict]]:
+    """SAM 3.1 looks for ``concept`` by itself on four enlarged quarters (exact outlines)."""
+    marks: list[dict] = []
+    with tempfile.TemporaryDirectory() as tmp:
+        for n, region in enumerate(QUADRANTS):
+            target = Path(tmp) / f"sam{n}.png"
+            frame = zoom(photo, region, target)
+            image = cv2.imread(str(target))
+            detections, sent = client.segment(target, concept)
+            fx, fy = frame[0], frame[1]
+            sx, sy = (frame[2] - frame[0]) / 1000, (frame[3] - frame[1]) / 1000
+            for detection in detections:
+                mask = full_mask(detection, sent, image.shape)
+                if mask is None or not mask.any() or (detection.confidence or 0) < MIN_CONFIDENCE:
+                    continue
+                points = [[round(fx + x * sx), round(fy + y * sy)] for x, y in outline(mask)]
+                xs, ys = [x for x, _ in points], [y for _, y in points]
+                box = [min(xs), min(ys), max(xs), max(ys)]
+                fill = cv2.contourArea(np.array(points, np.float32)) / max(
+                    1, (box[2] - box[0]) * (box[3] - box[1])
+                )
+                if fill < min_fill:
+                    continue
+                mark = {
+                    "label": concept,
+                    "box": box,
+                    "cut_box": box,
+                    "outline": points,
+                    "confidence": round(detection.confidence or 0, 2),
+                    "zoom": True,
+                }
+                marks = merge(marks, [mark])
+    return marks, []
+
+
+def area(mark: dict) -> int:
+    x1, y1, x2, y2 = mark["cut_box"]
+    return (x2 - x1) * (y2 - y1)
+
+
+def carve(marks: list[dict]) -> list[dict]:
+    """Take a smaller part of another kind out of a bigger cut-out that swallowed it."""
+    for big in marks:
+        for small in marks:
+            if small is big or small["label"] == big["label"]:
+                continue
+            if area(small) >= area(big) or overlap(small["cut_box"], big["cut_box"]) < 0.5:
+                continue
+            canvas = np.zeros((1000, 1000), np.uint8)
+            cv2.fillPoly(canvas, [np.array(big["outline"], np.int32)], 1)
+            cv2.fillPoly(canvas, [np.array(small["outline"], np.int32)], 0)
+            points = outline(canvas.astype(bool))
+            if points:
+                xs, ys = [x for x, _ in points], [y for _, y in points]
+                big["outline"], big["cut_box"] = points, [min(xs), min(ys), max(xs), max(ys)]
+    return marks
+
+
+def merge(marks: list[dict], more: list[dict]) -> list[dict]:
+    """Add the marks of ``more`` that are not already in ``marks``."""
+    out = list(marks)
+    for mark in more:
+        if all(overlap(mark["cut_box"], other["cut_box"]) < 0.3 for other in out):
+            out.append(mark)
+    return out
+
+
 QUADRANTS = [[0, 0, 560, 560], [440, 0, 1000, 560], [0, 440, 560, 1000], [440, 440, 1000, 1000]]
 
 
@@ -464,12 +511,22 @@ def make(client: MetaClient, model: str, name: str, subject: dict[str, str], fre
     dropped: list[dict] = []
     if subject["query"]:
         min_fill = float(subject.get("min_fill", MIN_FILL))
-        if subject.get("tiled") == "yes":
-            marks, dropped = tiled(client, photo, subject["query"], subject["context"], min_fill)
-        else:
-            marks, dropped = cut(
-                client, photo, subject["query"], subject["context"], [0, 0, 1000, 1000], 8, min_fill
-            )
+        for query in split_query(subject["query"]):
+            if subject.get("tiled") == "yes":
+                found, lost = tiled(client, photo, query, subject["context"], min_fill)
+            else:
+                found, lost = cut(
+                    client, photo, query, subject["context"], [0, 0, 1000, 1000], 8, min_fill
+                )
+            if repeated(query) and subject.get("tiled") != "yes":
+                expected = count(client, model, photo, query, subject["context"])
+                if len(found) < expected:
+                    more, missed = tiled(client, photo, query, subject["context"], min_fill)
+                    found, lost = merge(found, more), lost + missed
+                if len(found) < expected and concept_of(query):
+                    more, _ = sam_find(client, photo, concept_of(query), min_fill)
+                    found = merge(found, more)
+            marks, dropped = merge(marks, found), dropped + lost
         parent = subject.get("zoom_into", "")
         holder = next((m for m in marks if parent and parent in m["label"].lower()), None)
         if holder is not None:
@@ -483,7 +540,7 @@ def make(client: MetaClient, model: str, name: str, subject: dict[str, str], fre
         marks, dropped = refine(client, photo, marks, dropped, subject["context"])
         checked = confirm(client, model, image, marks, subject["context"])
         dropped += [mark for mark in checked if not mark["checked"]]
-        marks = [mark for mark in checked if mark["checked"]]
+        marks = carve([mark for mark in checked if mark["checked"]])
     data = {
         "name": name,
         "width": width,

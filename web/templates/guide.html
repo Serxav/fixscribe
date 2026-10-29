@@ -142,7 +142,7 @@
       </div>
       <span class="hint">Drag to turn · tap to take apart</span>
     </div>
-    <div class="view" data-view-panel="photo"><img class="fit" src="{{ v.overlay or v.image }}" alt="Step {{ s.index }}: {{ s.title }}" loading="lazy"></div>
+    <div class="view" data-view-panel="photo"><img class="fit" src="{{ v.overlay or v.image }}" alt="Step {{ s.index }}: {{ s.title }}" loading="lazy"{% if s.screws and s.screws.count and v.overlay %} data-tap-step="{{ s.index }}" data-markers='{{ s.screws.model_dump()["boxes"] | tojson }}'{% endif %}>{% if s.screws and s.screws.count and v.overlay %}<span class="hint" data-tap-hint>Tap a missing {{ s.screws.kind }} to add it · tap a wrong number to remove it</span>{% endif %}</div>
     {% endif %}
     {% if v.clip %}
     <div class="view{% if first == 'clip' %} on{% endif %}" data-view-panel="clip"><video class="fit" src="{{ v.clip }}" muted loop playsinline preload="none"></video></div>

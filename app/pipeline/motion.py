@@ -1,10 +1,11 @@
-"""Motion stage: SAM 3.1 tracks the part and the fasteners through each step clip.
+"""Motion stage: SAM 3.1 tracks the part through each step clip; fasteners come from perception.
 
 SAM is used the way it works best: first FIND, then FOLLOW. On the sharpest frame of the step,
-SAM image segmentation finds the part (text concept) and, on a zoomed crop around it, the
-fasteners. Those boxes are then sent as prompts to SAM video tracking, so it follows exactly
-those objects (one id each) instead of everything that looks alike. If finding fails we fall
-back to tracking the text concept. Masks are smoothed over time so the outline does not shake.
+SAM image segmentation finds the part (text concept), and that box is sent as a prompt to SAM
+video tracking. If finding fails we fall back to tracking the text concept. Masks are smoothed
+over time so the outline does not shake. The fasteners are not searched again here: the
+perception stage already found, chose and followed them (``steps/NN_fasteners.json``), and
+their tracks are drawn on this clip.
 
 From the per-frame masks we render a
 "cinematic" clip: the scene dims and loses colour, the part stays in full colour with a soft glow
@@ -26,8 +27,9 @@ from app import artifacts
 from app.config import Settings
 from app.meta_client import BudgetExceeded, make_client
 from app.pipeline.analyze import guide_direction
+from app.pipeline.fasteners import Found, load_found
 from app.pipeline.ingest import run_ffmpeg
-from app.pipeline.perception import fastener_concept, part_concepts
+from app.pipeline.perception import part_concepts
 from app.schemas import Identity, Motion, NormBox, Plan, StepMotion
 
 logger = logging.getLogger(__name__)
@@ -40,9 +42,7 @@ WIDTH = 720  # long side of the working clip
 HOLD_FRAMES = 4  # a mask SAM skipped on a frame is kept this many frames, then fades
 SMOOTH = 0.6  # weight of this frame's mask against the previous one (removes jitter)
 SEED_MIN_CONFIDENCE = 0.3
-MAX_FASTENERS = 15  # SAM video follows at most 16 prompted objects; 1 is the part
-ZOOM_SIDE = 900  # fasteners are small: the crop around the part is upscaled to this side
-MAX_FASTENER_SIDE = 0.08  # a fastener box bigger than this share of the frame is a lost track
+POP_FRAMES = 8  # a fastener that comes out leaves an expanding ring for this many frames
 MAX_RING = 0.03  # ring radius at most this share of the frame's long side
 
 ACCENT = (255, 132, 10)  # BGR of #0a84ff
@@ -207,70 +207,6 @@ def render_frame(
     return out
 
 
-def removed_fasteners(track: Track | None, frame_count: int) -> dict[int, int]:
-    """The fasteners taken out during the clip (seen, then gone before the end).
-
-    Returns {object_id: last frame seen}. A fastener still there at the end was not removed in
-    this step, so it is only drawn faintly.
-    """
-    if track is None or not track.objects:
-        return {}
-    last: dict[int, int] = {}
-    for index, boxes in track.objects.items():
-        for object_id in boxes:
-            last[object_id] = max(index, last.get(object_id, -1))
-    end = max(frame_count - 1, max(track.objects))
-    return {oid: seen for oid, seen in last.items() if seen < end - HOLD_FRAMES}
-
-
-def added_fasteners(track: Track | None) -> dict[int, int]:
-    """The fasteners put in during the clip (absent at the start, then seen): {id: first frame}."""
-    if track is None or not track.objects:
-        return {}
-    first: dict[int, int] = {}
-    for index in sorted(track.objects):
-        for object_id in track.objects[index]:
-            first.setdefault(object_id, index)
-    start = min(track.objects)
-    return {oid: seen for oid, seen in first.items() if seen > start + HOLD_FRAMES}
-
-
-def drop_lost(track: Track | None, size: tuple[int, int]) -> Track | None:
-    """Remove fastener boxes that grew too big: SAM slid onto a hand or a whole part."""
-    if track is None:
-        return None
-    limit = MAX_FASTENER_SIDE * max(size)
-    kept = {
-        index: {
-            oid: box for oid, box in boxes.items() if max(box[2] - box[0], box[3] - box[1]) <= limit
-        }
-        for index, boxes in track.objects.items()
-    }
-    return Track(masks=track.masks, objects={i: b for i, b in kept.items() if b})
-
-
-def fastener_numbers(track: Track | None, only: set[int] | None = None) -> dict[int, int]:
-    """Number fasteners 1, 2, 3... in reading order of where they first appear."""
-    if track is None:
-        return {}
-    first: dict[int, tuple[float, float]] = {}
-    for index in sorted(track.objects):
-        for object_id, (x1, y1, x2, y2) in track.objects[index].items():
-            if only is None or object_id in only:
-                first.setdefault(object_id, ((y1 + y2) / 2, (x1 + x2) / 2))
-    ordered = sorted(first, key=lambda oid: (round(first[oid][0] / 40), first[oid][1]))
-    return {oid: n for n, oid in enumerate(ordered, start=1)}
-
-
-def last_boxes(track: Track | None) -> dict[int, tuple[float, float, float, float]]:
-    """Where each fastener was last seen (for the 'pop' when it comes out)."""
-    found: dict[int, tuple[float, float, float, float]] = {}
-    if track is not None:
-        for index in sorted(track.objects):
-            found.update(track.objects[index])
-    return found
-
-
 def write_clip(frames: list[np.ndarray], dst: Path, reverse: Path | None = None) -> None:
     height, width = frames[0].shape[:2]
     with artifacts.atomic_path(dst) as tmp:
@@ -404,43 +340,6 @@ def seed_part(client: Any, frame: np.ndarray, concept: str, work: Path) -> tuple
     return max(found, key=lambda item: (round(item[0], 2), area(item[1])))[1]
 
 
-def seed_fasteners(
-    client: Any, frame: np.ndarray, around: tuple | None, fastener: str, work: Path
-) -> list[tuple]:
-    """Fastener boxes on a zoomed crop around the part (whole frame if no part)."""
-    height, width = frame.shape[:2]
-    if around is None:
-        x1, y1, x2, y2 = 0, 0, width, height
-    else:
-        cx, cy = (around[0] + around[2]) / 2, (around[1] + around[3]) / 2
-        half_w, half_h = (around[2] - around[0]) * 0.65, (around[3] - around[1]) * 0.65
-        x1, y1 = int(max(0, cx - half_w)), int(max(0, cy - half_h))
-        x2, y2 = int(min(width, cx + half_w)), int(min(height, cy + half_h))
-    crop = frame[y1:y2, x1:x2]
-    scale = max(1.0, ZOOM_SIDE / max(crop.shape[:2]))
-    zoomed = cv2.resize(crop, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
-    found = _found(client, zoomed, work / "seed_fasteners.png", fastener)
-    boxes = []
-    for _, (left, top, right, bottom) in sorted(found, key=lambda item: -item[0]):
-        box = (
-            x1 + int(left / scale),
-            y1 + int(top / scale),
-            x1 + int(right / scale),
-            y1 + int(bottom / scale),
-        )
-        if all(_overlap(box, other) < 0.5 for other in boxes):
-            boxes.append(box)
-    return boxes[:MAX_FASTENERS]
-
-
-def _overlap(a: tuple, b: tuple) -> float:
-    ix = max(0, min(a[2], b[2]) - max(a[0], b[0]))
-    iy = max(0, min(a[3], b[3]) - max(a[1], b[1]))
-    inter = ix * iy
-    union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
-    return inter / union if union else 0.0
-
-
 def follow(client: Any, clip: Path, size: tuple[int, int], boxes: list, frame: int, concept: str):
     """SAM video: follow the given boxes from `frame` (one id each), or the concept if none."""
     if boxes:
@@ -462,8 +361,34 @@ def smoothed(track: Track | None, count: int, shape: tuple[int, int]) -> list[tu
     return out
 
 
+def fastener_boxes(found: Found | None, t: float, size: tuple[int, int]) -> dict[int, tuple]:
+    """Perception's kept fasteners at video time ``t``, scaled to this clip."""
+    if found is None:
+        return {}
+    sx, sy = size[0] / found.size[0], size[1] / found.size[1]
+    return {
+        oid: (x1 * sx, y1 * sy, x2 * sx, y2 * sy)
+        for oid, (x1, y1, x2, y2) in found.boxes_at(t).items()
+    }
+
+
+def gone_frames(found: Found, start: float, count: int) -> dict[int, tuple[int, tuple]]:
+    """For each fastener taken out: the clip frame it was last seen on and its box there."""
+    last: dict[int, tuple[int, tuple]] = {}
+    for index in sorted(found.frames):
+        for oid, box in found.frames[index].items():
+            if oid in found.kept:
+                last[oid] = (index, box)
+    out = {}
+    for oid, (index, box) in last.items():
+        at = round((found.start_s + index / found.fps - start) * FPS)
+        if 0 <= at < count - 1:
+            out[oid] = (at, box)
+    return out
+
+
 def motion_for_step(
-    job_dir: Path, client: Any, step, plan: Plan, fastener: str, direction: str = "disassemble"
+    job_dir: Path, client: Any, step, plan: Plan, direction: str = "disassemble"
 ) -> StepMotion | None:
     concepts = part_concepts(step)
     if not concepts:
@@ -488,33 +413,19 @@ def motion_for_step(
     part_track = to_track(
         follow(client, source, size, [part_box] if part_box else [], seed, concept), size
     )
-    screw_track = None
-    if step.screws and step.screws.count:
-        # Seed where the fasteners are all visible: the first frame when taking apart, the last
-        # one when building (they are in place at the end).
-        at = 0 if direction == "disassemble" else len(frames) - 1
-        around = part_box or _track_box(part_track)
-        screws = seed_fasteners(client, frames[at], around, fastener, work)
-        screw_track = drop_lost(
-            to_track(follow(client, source, size, screws, at, fastener), size), size
-        )
-    if direction == "assemble":
-        removed = added_fasteners(screw_track)  # the ones that appear are the ones put in
-    else:
-        removed = removed_fasteners(screw_track, len(frames))
-    numbers = fastener_numbers(screw_track, set(removed))
-    seen_last = last_boxes(screw_track)
-    pop_frames = 8
+    found = load_found(job_dir, step.index)
+    numbers = {oid: n for n, oid in enumerate(found.kept, start=1)} if found else {}
+    gone = gone_frames(found, start, len(frames)) if found and direction != "assemble" else {}
 
     masks = smoothed(part_track, len(frames), (height, width))
     rendered = []
     for index, frame in enumerate(frames):
         part, alpha = masks[index]
-        boxes = screw_track.objects.get(index, {}) if screw_track else {}
+        boxes = fastener_boxes(found, start + index / FPS, size)
         pops = [
-            (seen_last[oid], (index - gone) / pop_frames)
-            for oid, gone in removed.items()
-            if 0 < index - gone <= pop_frames
+            (box, (index - at) / POP_FRAMES)
+            for oid, (at, box) in gone.items()
+            if 0 < index - at <= POP_FRAMES
         ]
         rendered.append(
             render_frame(frame, part, alpha, boxes, numbers, index / max(1, len(frames) - 1), pops)
@@ -530,7 +441,7 @@ def motion_for_step(
         clip_reverse=clip_reverse,
         part=concept,
         fasteners_tracked=len(numbers),
-        frames=len(frames) * (2 if screw_track is not None else 1),
+        frames=len(frames),
         start_s=round(start, 3),
         end_s=round(start + len(frames) / FPS, 3),
         voice=voice,
@@ -549,26 +460,16 @@ def motion_for_step(
     return motion
 
 
-def _track_box(track: Track) -> tuple | None:
-    """The box around the part where SAM saw it largest (seed for the fastener search)."""
-    best = best_frame(track)
-    if best is None:
-        return None
-    ys, xs = np.nonzero(track.masks[best])
-    return (int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1)
-
-
 def run(job_dir: Path, settings: Settings, client: Any = None) -> Motion:
     plan = artifacts.load(job_dir, Plan)
     if client is None:
         client = make_client(settings, job_dir=job_dir)
-    fastener = fastener_concept(job_dir)
     identity = artifacts.load_optional(job_dir, Identity)
     direction = guide_direction(identity.task if identity else None)
     result = Motion()
     for step in plan.steps[:MAX_STEPS]:
         try:
-            motion = motion_for_step(job_dir, client, step, plan, fastener, direction)
+            motion = motion_for_step(job_dir, client, step, plan, direction)
         except BudgetExceeded:
             result.notes.append("SAM budget reached: later steps have no motion clip.")
             break
