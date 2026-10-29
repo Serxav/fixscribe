@@ -6,7 +6,7 @@
     <p class="kicker mono">Job {{ job_id }}<span id="replay-tag" class="hidden"> · replay</span></p>
     <h1 class="run-title" id="headline">Making your guide</h1>
     <div class="run-status">
-      <span class="live" id="live"></span>
+      <span class="run-live" id="live"></span>
       <span id="stage-label">{{ status.stage or "Starting" }}</span>
       <span class="run-percent mono tabular" id="percent">{{ (status.progress * 100)|round|int }}%</span>
     </div>
@@ -16,33 +16,33 @@
 
   <div class="run-grid">
     <div class="run-main">
-      <figure class="scan" id="scan">
+      <figure class="run-scan" id="scan">
         <video id="scan-video" muted loop playsinline preload="auto"></video>
-        <div class="scan-empty" id="scan-empty"><span class="mono">Preparing your video</span></div>
-        <i class="scan-line" aria-hidden="true"></i>
-        <i class="scan-corner tl"></i><i class="scan-corner tr"></i><i class="scan-corner bl"></i><i class="scan-corner br"></i>
-        <div class="scan-tags">
-          <span class="tag tag-ident hidden" id="tag-ident"></span>
-          <span class="tag tag-safety hidden" id="tag-safety"></span>
+        <div class="run-scan-empty" id="scan-empty"><span class="mono">Preparing your video</span></div>
+        <i class="run-scan-line" aria-hidden="true"></i>
+        <i class="run-scan-corner tl"></i><i class="run-scan-corner tr"></i><i class="run-scan-corner bl"></i><i class="run-scan-corner br"></i>
+        <div class="run-scan-tags">
+          <span class="run-tag run-tag-ident hidden" id="tag-ident"></span>
+          <span class="run-tag run-tag-safety hidden" id="tag-safety"></span>
         </div>
-        <figcaption class="scan-caption mono" id="scan-caption">Waiting</figcaption>
+        <figcaption class="run-scan-caption mono" id="scan-caption">Waiting</figcaption>
       </figure>
 
       <div class="run-timeline" id="timeline" aria-label="Steps on the video timeline">
-        <i class="playhead" id="playhead"></i>
+        <i class="run-playhead" id="playhead"></i>
       </div>
       <div class="run-timeline-scale mono"><span>0:00</span><span id="duration"></span></div>
 
       <section class="run-block">
         <div class="run-block-head"><h2>Steps</h2><span class="muted small" id="steps-note">They appear as FixScribe watches the repair.</span></div>
-        <ol class="step-cards" id="step-cards"></ol>
+        <ol class="run-step-cards" id="step-cards"></ol>
       </section>
     </div>
 
     <aside class="run-side">
       <section class="run-block">
         <div class="run-block-head"><h2>What it heard</h2><span class="muted small" id="heard-note">Muse Voice</span></div>
-        <ol class="heard" id="heard"><li class="heard-empty muted small">Listening…</li></ol>
+        <ol class="run-heard" id="heard"><li class="run-heard-empty muted small">Listening…</li></ol>
       </section>
       <section class="run-block">
         <div class="run-block-head"><h2>Pipeline</h2><span class="muted small">Optional stages can fail without stopping your guide.</span></div>
@@ -58,11 +58,11 @@
     </aside>
   </div>
 
-  <div class="done-sheet hidden" id="done" role="dialog" aria-labelledby="done-title">
-    <div class="done-card">
+  <div class="run-done-sheet hidden" id="done" role="dialog" aria-labelledby="done-title">
+    <div class="run-done-card">
       <p class="kicker mono">Your guide is ready</p>
-      <h2 class="done-title" id="done-title"></h2>
-      <dl class="done-stats" id="done-stats"></dl>
+      <h2 class="run-done-title" id="done-title"></h2>
+      <dl class="run-done-stats" id="done-stats"></dl>
       <a href="/guides/{{ job_id }}" class="btn btn-primary btn-lg btn-block" id="done-open">Open the guide</a>
       <button type="button" class="btn btn-glass btn-block" id="done-stay">Stay on this page</button>
     </div>

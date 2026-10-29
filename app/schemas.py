@@ -31,6 +31,10 @@ class ScrewMap(Strict):
     count: int = Field(ge=0)
     boxes: list[Box] = Field(default_factory=list)
     kind: str = "screw"  # the fastener type, as named by the domain profile
+    # From Spark watching the video with the narration: the second the fasteners show best,
+    # and where they go in a few words ("four holes along the middle rail").
+    seen_s: float | None = None
+    where: str = ""
 
     @model_validator(mode="after")
     def unique_numbers(self) -> "ScrewMap":
@@ -161,6 +165,8 @@ class DraftStep(BaseModel):
     action: str | None = None
     removes: list[str] = Field(default_factory=list)
     screw_count: int = Field(default=0, ge=0)
+    fastener_s: float = 0.0  # the second the fasteners show best (0 when there are none)
+    fastener_where: str = ""  # where they go, in a few words
     warnings: list[str] = Field(default_factory=list)
     evidence: list[Evidence] = Field(default_factory=list)
     confidence: float = Field(default=0.5, ge=0, le=1)
@@ -278,6 +284,8 @@ ANALYSIS_JSON_SCHEMA: dict[str, Any] = _object(
                     "action": {"type": "string", "enum": ACTIONS},
                     "removes": _STRINGS,
                     "screw_count": {"type": "integer"},
+                    "fastener_s": {"type": "number"},
+                    "fastener_where": {"type": "string"},
                     "warnings": _STRINGS,
                     "evidence": {
                         "type": "array",

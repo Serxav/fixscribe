@@ -45,6 +45,7 @@ from app.schemas import (
     ScrewRecord,
     Step,
     StepPerception,
+    Transcript,
 )
 from app.text import plural
 
@@ -253,6 +254,25 @@ def fill_ledger(sp: StepPerception, found: Found, next_number: int) -> int:
     return next_number
 
 
+SAID_CHARS = 400
+
+
+def said_during(job_dir: Path, step: Step) -> str:
+    """The person's own words during the step (they often say where the fasteners go)."""
+    try:
+        transcript = artifacts.load_optional(job_dir, Transcript)
+    except artifacts.ArtifactError:
+        return ""
+    if transcript is None:
+        return ""
+    words = " ".join(
+        turn.text.strip()
+        for turn in transcript.turns
+        if turn.end_s > step.start_s - 1.0 and turn.start_s < step.end_s
+    )
+    return words[:SAID_CHARS]
+
+
 def _process_step(
     job_dir: Path,
     settings: Settings,
@@ -274,6 +294,12 @@ def _process_step(
     if count:
         kind = step_fastener(step, fastener)
         context = f"{object_name or plan.device}. Step: {step.title}. {step.instruction}"
+        if step.screws and step.screws.where:
+            context += f" The {plural(kind, 2)} are in: {step.screws.where}."
+        said = said_during(job_dir, step)
+        if said:
+            context += f' The person says: "{said}"'
+
         work = job_dir / "steps" / f"{step.index:02d}_work"
         try:
             video, prefilter = best_video(job_dir, ingest)

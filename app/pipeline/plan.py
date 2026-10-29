@@ -104,6 +104,18 @@ def clean_times(drafts: list[DraftStep], duration_s: float) -> tuple[list[DraftS
     return kept, notes
 
 
+def _screws(draft: DraftStep) -> ScrewMap | None:
+    """The fastener count, with when and where Spark saw them (dropped if outside the step)."""
+    if not draft.screw_count:
+        return None
+    inside = draft.start_s < draft.fastener_s <= draft.end_s
+    return ScrewMap(
+        count=draft.screw_count,
+        seen_s=draft.fastener_s if inside else None,
+        where=draft.fastener_where.strip()[:120],
+    )
+
+
 def to_step(index: int, draft: DraftStep) -> Step:
     return Step(
         index=index,
@@ -115,7 +127,7 @@ def to_step(index: int, draft: DraftStep) -> Step:
         sam_concept=draft.sam_concept or None,
         action=draft.action,
         removes=draft.removes,
-        screws=ScrewMap(count=draft.screw_count) if draft.screw_count else None,
+        screws=_screws(draft),
         warnings=draft.warnings,
         # Only evidence that belongs to this step (1 s of slack for rounding).
         evidence=[
