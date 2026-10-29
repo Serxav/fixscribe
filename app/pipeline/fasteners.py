@@ -442,6 +442,17 @@ def reading_order(boxes: dict[int, Box], height: int) -> list[int]:
     )
 
 
+def told_frame(step: Step, fps: float, frames: dict[int, np.ndarray]) -> int | None:
+    """The sharpest loaded frame within half a second of the step's ``seen_s``, if any."""
+    seen = step.screws.seen_s if step.screws else None
+    if seen is None or not frames:
+        return None
+    at = round((seen - step.start_s) * fps)
+    half = max(1, round(fps / 2))
+    near = [i for i in frames if abs(i - at) <= half]
+    return sharpest(frames, min(near), max(near) + 1) if near else None
+
+
 def find_in_step(
     client: Any,
     model: str,
@@ -474,6 +485,9 @@ def find_in_step(
         seeds = [sharpest(frames, count - window, count), sharpest(frames, count - last, count)]
     else:
         seeds = [sharpest(frames, 0, window), sharpest(frames, 0, last)]
+    told = told_frame(step, fps, frames)
+    if told is not None:  # the moment Spark saw them best, from the video and the narration
+        seeds.append(told)
     seeds = sorted(set(seeds))
     proposed: list[tuple[float, int, Box, str]] = []  # confidence, frame, box, kind
     for n, (seed, kind) in enumerate((seed, kind) for seed in seeds for kind in kinds):

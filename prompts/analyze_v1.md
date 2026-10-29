@@ -33,6 +33,11 @@ Task: <<TASK_SENTENCE>>
 7. `screw_count` is the number of fasteners (screws, bolts, nuts, dowels, clips... see above)
    <<FASTENER_VERB>> in this step. Count them on the video, or take the number the person says
    ("doce tornillos" = 12). Use 0 if none.
+   `fastener_s` is the second inside the step where those fasteners are seen best: when the
+   person points at them, says where they go ("en estos cuatro agujeros"), or the last moment
+   they are all in view. `fastener_where` says where they are in a few English words, as the
+   person describes it or as you see it ("four holes along the middle rail", "two corners of
+   the back cover"). Use 0 and "" when `screw_count` is 0.
 8. `warnings` are real safety or damage risks for this step only. No generic advice.
 9. `evidence` gives 1–3 moments that prove the step: `t_s` inside the step, `source` "audio" with
    the person's own words (quote them, in their language) or "video" with what you see.
