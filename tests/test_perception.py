@@ -58,6 +58,30 @@ class FakeMeta:
         sx, sy = w / W, h / H
         return [_det((a * sx, b * sy, c * sx, d * sy)) for a, b, c, d in SPOTS], (w, h)
 
+    def ground(self, path, query, *, context="", max_boxes=8):
+        return [SimpleNamespace(label=query, box=(100, 100, 900, 900), why="t")]
+
+    def segment_boxes(self, path, boxes, max_side=1280):
+        self._count("find")
+        image = cv2.imread(str(path))
+        h, w = image.shape[:2]
+        size = (w // 2, h // 2)
+        detection = SimpleNamespace(
+            box=(0, 0, size[0], size[1]),
+            confidence=0.9,
+            mask=bytes([1]) * (size[0] * size[1]),
+            mask_size=size,
+            mask_bounds=(0, 0, size[0], size[1]),
+        )
+        return [detection], (w, h)
+
+    def respond(self, **kwargs):
+        if kwargs["text"]["format"]["name"] == "pick_frames":
+            return SimpleNamespace(output_text=json.dumps({"frames": [1]}))
+        content = kwargs["input"][0]["content"]
+        tiles = [{"n": n, "real": True, "why": "t"} for n in range(1, len(content))]
+        return SimpleNamespace(output_text=json.dumps({"tiles": tiles}))
+
     def segment_video(self, clip, boxes=(), size=None):
         self._count("follow")
         count = fasteners.frame_count(clip)
@@ -157,6 +181,8 @@ def test_taking_apart_keeps_the_fasteners_that_disappear(tmp_path):
 
 class CheckingMeta(FakeMeta):
     def respond(self, **kwargs):
+        if kwargs["text"]["format"]["name"] == "pick_frames":
+            return SimpleNamespace(output_text=json.dumps({"frames": [1]}))
         content = kwargs["input"][0]["content"]
         tiles = [{"n": n, "real": n != 2, "why": "t"} for n in range(1, len(content))]
         return SimpleNamespace(output_text=json.dumps({"tiles": tiles}))
@@ -206,7 +232,8 @@ def test_a_failing_step_keeps_the_others(tmp_path):
     steps = [_step(1, 0.0, 3.0, screws=3), _step(2, 4.0, 7.0, screws=3)]
     settings = _job(tmp_path, steps, task="assemble")
     result = perception.run(tmp_path, settings, client=FakeMeta(meta_fail_on_call=1))
-    assert result.steps[0].notes and result.steps[0].removed == []
+    # the part failed, the fasteners of the same step still count
+    assert result.steps[0].part is None and len(result.steps[0].removed) == 3
     assert len(result.steps[1].removed) == 3
 
 
@@ -250,3 +277,54 @@ def test_part_concepts_ask_for_the_part_before_a_tool_next_to_it():
     step = Step(index=1, title="t", instruction="i", start_s=0, end_s=1, target_part="back cover",
                 sam_concept="yellow bottle")  # fmt: skip
     assert part_concepts(step)[0] == "back cover"
+
+
+def _locate_job(tmp_path):
+    return _job(tmp_path, [_step(1, 0.0, 4.0)])
+
+
+def test_a_weak_cut_out_is_not_shown_and_the_reason_is_saved(tmp_path):
+    settings = _locate_job(tmp_path)
+
+    class Weak(FakeMeta):
+        def segment_boxes(self, path, boxes, max_side=1280):
+            detections, size = super().segment_boxes(path, boxes, max_side)
+            detections[0].confidence = 0.46  # a real wrong cut-out scored this
+            return detections, size
+
+    step = perception.run(tmp_path, settings, client=Weak()).steps[0]
+    assert step.part is None
+    record = json.loads((tmp_path / "steps" / "01_part.json").read_text())
+    assert record["tries"][0]["result"] == "weak cut-out"
+
+
+def test_a_cut_out_spark_rejects_is_not_shown(tmp_path):
+    settings = _locate_job(tmp_path)
+
+    class Rejects(FakeMeta):
+        def respond(self, **kwargs):
+            if kwargs["text"]["format"]["name"] == "pick_frames":
+                return super().respond(**kwargs)
+            tiles = [{"n": 1, "real": False, "why": "that is the mat"}]
+            return SimpleNamespace(output_text=json.dumps({"tiles": tiles}))
+
+    step = perception.run(tmp_path, settings, client=Rejects()).steps[0]
+    assert step.part is None and "could not be proven" in step.notes[0]
+
+
+def test_a_part_spark_cannot_see_costs_no_sam_call(tmp_path):
+    settings = _locate_job(tmp_path)
+
+    class Hidden(FakeMeta):
+        def respond(self, **kwargs):
+            return SimpleNamespace(output_text=json.dumps({"frames": []}))
+
+    client = Hidden()
+    step = perception.run(tmp_path, settings, client=client).steps[0]
+    assert step.part is None and client.calls == []
+
+
+def test_the_part_keeps_the_second_it_was_found(tmp_path):
+    settings = _locate_job(tmp_path)
+    step = perception.run(tmp_path, settings, client=FakeMeta()).steps[0]
+    assert step.part.t_s is not None and 0 <= step.part.t_s <= 4

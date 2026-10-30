@@ -131,7 +131,7 @@
     <div class="view on" data-view-panel="sam"><video class="fit" src="{{ v.motion }}" muted loop playsinline autoplay preload="metadata"></video><span class="hint">SAM 3.1 is tracking the {{ v.part.label if v.part else 'part' }}</span></div>
     {% endif %}
     {% if v.image %}
-    <div class="view{% if first == 'photo' %} on{% endif %}" data-view-panel="photo"><img class="fit" src="{{ v.overlay or v.image }}" alt="Step {{ s.index }}: {{ s.title }}" loading="lazy"{% if s.screws and s.screws.count and v.overlay %} data-tap-step="{{ s.index }}" data-markers='{{ s.screws.model_dump()["boxes"] | tojson }}'{% endif %}>{% if s.screws and s.screws.count and v.overlay %}<span class="hint" data-tap-hint>Tap a missing {{ s.screws.kind }} to add it · tap a wrong number to remove it</span>{% endif %}</div>
+    <div class="view{% if first == 'photo' %} on{% endif %}" data-view-panel="photo"><img class="fit" src="{{ v.overlay or v.image }}" alt="Step {{ s.index }}: {{ s.title }}" loading="lazy"{% if s.screws and s.screws.count and v.overlay %} data-tap-step="{{ s.index }}" data-markers='{{ s.screws.model_dump()["boxes"] | tojson }}'{% endif %}>{% if v.part and v.part.label %}<span class="hint">Muse Spark pointed · SAM 3.1 cut out the {{ v.part.label }}</span>{% endif %}</div>
     {% endif %}
     {% if v.clip %}
     <div class="view{% if first == 'clip' %} on{% endif %}" data-view-panel="clip"><video class="fit" src="{{ v.clip }}" muted loop playsinline preload="none"></video></div>

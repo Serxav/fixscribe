@@ -177,7 +177,7 @@ def test_rehearsal_good_run_end_to_end(tmp_path, settings):
     rec.write_signoff(job, SignOff(approved=True))
     record = loop.run(job, settings, resume=True, client=meta)
     assert record.status == "done"
-    assert meta.deleted == ["file-1"]
+    assert meta.deleted == []  # the agent works on frames: no video is uploaded
 
     turns = rec.load_turns(job)
     assert [t.turn for t in turns] == list(range(1, 9))

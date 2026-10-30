@@ -23,7 +23,7 @@ from app.schemas import ACTIONS
 
 MAX_ASKS = 3
 MIN_MASK_FILL = 0.10  # SAM must fill at least this share of the box, or the box missed the part
-MIN_CONFIDENCE = 0.30
+MIN_CONFIDENCE = 0.60  # on a real video a good cut-out scored 0.97, a wrong one 0.46
 QUOTE_WINDOW_S = 8.0  # the quote must be said near the step
 
 

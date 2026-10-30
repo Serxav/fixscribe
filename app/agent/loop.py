@@ -25,7 +25,7 @@ from app.agent.record import Act, AgentRecord, Observe, SignOff, Turn
 from app.agent.tools import DEFINITIONS, Case, Result, run_tool
 from app.config import Settings
 from app.meta_client import BudgetExceeded, MetaError, make_client, token_cost
-from app.schemas import Analysis, Identity, IngestInfo, Transcript
+from app.schemas import Analysis, Identity, IngestInfo, Perception, Transcript
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +68,14 @@ def case_file(job_dir: Path, record: AgentRecord, info: IngestInfo) -> str:
         for n, step in enumerate(analysis.steps, start=1):
             part = f" [part: {step.target_part}]" if step.target_part else ""
             lines.append(f"{n}. [{step.start_s:.1f}-{step.end_s:.1f}] {step.title}{part}")
+    perception = artifacts.load_optional(job_dir, Perception)
+    proven = [item.part for item in perception.steps if item.part] if perception else []
+    if proven:
+        lines.append("\nParts already pointed at and cut out (look at that second, then add_part):")
+        for part in proven:
+            box = part.box
+            grid = [box.x, box.y, box.x + box.w, box.y + box.h]
+            lines.append(f"{part.concept} at {part.t_s} s, box {[int(v * 1000) for v in grid]}")
     if record.parts or record.steps:
         lines.append("\nAlready in the record (keep it, continue from here):")
         lines += [f"part {p.id}: {p.name} x{p.count}" for p in record.parts]
@@ -202,7 +210,7 @@ def step(case: Case, settings: Settings, state: dict, pending_input: list) -> tu
 # --- run and resume --------------------------------------------------------------------------
 
 
-def opening_input(case: Case, file_id: str, info: IngestInfo) -> list:
+def opening_input(case: Case, info: IngestInfo) -> list:
     playbook = PROMPT.read_text(encoding="utf-8")
     return [
         {"role": "system", "content": playbook},
@@ -210,7 +218,6 @@ def opening_input(case: Case, file_id: str, info: IngestInfo) -> list:
             "role": "user",
             "content": [
                 {"type": "input_text", "text": case_file(case.job_dir, case.record, info)},
-                {"type": "input_file", "file_id": file_id},
             ],
         },
     ]
@@ -225,7 +232,7 @@ def restart_input(case: Case, state: dict, pending_input: list) -> list:
             lines.append(f"{turn.turn}. {turn.act.tool} {turn.act.args}: {turn.observe.text[:300]}")
     recap = {"role": "user", "content": "\n".join(lines)}
     images = [item for item in pending_input if item.get("role") == "user"]
-    return [*opening_input(case, state["file_id"], info), recap, *images]
+    return [*opening_input(case, info), recap, *images]
 
 
 def resume_input(job_dir: Path, record: AgentRecord, state: dict) -> list | None:
@@ -293,8 +300,7 @@ def run(
     case = load_case(job_dir, client, record)
     try:
         if pending is None:
-            state["file_id"] = client.upload_file(case.video)
-            pending = opening_input(case, state["file_id"], info)
+            pending = opening_input(case, info)
         save_state(job_dir, state)
         stop = False
         while not stop:

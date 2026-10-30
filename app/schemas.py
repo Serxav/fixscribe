@@ -454,6 +454,7 @@ class PartHighlight(Strict):
     concept: str
     box: NormBox
     confidence: float | None = Field(default=None, ge=0, le=1)
+    t_s: float | None = None  # the second of the video where it was found and checked
 
 
 class StepPerception(Strict):

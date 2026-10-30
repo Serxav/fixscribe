@@ -32,6 +32,7 @@ from app.pipeline.fasteners import (
     step_fasteners,
 )
 from app.pipeline.ingest import IngestError, color_filter, find_original
+from app.pipeline.locate import Located, locate_part
 from app.pipeline.media import extract_still
 from app.pipeline.overlay import draw_part, draw_screws, save_jpeg
 from app.schemas import (
@@ -68,6 +69,10 @@ class Counted:
     def segment(self, *args: Any, **kwargs: Any) -> Any:
         self.sam_calls += 1
         return self._client.segment(*args, **kwargs)
+
+    def segment_boxes(self, *args: Any, **kwargs: Any) -> Any:
+        self.sam_calls += 1
+        return self._client.segment_boxes(*args, **kwargs)
 
     def segment_video(self, *args: Any, **kwargs: Any) -> Any:
         self.sam_calls += 1
@@ -176,7 +181,9 @@ def _keyframe_still(
     return dst
 
 
-def make_overlay(job_dir: Path, step: Step, image: np.ndarray, sp: StepPerception) -> str:
+def make_overlay(
+    job_dir: Path, step: Step, image: np.ndarray, sp: StepPerception, located: Located | None = None
+) -> str:
     """Draw the part (on the keyframe) or the fasteners (on the frame they were chosen on)."""
     height, width = image.shape[:2]
     longest = max(width, height)
@@ -192,6 +199,8 @@ def make_overlay(job_dir: Path, step: Step, image: np.ndarray, sp: StepPerceptio
         result = draw_screws(
             image, [record.box for record in sp.removed], [record.number for record in sp.removed]
         )
+    elif located is not None:  # the cut-out itself, not a rectangle
+        result = draw_part(image, located.detection, located.size_sent)
     elif sp.part is not None:
         box = sp.part.box
         detection = Detection(
@@ -220,18 +229,29 @@ def best_video(job_dir: Path, ingest: IngestInfo | None) -> tuple[Path, str]:
     return job_dir / "video.mp4", ""
 
 
-def _find_part(client: Any, keyframe: Path, step: Step, sp: StepPerception) -> None:
+def _find_part(
+    client: Any, settings: Settings, job_dir: Path, step: Step, sp: StepPerception, object_name: str
+) -> Located | None:
+    """Spark points at the part, SAM cuts it out, Spark checks it (app/pipeline/locate.py)."""
     concepts = part_concepts(step)
-    for concept in concepts:  # plain words first, then shorter fallbacks
-        detections, sent_size = client.segment(keyframe, concept, max_side=1600)
-        usable = [d for d in detections if _confidence_value(d) >= MIN_CONFIDENCE]
-        best = max(usable, key=_confidence_value, default=None)
-        part_box = _norm_box(best.box, sent_size) if best is not None else None
-        if best is not None and part_box is not None:
-            sp.part = PartHighlight(concept=concept, box=part_box, confidence=best.confidence)
-            return
-    if concepts:
-        sp.notes.append(f"No part found for '{concepts[0]}'.")
+    if not concepts:
+        return None
+    part = concepts[0]
+    context = f"{object_name}. Step: {step.title}. {step.instruction}"
+    work = job_dir / "steps" / f"{step.index:02d}_locate"
+    try:
+        located = locate_part(client, settings, job_dir, step, part, context, work)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    if located is None:
+        sp.notes.append(f"The {part} could not be proven on any frame of this step.")
+        return None
+    x1, y1, x2, y2 = located.box
+    box = NormBox(x=x1 / 1000, y=y1 / 1000, w=(x2 - x1) / 1000, h=(y2 - y1) / 1000)
+    sp.part = PartHighlight(
+        concept=part, box=box, confidence=round(located.confidence, 3), t_s=located.t_s
+    )
+    return located
 
 
 def fill_ledger(sp: StepPerception, found: Found, next_number: int) -> int:
@@ -290,9 +310,11 @@ def _process_step(
     adding: bool,
     object_name: str,
 ) -> int:
-    keyframe = _keyframe_still(job_dir, ingest, frames, step, plan.duration_s)
-    _find_part(client, keyframe, step, sp)
-    image = _read_image(keyframe)
+    located = _find_part(client, settings, job_dir, step, sp, object_name or plan.device)
+    if located is not None:
+        image = located.frame
+    else:
+        image = _read_image(_keyframe_still(job_dir, ingest, frames, step, plan.duration_s))
     count = _screw_count(step)
     if count:
         kind = step_fastener(step, fastener)
@@ -331,7 +353,7 @@ def _process_step(
                 f"{seen} of {count} {plural(kind.split()[-1])} {verb} are clearly visible in "
                 "the video; the count comes from the analysis."
             )
-    sp.overlay = make_overlay(job_dir, step, image, sp)
+    sp.overlay = make_overlay(job_dir, step, image, sp, located)
     sp.sam_calls = client.sam_calls
     return next_number
 

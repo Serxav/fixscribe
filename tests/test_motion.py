@@ -11,7 +11,16 @@ from app import artifacts
 from app.config import Settings
 from app.pipeline import motion
 from app.pipeline.fasteners import Found, save_found
-from app.schemas import Motion, Plan, ScrewMap, Step
+from app.schemas import (
+    Motion,
+    NormBox,
+    PartHighlight,
+    Perception,
+    Plan,
+    ScrewMap,
+    Step,
+    StepPerception,
+)
 
 
 def _obj(object_id, box, mask=None):
@@ -25,6 +34,8 @@ def _frame(index, objects, size=(40, 30)):
 def test_clip_window_keeps_short_steps_and_centers_long_ones():
     assert motion.clip_window(2.0, 6.0) == (2.0, 6.0)
     assert motion.clip_window(0.0, 20.0) == (6.0, 14.0)
+    assert motion.clip_window(0.0, 20.0, around=18.0) == (12.0, 20.0)
+    assert motion.clip_window(0.0, 20.0, around=1.0) == (0.0, 8.0)
 
 
 def test_to_track_unions_masks_and_scales_boxes():
@@ -134,6 +145,19 @@ def job(tmp_path):
              target_part="back cover", screws=ScrewMap(count=1)),
         Step(index=2, title="Look", instruction="Look.", start_s=2.5, end_s=2.9),
     ]  # fmt: skip
+    artifacts.save(
+        tmp_path,
+        Perception(
+            steps=[
+                StepPerception(
+                    index=1,
+                    part=PartHighlight(
+                        concept="back cover", box=NormBox(x=0.2, y=0.2, w=0.3, h=0.3), t_s=1.0
+                    ),
+                )
+            ]
+        ),
+    )
     artifacts.save(tmp_path, Plan(title="t", device="d", mode="silent", duration_s=3, steps=steps))
     return tmp_path
 
@@ -146,8 +170,8 @@ def test_run_renders_clips_cutout_and_draws_perception_fasteners(job):
     save_found(job, 1, found)
     sam = FakeSam()
     result = motion.run(job, Settings(), client=sam)
-    # Find the part and follow it; the fasteners are not searched again. Step 2 has no part.
-    assert sam.calls == [("find", "back cover"), ("follow", [1])]
+    # Perception proved the part: only follow it. Step 2 has nothing proven and costs nothing.
+    assert sam.calls == [("follow", [1])]
     step = result.steps[0]
     assert step.fasteners_tracked == 1  # only the one that came out
     for path in (step.clip, step.clip_reverse, step.cutout):
@@ -172,23 +196,6 @@ def test_box_local_masks_are_placed_inside_their_box():
     track = motion.to_track([_frame(0, [_obj(1, (20, 10, 30, 15), local)], (40, 30))], (40, 30))
     ys, xs = np.nonzero(track.masks[0])
     assert (xs.min(), xs.max(), ys.min(), ys.max()) == (20, 29, 10, 14)
-
-
-def test_seed_part_takes_the_most_confident_then_largest():
-    class Finder:
-        def segment(self, path, concept, max_side=1280):
-            return [
-                _det((0, 0, 10, 10), 0.9),
-                _det((0, 0, 30, 30), 0.9),
-                _det((0, 0, 50, 50), 0.2),
-            ], (100, 100)
-
-    frame = np.zeros((100, 100, 3), dtype=np.uint8)
-    import tempfile
-    from pathlib import Path
-
-    with tempfile.TemporaryDirectory() as work:
-        assert motion.seed_part(Finder(), frame, "lid", Path(work)) == (0, 0, 30, 30)
 
 
 def test_smoothing_removes_one_frame_flicker():

@@ -76,6 +76,9 @@ class BudgetExceeded(Exception):
     """Raised before a call when spend is already at or over budget."""
 
 
+JOB_RESERVE_USD = 0.05
+
+
 class MetaError(Exception):
     """Non-retryable Meta API failure, or retries used up."""
 
@@ -759,7 +762,8 @@ class MetaClient:
 
     def _check_budget(self) -> None:
         self.spend.check()
-        if self.job_spend is not None and self.job_spend.total() >= self.job_spend.budget_usd:
+        left = self.job_spend.budget_usd - self.job_spend.total() if self.job_spend else 1.0
+        if left <= JOB_RESERVE_USD:  # one call can cost more than a few cents: stop before the cap
             raise BudgetExceeded(
                 f"this video reached its spend limit of ${self.job_spend.budget_usd:.2f}"
             )
