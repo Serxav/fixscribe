@@ -17,7 +17,7 @@
     if (!media) return;
     var fit = function () {
       var w = media.naturalWidth || media.videoWidth, h = media.naturalHeight || media.videoHeight;
-      if (w && h) stage.style.aspectRatio = w + " / " + h;
+      if (w && h && w >= h) stage.style.aspectRatio = w + " / " + h;
     };
     fit();
     media.addEventListener("load", fit);
