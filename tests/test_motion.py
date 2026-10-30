@@ -33,9 +33,9 @@ def _frame(index, objects, size=(40, 30)):
 
 def test_clip_window_keeps_short_steps_and_centers_long_ones():
     assert motion.clip_window(2.0, 6.0) == (2.0, 6.0)
-    assert motion.clip_window(0.0, 20.0) == (6.0, 14.0)
-    assert motion.clip_window(0.0, 20.0, around=18.0) == (12.0, 20.0)
-    assert motion.clip_window(0.0, 20.0, around=1.0) == (0.0, 8.0)
+    assert motion.clip_window(0.0, 20.0) == (7.5, 12.5)
+    assert motion.clip_window(0.0, 20.0, around=18.0) == (15.0, 20.0)
+    assert motion.clip_window(0.0, 20.0, around=1.0) == (0.0, 5.0)
 
 
 def test_to_track_unions_masks_and_scales_boxes():
@@ -54,14 +54,14 @@ def test_held_mask_fades_over_skipped_frames():
     assert motion.held_mask(track, 10 + motion.HOLD_FRAMES + 1, (4, 4))[1] == 0.0
 
 
-def test_render_frame_dims_the_scene_and_keeps_the_part():
+def test_render_frame_marks_the_part_and_leaves_the_rest_of_the_video_alone():
     frame = np.full((60, 80, 3), 200, dtype=np.uint8)
     part = np.zeros((60, 80), dtype=bool)
     part[20:40, 30:50] = True
     out = motion.render_frame(frame, part, 1.0, {7: (5, 5, 9, 9)}, {7: 1}, t=0.5)
     assert out.shape == frame.shape
-    assert out[5, 70].mean() < 160  # background dimmed
-    assert out[30, 40].mean() > 180  # the part stays bright
+    assert out[5, 70].mean() == 200  # never darkened
+    assert out[25, 35][2] > out[25, 35][0]  # the part is tinted orange
 
 
 def test_render_frame_without_a_part_keeps_the_video_as_it_is():

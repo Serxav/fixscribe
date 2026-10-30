@@ -7,9 +7,8 @@ over time so the outline does not shake. The fasteners are not searched again he
 perception stage already found, chose and followed them (``steps/NN_fasteners.json``), and
 their tracks are drawn on this clip.
 
-From the per-frame masks we render a "cinematic" clip: the scene dims a little while the part is
-found, the part stays bright with a soft glow and a crisp outline that follows it, and every
-fastener gets a numbered ring that moves with it.
+From the per-frame masks we render a clip with the same mark the site shows: the part's own shape
+in orange with its name, following it, and every fastener with a numbered ring that moves with it.
 We also cut the part out along its mask (transparent PNG) and keep its outline as an SVG path, so
 the web page can lift the real shape of the part in 3D instead of a rectangle.
 """
@@ -29,6 +28,7 @@ from app.meta_client import BudgetExceeded, make_client
 from app.pipeline.analyze import guide_direction
 from app.pipeline.fasteners import Found, load_found
 from app.pipeline.ingest import run_ffmpeg
+from app.pipeline.overlay import mark_part
 from app.schemas import Identity, Motion, NormBox, PartHighlight, Perception, Plan, StepMotion
 
 logger = logging.getLogger(__name__)
@@ -36,15 +36,13 @@ logger = logging.getLogger(__name__)
 VERSION = "3"
 MAX_STEPS = 12
 FPS = 15
-MAX_SECONDS = 8.0  # longer steps: the middle 8 s (SAM bills per frame)
+MAX_SECONDS = 5.0  # longer steps: 5 s around the part (SAM bills per frame)
 WIDTH = 720  # long side of the working clip
 HOLD_FRAMES = 4  # a mask SAM skipped on a frame is kept this many frames, then fades
 SMOOTH = 0.6  # weight of this frame's mask against the previous one (removes jitter)
 POP_FRAMES = 8  # a fastener that comes out leaves an expanding ring for this many frames
 MAX_RING = 0.03  # ring radius at most this share of the frame's long side
 
-ACCENT = (255, 132, 10)  # BGR of #0a84ff
-OUTLINE = (255, 214, 120)  # light cyan-blue, BGR
 RING = (10, 214, 255)  # yellow #ffd60a, BGR
 
 
@@ -151,36 +149,15 @@ def render_frame(
     numbers: dict[int, int],
     t: float,
     pops: list[tuple[tuple[float, float, float, float], float]] = (),
+    label: str = "",
 ) -> np.ndarray:
-    """One cinematic frame. `t` is 0..1 along the clip (for the intro and the glow pulse).
+    """One frame with the marks the site shows; the video itself stays as it was filmed.
 
     `pops` are fasteners that just came out: (last box, 0..1 progress) -> an expanding ring.
     """
-    intro = min(1.0, t * 6)  # the first ~15 % of the clip eases from normal to styled
-    gray = cv2.cvtColor(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2BGR)
-    dim = cv2.addWeighted(frame, 0.7, gray, 0.3, 0).astype(np.float32) * 0.72
-    # the scene only dims while the part is on screen; with nothing to show it stays as it is
-    styled = frame.astype(np.float32) * (1 - part_alpha) + dim * part_alpha
-
-    if part_alpha > 0 and part.any():
-        soft = cv2.GaussianBlur(part.astype(np.float32), (0, 0), 2.0)[..., None] * part_alpha
-        lit = np.clip(frame.astype(np.float32) * 1.08 + 6, 0, 255)
-        styled = styled * (1 - soft) + lit * soft
-        ring = cv2.dilate(part.astype(np.uint8), np.ones((9, 9), np.uint8)) - part.astype(np.uint8)
-        pulse = 0.75 + 0.25 * np.sin(t * np.pi * 4)
-        glow = cv2.GaussianBlur(ring.astype(np.float32), (0, 0), 9.0)[..., None]
-        styled = styled + glow * np.array(ACCENT, dtype=np.float32) * 1.6 * pulse * part_alpha
-
-    out = frame.astype(np.float32) * (1 - intro) + styled * intro
-    out = np.clip(out, 0, 255).astype(np.uint8)
-
-    if part_alpha > 0 and part.any():
-        contours, _ = cv2.findContours(
-            part.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-        )
-        overlay = out.copy()
-        cv2.drawContours(overlay, contours, -1, OUTLINE, 2, cv2.LINE_AA)
-        out = cv2.addWeighted(overlay, part_alpha * intro, out, 1 - part_alpha * intro, 0)
+    out = mark_part(frame, part, label, part_alpha)
+    if out is frame:
+        out = frame.copy()
 
     for object_id, (x1, y1, x2, y2) in fasteners.items():
         cx, cy = int((x1 + x2) / 2), int((y1 + y2) / 2)
@@ -388,7 +365,9 @@ def motion_for_step(
             if 0 < index - at <= POP_FRAMES
         ]
         rendered.append(
-            render_frame(frame, part, alpha, boxes, numbers, index / max(1, len(frames) - 1), pops)
+            render_frame(
+                frame, part, alpha, boxes, numbers, index / max(1, len(frames) - 1), pops, concept
+            )
         )
     clip = f"steps/{step.index:02d}_motion.mp4"
     clip_reverse = f"steps/{step.index:02d}_motion_rev.mp4"

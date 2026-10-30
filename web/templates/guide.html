@@ -89,6 +89,20 @@
 {% endif %}
 
 {% if guide.tools or guide.parts %}
+{% if found and found.rows %}
+<section class="found" aria-label="Parts found">
+  {% if found.hero %}<img class="found-photo" src="{{ found.hero }}" alt="" loading="lazy">{% endif %}
+  <div class="found-panel">
+    <p class="found-kicker mono">Muse Spark · SAM 3.1</p>
+    <h2 class="found-title">{{ guide.device or guide.title }}</h2>
+    <ol class="found-rows">
+      {% for row in found.rows %}<li><span class="mono">{{ '%02d' % loop.index }}</span><a href="#step-{{ row.step }}">{{ row.name }}</a><i aria-hidden="true">✓</i></li>{% endfor %}
+    </ol>
+    <p class="found-foot mono">{{ found.rows|length }} part{{ '' if found.rows|length == 1 else 's' }} found · each one cut out{% if found.missed %} · {{ found.missed }} step{{ '' if found.missed == 1 else 's' }} not proven{% endif %}</p>
+  </div>
+</section>
+{% endif %}
+
 <section>
   <div class="sect"><span class="num">III</span><span>Tools and parts</span></div>
   <div class="grid12 guide-sect">

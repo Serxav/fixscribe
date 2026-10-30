@@ -185,6 +185,28 @@ def step_views(guide: Guide, job_id: str, parts: dict[int, dict]) -> list[dict]:
     return views
 
 
+def found_parts(folder: Path, guide: Guide, media: str) -> dict:
+    """The site's list of parts: each proven part once, with its step; the rest stay marked."""
+    try:
+        perception = artifacts.load_optional(folder, Perception)
+    except ArtifactError:
+        perception = None
+    rows, seen = [], set()
+    missed = 0
+    hero = None
+    titles = {step.index: step.title for step in guide.steps}
+    for item in perception.steps if perception else []:
+        if item.part is None:
+            missed += 1
+            continue
+        hero = hero or (media + item.overlay if item.overlay else None)
+        name = item.part.concept.capitalize()
+        if name not in seen:
+            seen.add(name)
+            rows.append({"name": name, "step": item.index, "title": titles.get(item.index, "")})
+    return {"rows": rows, "missed": missed, "hero": hero}
+
+
 @router.get("/guides/{job_id}", response_class=HTMLResponse)
 def guide_page(
     request: Request,
@@ -205,6 +227,7 @@ def guide_page(
             "job_id": job_id,
             "valid_id": True,
             "steps": step_views(guide, job_id, _part_boxes(folder)),
+            "found": found_parts(folder, guide, f"/media/{job_id}/"),
             "fasteners_total": f"{total} {plural(kind, total)}" if total else "",
             "proof_percent": round(guide.proof.score * 100) if guide.proof else None,
             "level": guide.safety.level if guide.safety else "normal",

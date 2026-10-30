@@ -10,7 +10,10 @@ from app import artifacts
 from app.meta_client import Detection
 
 # Signal lime #D4FF3A and graphite #0E0F11, in OpenCV BGR order.
-LIME_BGR = (58, 255, 212)
+CUT_BGR = (31, 90, 255)  # the site's #ff5a1f
+CUT_TINT = 0.14
+PILL_BGR = (32, 16, 11)  # the site's dark label
+LIME_BGR = (10, 214, 255)  # the yellow of the screw rings on the site
 GRAPHITE_BGR = (17, 15, 14)
 WHITE_BGR = (255, 255, 255)
 
@@ -65,8 +68,49 @@ def _rounded_rectangle(image: Any, pt1: tuple[int, int], pt2: tuple[int, int]) -
     cv2.ellipse(image, (x1 + radius, y2 - radius), (radius, radius), 90, 0, 90, LIME_BGR, 2)
 
 
-def draw_part(image: Any, detection: Detection, size_sent: tuple[int, int]) -> Any:
-    """Return a copy with the part mask tinted lime, or a lime box outline."""
+def mark_part(image: Any, mask: Any, label: str = "", alpha: float = 1.0) -> Any:
+    """The mark the site shows: the part's own shape in orange, a white dot and its name."""
+    if not mask.any() or alpha <= 0:
+        return image
+    full = mask.astype(np.uint8)
+    tinted = image.copy()
+    tinted[mask] = (image[mask] * (1 - CUT_TINT) + np.array(CUT_BGR) * CUT_TINT).astype(np.uint8)
+    contours, _ = cv2.findContours(full, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cv2.drawContours(tinted, contours, -1, CUT_BGR, max(2, image.shape[1] // 500), cv2.LINE_AA)
+    moments = cv2.moments(full, binaryImage=True)
+    if moments["m00"] > 0:
+        dot = (int(moments["m10"] / moments["m00"]), int(moments["m01"] / moments["m00"]))
+        if label:
+            _name_pill(tinted, label.capitalize(), dot, cv2.boundingRect(full)[1])
+        cv2.circle(tinted, dot, max(3, image.shape[1] // 300), (255, 255, 255), -1, cv2.LINE_AA)
+    if alpha >= 1:
+        return tinted
+    return cv2.addWeighted(tinted, alpha, image, 1 - alpha, 0)
+
+
+def _name_pill(image: Any, text: str, dot: tuple[int, int], top: int) -> None:
+    """A dark pill with the name above the part, joined to its dot by a thin white line."""
+    height, width = image.shape[:2]
+    scale = max(0.45, width / 1800)
+    thick = 1 if scale < 0.7 else 2
+    (text_w, text_h), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, scale, thick)
+    pad_x, pad_y = int(text_h * 0.9), int(text_h * 0.6)
+    pill_h = text_h + 2 * pad_y
+    x1 = min(max(4, dot[0] - text_w // 2 - pad_x), width - text_w - 2 * pad_x - 4)
+    y1 = max(4, top - pill_h - pill_h // 2)
+    x2, y2 = x1 + text_w + 2 * pad_x, y1 + pill_h
+    cv2.line(image, dot, (dot[0], y2), (255, 255, 255), 1, cv2.LINE_AA)
+    radius = pill_h // 2
+    cv2.rectangle(image, (x1 + radius, y1), (x2 - radius, y2), PILL_BGR, -1)
+    cv2.circle(image, (x1 + radius, y1 + radius), radius, PILL_BGR, -1, cv2.LINE_AA)
+    cv2.circle(image, (x2 - radius, y1 + radius), radius, PILL_BGR, -1, cv2.LINE_AA)
+    baseline = y1 + pad_y + text_h
+    cv2.putText(image, text, (x1 + pad_x, baseline), cv2.FONT_HERSHEY_SIMPLEX, scale,
+                (255, 255, 255), thick, cv2.LINE_AA)  # fmt: skip
+
+
+def draw_part(image: Any, detection: Detection, size_sent: tuple[int, int], label: str = "") -> Any:
+    """Return a copy with the part marked like on the site, or a box outline without a mask."""
     result = image.copy()
     if detection.mask is None:
         x1, y1, x2, y2 = _scaled_box(detection.box, size_sent, image.shape)
@@ -92,14 +136,7 @@ def draw_part(image: Any, detection: Detection, size_sent: tuple[int, int]) -> A
     scaled = cv2.resize(local, (box_w, box_h), interpolation=cv2.INTER_NEAREST)
     full = np.zeros(image.shape[:2], dtype=np.uint8)
     full[y1:y2, x1:x2] = (scaled > 0).astype(np.uint8) * 255
-    lime = np.array(LIME_BGR, dtype=np.float32)
-    region = full > 0
-    if np.any(region):
-        original = result[region].astype(np.float32)
-        result[region] = (original * 0.65 + lime * 0.35).astype(np.uint8)
-        contours, _ = cv2.findContours(full, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        cv2.drawContours(result, contours, -1, LIME_BGR, 2)
-    return result
+    return mark_part(result, full > 0, label)
 
 
 def _is_norm_box(item: Any) -> bool:

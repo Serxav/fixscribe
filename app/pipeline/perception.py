@@ -200,7 +200,7 @@ def make_overlay(
             image, [record.box for record in sp.removed], [record.number for record in sp.removed]
         )
     elif located is not None:  # the cut-out itself, not a rectangle
-        result = draw_part(image, located.detection, located.size_sent)
+        result = draw_part(image, located.detection, located.size_sent, sp.part.concept)
     elif sp.part is not None:
         box = sp.part.box
         detection = Detection(
