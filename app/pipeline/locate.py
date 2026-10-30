@@ -39,6 +39,7 @@ ZOOM_PAD = 0.15  # room kept around the object, as a share of its size
 MIN_ZOOM = 0.3  # never zoom on less than this share of the frame's width or height
 REVIEW_FRAMES = 12  # frames of a step Spark goes through one by one
 SLOW_BOX = 28  # half a box around a pointed small part, on the 0..1000 grid
+WORK_MARGIN = 60  # how far from the spot being worked on a pointed part may be, on the same grid
 REVIEW_SCHEMA = {
     "type": "object",
     "properties": {
@@ -48,6 +49,9 @@ REVIEW_SCHEMA = {
         "end_s": {"type": "number"},
         "confidence": {"type": "number"},
         "part_frames": {"type": "array", "items": {"type": "integer"}},
+        "work_frame": {"type": "integer"},
+        "work_x": {"type": "integer"},
+        "work_y": {"type": "integer"},
         "fastener_frame": {"type": "integer"},
         "points": {
             "type": "array",
@@ -66,6 +70,9 @@ REVIEW_SCHEMA = {
         "end_s",
         "confidence",
         "part_frames",
+        "work_frame",
+        "work_x",
+        "work_y",
         "fastener_frame",
         "points",
     ],
@@ -171,6 +178,7 @@ def review_step(
                 schema=REVIEW_SCHEMA,
                 prompt=prompt,
                 images=paths,
+                raw_path=work.parent / f"{step.index:02d}_review_raw.txt",
             )
         except spark.SparkAnswerError:
             continue
@@ -245,6 +253,25 @@ def _clean_box(box: tuple) -> bool:
     return x2 - x1 >= 4 and y2 - y1 >= 4 and area <= MAX_AREA
 
 
+def _touches(box: tuple, spot: tuple[int, int]) -> bool:
+    """True when the spot is inside the box, give or take ``WORK_MARGIN``."""
+    x1, y1, x2, y2 = box
+    return (
+        x1 - WORK_MARGIN <= spot[0] <= x2 + WORK_MARGIN
+        and y1 - WORK_MARGIN <= spot[1] <= y2 + WORK_MARGIN
+    )
+
+
+def work_spot(review: dict, count: int) -> tuple[int, tuple[int, int]] | None:
+    """The frame number and the spot the review saw the tool or fingers touch, if any."""
+    n, x, y = review.get("work_frame"), review.get("work_x"), review.get("work_y")
+    if not all(isinstance(value, int) for value in (n, x, y)):
+        return None
+    if not 1 <= n <= count or not (0 <= x <= 1000 and 0 <= y <= 1000):
+        return None
+    return n, (x, y)
+
+
 def cut_and_check(
     client: Any,
     settings: Settings,
@@ -253,8 +280,15 @@ def cut_and_check(
     part: str,
     context: str,
     tried: dict,
+    near: tuple[int, int] | None = None,
 ) -> tuple[tuple[int, int, int, int], float, Detection, tuple[int, int]] | None:
-    """Spark points on one frame, SAM cuts, Spark checks. ``tried`` records what happened."""
+    """Spark points on one frame, SAM cuts, Spark checks. ``tried`` records what happened.
+
+    ``near`` is the spot being worked on: there can be several parts of the same kind, and the
+    one that counts is the one under the tool.
+    """
+    if near is not None:
+        context += f" The tool or fingers touch it at about x={near[0]}, y={near[1]} (0-1000 grid)."
     pointed = client.ground(path, part, context=context, max_boxes=1)
     if not pointed:
         tried["result"] = "Spark does not see it"
@@ -263,6 +297,9 @@ def cut_and_check(
     tried["box"] = list(box)
     if not _clean_box(box):
         tried["result"] = "unusable box"
+        return None
+    if near is not None and not _touches(box, near):
+        tried["result"] = "another part, away from the spot being worked on"
         return None
     detections, size = client.segment_boxes(path, [box])
     if not detections:
@@ -340,13 +377,18 @@ def look_at_step(
             return look
         record["review"] = look.review
         chosen = look.review.get("part_frames") or []
-        for n in [n for n in chosen if isinstance(n, int) and 1 <= n <= len(look.frames)][:3]:
+        chosen = [n for n in chosen if isinstance(n, int) and 1 <= n <= len(look.frames)][:3]
+        spot = work_spot(look.review, len(look.frames))
+        near = spot[1] if spot else None
+        if spot:  # the frame where the tool touches it comes first: its spot is exact there
+            chosen = [spot[0], *(n for n in chosen if n != spot[0])][:3]
+        for n in chosen:
             t_s, frame = look.frames[n - 1]
             tried: dict[str, Any] = {"t_s": round(t_s, 2)}
             record["tries"].append(tried)
             path = _write(frame, work / f"try{n}.jpg")
             try:
-                kept = cut_and_check(client, settings, path, frame, part, context, tried)
+                kept = cut_and_check(client, settings, path, frame, part, context, tried, near)
             except BudgetExceeded:
                 raise
             except MetaError as exc:

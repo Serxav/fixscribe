@@ -23,14 +23,14 @@ def main(argv: list[str]) -> int:
     if len(args) < 2:
         print(__doc__)
         return 2
-    source, wanted = Path(args[0]), {int(a) for a in args[1:]}
+    source, wanted = Path(args[0]).resolve(), {int(a) for a in args[1:]}
     plan = artifacts.load(source, Plan)
     steps = [step for step in plan.steps if step.index in wanted]
     if not real:
         for step in steps:
             print(step.index, step.title, step.target_part, step.screws)
         return 0
-    copy = source.parent.parent.parent / "close_look" / source.name
+    copy = source.parent.parent / "close_look" / source.name
     shutil.rmtree(copy, ignore_errors=True)
     (copy / "steps").mkdir(parents=True)
     for name in KEEP:

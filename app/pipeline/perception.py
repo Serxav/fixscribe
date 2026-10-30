@@ -367,9 +367,11 @@ def _process_step(
                 prefilter,
             )
             if result is not None:
-                found, image = result
+                found, found_image = result
                 save_found(job_dir, step.index, found)
                 next_number = fill_ledger(sp, found, next_number)
+                if sp.removed:  # a kept cut-out belongs to its own zoomed frame, not this one
+                    image = found_image
             if not sp.removed:  # too small for the search: go through the step frame by frame
                 work.mkdir(parents=True, exist_ok=True)
                 slow = cut_pointed(client, settings, look, kind, count, context, work)

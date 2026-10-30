@@ -382,3 +382,60 @@ def test_small_fasteners_are_found_going_through_the_step_slowly(tmp_path):
     step = perception.run(tmp_path, settings, client=client).steps[0]
     assert client.slow == [locate.REVIEW_FRAMES]
     assert [record.number for record in step.removed] == [1, 2]
+
+
+def test_a_part_away_from_the_spot_being_worked_on_is_not_shown(tmp_path):
+    settings = _locate_job(tmp_path)
+
+    class Elsewhere(FakeMeta):
+        def ground(self, path, query, *, context="", max_boxes=8):
+            if query != "rail":
+                return super().ground(path, query, context=context, max_boxes=max_boxes)
+            assert "x=800, y=800" in context
+            return [SimpleNamespace(label=query, box=(100, 100, 300, 300), why="t")]
+
+        def respond(self, **kwargs):
+            answer = {**REVIEW, "work_frame": 2, "work_x": 800, "work_y": 800}
+            return SimpleNamespace(output_text=json.dumps(answer))
+
+    client = Elsewhere()
+    step = perception.run(tmp_path, settings, client=client).steps[0]
+    assert step.part is None and client.calls == []
+    record = json.loads((tmp_path / "steps" / "01_part.json").read_text())
+    assert [t["result"][:12] for t in record["tries"]] == ["another part"] * 2
+
+
+def test_the_frame_where_the_tool_touches_the_part_is_tried_first(tmp_path):
+    settings = _locate_job(tmp_path)
+
+    class Touching(FakeMeta):
+        def respond(self, **kwargs):
+            if kwargs["text"]["format"]["name"] != "step_review":
+                return super().respond(**kwargs)
+            answer = {**REVIEW, "work_frame": 5, "work_x": 500, "work_y": 500}
+            return SimpleNamespace(output_text=json.dumps(answer))
+
+    perception.run(tmp_path, settings, client=Touching())
+    record = json.loads((tmp_path / "steps" / "01_part.json").read_text())
+    moments = locate.moments(0.0, 6.0)  # the step and the bit of video after it
+    assert abs(record["tries"][0]["t_s"] - moments[4]) < 0.5
+    assert record["tries"][0]["result"] == "kept"
+
+
+def test_a_cut_out_stays_on_its_zoomed_frame_when_no_fastener_was_kept(tmp_path, monkeypatch):
+    settings = _job(tmp_path, [_step(1, 0.0, 4.0, screws=2)], task="assemble")
+    other = np.zeros((10, 10, 3), dtype=np.uint8)
+    nothing = SimpleNamespace(frames={}, kept=[], seed=0, size=(10, 10), confidence={})
+    monkeypatch.setattr(perception, "find_in_step", lambda *a, **k: (nothing, other))
+    monkeypatch.setattr(perception, "save_found", lambda *a, **k: None)
+    drawn = []
+    real = perception.make_overlay
+
+    def spy(job_dir, step, image, sp, located=None):
+        drawn.append((image, located))
+        return real(job_dir, step, image, sp, located)
+
+    monkeypatch.setattr(perception, "make_overlay", spy)
+    perception.run(tmp_path, settings, client=FakeMeta())
+    image, located = drawn[0]
+    assert located is not None and image is located.frame
