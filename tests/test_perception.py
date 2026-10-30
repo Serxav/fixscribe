@@ -244,3 +244,9 @@ def test_part_concepts_prefer_plain_words_then_the_head_noun():
     step = Step(index=1, title="t", instruction="i", start_s=0, end_s=1, sam_concept="wooden leg",
                 target_part="leg frame C", removes=["Rail C"])  # fmt: skip
     assert part_concepts(step) == ["wooden leg", "leg", "frame c"]
+
+
+def test_part_concepts_ask_for_the_part_before_a_tool_next_to_it():
+    step = Step(index=1, title="t", instruction="i", start_s=0, end_s=1, target_part="back cover",
+                sam_concept="yellow bottle")  # fmt: skip
+    assert part_concepts(step)[0] == "back cover"

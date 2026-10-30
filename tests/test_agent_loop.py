@@ -17,7 +17,7 @@ from app.agent import record as rec
 from app.agent.record import SignOff
 from app.agent.tools import Case, add_part, add_step, normalize, submit_guide, valid_box
 from app.config import Settings
-from app.meta_client import BudgetExceeded, Detection
+from app.meta_client import BudgetExceeded, Detection, MetaError
 from app.schemas import Identity, IngestInfo, Transcript, Turn
 
 
@@ -224,6 +224,27 @@ def test_budget_pauses_without_losing_the_record(tmp_path, settings):
     record = loop.run(job, settings, client=meta)
     assert record.status == "paused" and "budget" in record.notes[-1]
     assert rec.load_record(job).turn == 1
+
+
+def test_a_lost_response_restarts_the_conversation_and_keeps_working(tmp_path, settings):
+    job = make_job(tmp_path)
+    meta = FakeMeta([("look", {"t_s": 1.0}), ("look", {"t_s": 2.0})])
+    original = meta.respond
+    failed = []
+
+    def respond(**kwargs):
+        if kwargs.get("previous_response_id") and not failed:
+            failed.append(kwargs)
+            raise MetaError("meta api failed with status 400 on attempt 1", status_code=400)
+        return original(**kwargs)
+
+    meta.respond = respond
+    record = loop.run(job, settings, client=meta)
+    assert failed and record.turn >= 2
+    retry = meta.calls[1]
+    assert "previous_response_id" not in retry
+    assert "1. look" in json.dumps(retry["input"])
+    assert not any(item.get("type") == "function_call_output" for item in retry["input"])
 
 
 def test_bad_tool_calls_are_refusals_not_crashes(tmp_path, settings, monkeypatch):

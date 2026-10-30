@@ -7,14 +7,15 @@ over time so the outline does not shake. The fasteners are not searched again he
 perception stage already found, chose and followed them (``steps/NN_fasteners.json``), and
 their tracks are drawn on this clip.
 
-From the per-frame masks we render a
-"cinematic" clip: the scene dims and loses colour, the part stays in full colour with a soft glow
-and a crisp outline that follows it, and every fastener gets a numbered ring that moves with it.
+From the per-frame masks we render a "cinematic" clip: the scene dims a little while the part is
+found, the part stays bright with a soft glow and a crisp outline that follows it, and every
+fastener gets a numbered ring that moves with it.
 We also cut the part out along its mask (transparent PNG) and keep its outline as an SVG path, so
 the web page can lift the real shape of the part in 3D instead of a rectangle.
 """
 
 import logging
+import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -35,7 +36,7 @@ from app.schemas import Identity, Motion, NormBox, Plan, StepMotion
 logger = logging.getLogger(__name__)
 
 VERSION = "3"
-MAX_STEPS = 6
+MAX_STEPS = 12
 FPS = 15
 MAX_SECONDS = 8.0  # longer steps: the middle 8 s (SAM bills per frame)
 WIDTH = 720  # long side of the working clip
@@ -159,9 +160,9 @@ def render_frame(
     """
     intro = min(1.0, t * 6)  # the first ~15 % of the clip eases from normal to styled
     gray = cv2.cvtColor(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2BGR)
-    dim = cv2.addWeighted(frame, 0.35, gray, 0.65, 0) * 0.42
-    dim = dim + np.array([18, 10, 4], dtype=np.float32)  # a cool blue cast in the shadows
-    styled = dim.astype(np.float32)
+    dim = cv2.addWeighted(frame, 0.7, gray, 0.3, 0).astype(np.float32) * 0.72
+    # the scene only dims while the part is on screen; with nothing to show it stays as it is
+    styled = frame.astype(np.float32) * (1 - part_alpha) + dim * part_alpha
 
     if part_alpha > 0 and part.any():
         soft = cv2.GaussianBlur(part.astype(np.float32), (0, 0), 2.0)[..., None] * part_alpha
@@ -417,6 +418,10 @@ def motion_for_step(
     numbers = {oid: n for n, oid in enumerate(found.kept, start=1)} if found else {}
     gone = gone_frames(found, start, len(frames)) if found and direction != "assemble" else {}
 
+    if not part_track.masks and not numbers:
+        source.unlink(missing_ok=True)
+        shutil.rmtree(work, ignore_errors=True)
+        return None  # SAM followed nothing: the step opens on its photo, not on an empty film
     masks = smoothed(part_track, len(frames), (height, width))
     rendered = []
     for index, frame in enumerate(frames):

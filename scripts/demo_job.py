@@ -355,6 +355,7 @@ class FakeMeta:
             "repair_identity": IDENTITY,
             "refined_step": unsure,
             "film_narration": NARRATION,
+            "song_lyrics": {"lyrics": []},
             # the fastener check: every candidate shown is confirmed
             "check": {"tiles": [{"n": n, "real": True, "why": "demo"} for n in range(1, 17)]},
         }

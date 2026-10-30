@@ -64,12 +64,18 @@ def select_steps(analysis: Analysis, fusion: Fusion | None) -> list[int]:
     A step is selected when its fused confidence is below
     ``CONFIDENCE_THRESHOLD`` or it removes screws. The fused confidence is
     used when fusion ran, otherwise Spark's own confidence. Lowest
-    confidence first, at most ``MAX_STEPS`` steps.
+    confidence first, at most ``MAX_STEPS`` steps. A step longer than the clip is left out:
+    Spark would see only part of it and rewrite the whole step from that part.
     """
     fused = {step.index: step for step in fusion.steps} if fusion is not None else {}
     selected: list[tuple[float, int]] = []
     for index, draft in enumerate(_ordered_drafts(analysis), start=1):
         fused_step = fused.get(index)
+        start, end = (
+            (fused_step.start_s, fused_step.end_s) if fused_step else (draft.start_s, draft.end_s)
+        )
+        if end - start > MAX_CLIP_S - 2 * CLIP_PAD_S:
+            continue
         confidence = (
             float(fused_step.confidence) if fused_step is not None else float(draft.confidence)
         )

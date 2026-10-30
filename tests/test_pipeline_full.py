@@ -155,7 +155,8 @@ def test_full_pipeline_builds_a_guide(tmp_path, fake_meta):
     folder = jobs / job_id
     scenes = json.loads((folder / "scenes.json").read_text())
     assert scenes["source"] == "voice"
-    identify_prompt, prompt = [text for kind, text in fake_meta.calls if kind == "respond"][:2]
+    # the first call checks the turns for song lyrics, then identify and analyze
+    identify_prompt, prompt = [text for kind, text in fake_meta.calls if kind == "respond"][1:3]
     assert "Step one, remove the four screws" in identify_prompt  # identify heard the speech
     assert "Step one, remove the four screws" in prompt
     assert "- step 1: 0.5–5.0 s" in prompt

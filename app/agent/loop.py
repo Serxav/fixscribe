@@ -146,15 +146,22 @@ def step(case: Case, settings: Settings, state: dict, pending_input: list) -> tu
     if record.turn + 1 >= record.max_turns:
         nudge = [{"role": "user", "content": "This is your last turn: call submit_guide now."}]
     follow_up = {"previous_response_id": state["response_id"]} if state.get("response_id") else {}
-    response = case.client.respond(
-        model=settings.wonder_model,
-        input=pending_input + nudge,
-        tools=DEFINITIONS,
-        parallel_tool_calls=False,
-        reasoning={"effort": EFFORT},
-        max_output_tokens=MAX_OUTPUT_TOKENS,
-        **follow_up,
-    )
+    request = {
+        "model": settings.wonder_model,
+        "tools": DEFINITIONS,
+        "parallel_tool_calls": False,
+        "reasoning": {"effort": EFFORT},
+        "max_output_tokens": MAX_OUTPUT_TOKENS,
+    }
+    try:
+        response = case.client.respond(input=pending_input + nudge, **request, **follow_up)
+    except MetaError as exc:
+        if exc.status_code != 400 or not follow_up:
+            raise
+        # Meta lost the open response: start a new conversation from what is already saved
+        logger.warning("the open response is gone, restarting the conversation from the record")
+        again = restart_input(case, state, pending_input)
+        response = case.client.respond(input=again + nudge, **request)
     record.turn += 1  # only a call that answered counts as a turn
     state["response_id"] = response.id
     tokens, usd = turn_cost(settings.wonder_model, response)
@@ -207,6 +214,18 @@ def opening_input(case: Case, file_id: str, info: IngestInfo) -> list:
             ],
         },
     ]
+
+
+def restart_input(case: Case, state: dict, pending_input: list) -> list:
+    """A new conversation that knows the turns so far; the tool's image still goes along."""
+    info = artifacts.load(case.job_dir, IngestInfo)
+    lines = ["Your earlier conversation was lost. What you already did, oldest first:"]
+    for turn in rec.load_turns(case.job_dir):
+        if turn.act and turn.observe:
+            lines.append(f"{turn.turn}. {turn.act.tool} {turn.act.args}: {turn.observe.text[:300]}")
+    recap = {"role": "user", "content": "\n".join(lines)}
+    images = [item for item in pending_input if item.get("role") == "user"]
+    return [*opening_input(case, state["file_id"], info), recap, *images]
 
 
 def resume_input(job_dir: Path, record: AgentRecord, state: dict) -> list | None:

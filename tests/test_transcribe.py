@@ -1,10 +1,12 @@
 """Transcribe stage tests. The Meta API is faked, never called."""
 
 import json
+import types
 import wave
 from pathlib import Path
 
 from app.config import Settings
+from app.meta_client import MetaError
 from app.pipeline.transcribe import run
 
 
@@ -26,11 +28,15 @@ class FakeTranscriber:
 
     def __init__(self, payload):
         self.payload = payload
+        self.lyrics: list = []
         self.calls: list = []
 
     def transcribe(self, wav, **kwargs):
         self.calls.append((wav, kwargs))
         return self.payload
+
+    def respond(self, **kwargs):
+        return types.SimpleNamespace(output_text=json.dumps({"lyrics": self.lyrics}))
 
 
 def test_run_without_audio_is_silent(tmp_path):
@@ -155,3 +161,51 @@ def test_run_single_short_turn_is_silent(tmp_path):
     assert result["turns"] == [{"start_s": 0.5, "end_s": 1.5, "text": "ok thanks"}]
     with open(job_dir / "transcript.json", encoding="utf-8") as f:
         assert json.load(f) == result
+
+
+def _sung_payload():
+    texts = ["shadows on the wall tonight", "we open the back cover now", "midnight wraps me slow"]
+    return {
+        "transcript": " ".join(texts),
+        "audioDurationMs": 9000,
+        "turns": [
+            {"startMs": 1000 * i, "endMs": 1000 * i + 900, "transcript": text}
+            for i, text in enumerate(texts)
+        ],
+    }
+
+
+def test_song_lyrics_are_dropped_from_the_transcript(tmp_path):
+    job_dir = tmp_path / "job"
+    job_dir.mkdir()
+    make_wav(job_dir / "audio.wav")
+    fake = FakeTranscriber(payload=_sung_payload())
+    fake.lyrics = [1, 3]
+    result = run(job_dir, make_settings(tmp_path), client=fake)
+    assert [turn.text for turn in result.turns] == ["we open the back cover now"]
+    assert result.transcript == "we open the back cover now"
+    assert result.mode == "narrated"
+
+
+def test_only_song_lyrics_means_a_silent_video(tmp_path):
+    job_dir = tmp_path / "job"
+    job_dir.mkdir()
+    make_wav(job_dir / "audio.wav")
+    fake = FakeTranscriber(payload=_sung_payload())
+    fake.lyrics = [1, 2, 3]
+    result = run(job_dir, make_settings(tmp_path), client=fake)
+    assert result.turns == [] and result.mode == "silent"
+
+
+def test_a_failed_lyrics_check_keeps_every_turn(tmp_path):
+    job_dir = tmp_path / "job"
+    job_dir.mkdir()
+    make_wav(job_dir / "audio.wav")
+    fake = FakeTranscriber(payload=_sung_payload())
+
+    def fail(**kwargs):
+        raise MetaError("down")
+
+    fake.respond = fail
+    result = run(job_dir, make_settings(tmp_path), client=fake)
+    assert len(result.turns) == 3

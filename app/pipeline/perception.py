@@ -80,10 +80,13 @@ class Counted:
 def part_concepts(step: Step) -> list[str]:
     """The words to ask SAM for the part, best first, without repeats.
 
-    Spark's `sam_concept` (a plain noun chosen to be visible) comes first; then the part names;
-    then their last word alone, because SAM finds "leg" when it cannot find "leg frame c".
+    The part of the step comes first, so SAM marks what the step is about and not a tool next to
+    it; then Spark's `sam_concept` (a plain noun chosen to be visible) and the other part names.
+    Each is also tried by its last word, because SAM finds "leg" when it cannot find "leg frame c".
     """
-    names = [step.sam_concept, step.target_part, *(step.removes or [])]
+    names = [step.target_part, step.sam_concept, *(step.removes or [])]
+    if clean_phrase(step.target_part) and len(clean_phrase(step.target_part).split()[-1]) == 1:
+        names = [step.sam_concept, step.target_part, *(step.removes or [])]  # "frame c" is a code
     found: list[str] = []
     for name in names:
         phrase = clean_phrase(name)

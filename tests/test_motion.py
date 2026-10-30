@@ -49,8 +49,14 @@ def test_render_frame_dims_the_scene_and_keeps_the_part():
     part[20:40, 30:50] = True
     out = motion.render_frame(frame, part, 1.0, {7: (5, 5, 9, 9)}, {7: 1}, t=0.5)
     assert out.shape == frame.shape
-    assert out[5, 70].mean() < 120  # background dimmed
+    assert out[5, 70].mean() < 160  # background dimmed
     assert out[30, 40].mean() > 180  # the part stays bright
+
+
+def test_render_frame_without_a_part_keeps_the_video_as_it_is():
+    frame = np.full((60, 80, 3), 200, dtype=np.uint8)
+    out = motion.render_frame(frame, np.zeros((60, 80), dtype=bool), 0.0, {}, {}, t=0.5)
+    assert out[5, 70].mean() == 200
 
 
 def test_outline_and_cutout(tmp_path):
