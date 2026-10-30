@@ -162,7 +162,7 @@ def review_step(
         "N": str(len(frames)),
     }.items():
         prompt = prompt.replace(f"<<{key}>>", value)
-    for attempt in range(2):  # a bad answer happens now and then: one more try is cheap
+    for _ in range(2):  # a bad answer happens now and then: one more try is cheap
         try:
             data = spark.ask_json(
                 client,
