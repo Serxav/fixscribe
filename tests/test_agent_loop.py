@@ -236,6 +236,8 @@ def test_a_lost_response_restarts_the_conversation_and_keeps_working(tmp_path, s
         if kwargs.get("previous_response_id") and not failed:
             failed.append(kwargs)
             raise MetaError("meta api failed with status 400 on attempt 1", status_code=400)
+        if not meta.script:
+            raise BudgetExceeded("the test ends here")
         return original(**kwargs)
 
     meta.respond = respond
