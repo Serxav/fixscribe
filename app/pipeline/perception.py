@@ -270,7 +270,7 @@ def _look(
             sp.notes.append(f"The {part} could not be proven on any frame of this step.")
         return look
     sp.part = PartHighlight(
-        concept=part,
+        concept=located.name or part,
         box=_grid_box(located.box),
         confidence=round(located.confidence, 3),
         t_s=located.t_s,

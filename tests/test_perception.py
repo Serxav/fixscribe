@@ -439,3 +439,41 @@ def test_a_cut_out_stays_on_its_zoomed_frame_when_no_fastener_was_kept(tmp_path,
     perception.run(tmp_path, settings, client=FakeMeta())
     image, located = drawn[0]
     assert located is not None and image is located.frame
+
+
+def test_a_spot_is_followed_when_the_object_moves_between_frames():
+    rng = np.random.default_rng(1)
+    first = cv2.GaussianBlur(rng.integers(0, 255, (360, 640, 3), dtype=np.uint8), (3, 3), 0)
+    moved = np.roll(first, (18, 32), axis=(0, 1))
+    x, y = locate.move_spot((500, 500), first, moved)
+    assert abs(x - 550) <= 3 and abs(y - 550) <= 3
+    assert locate.move_spot((500, 500), first, first) == (500, 500)
+    blank = np.zeros((360, 640, 3), dtype=np.uint8)
+    assert locate.move_spot((500, 500), first, blank) is None
+
+
+def test_the_close_up_stays_inside_the_frame_and_is_square_on_the_video():
+    x1, y1, x2, y2 = locate.close_area((990, 10), (300, 300, 700, 700), (1280, 720))
+    assert x2 <= 1000 and y1 >= 0
+    assert abs((x2 - x1) * 1280 - (y2 - y1) * 720) < 3000
+
+
+def test_the_part_under_the_tool_gets_the_name_spark_sees_on_the_close_up(tmp_path):
+    settings = _locate_job(tmp_path)
+
+    class CloseUp(FakeMeta):
+        def respond(self, **kwargs):
+            name = kwargs["text"]["format"]["name"]
+            if name == "step_review":
+                answer = {**REVIEW, "work_frame": 2, "work_x": 500, "work_y": 500}
+                return SimpleNamespace(output_text=json.dumps(answer))
+            if name == "part_at_spot":
+                answer = {"visible": True, "name": "copper shield", "x_min": 150, "y_min": 150,
+                          "x_max": 850, "y_max": 850}  # fmt: skip
+                return SimpleNamespace(output_text=json.dumps(answer))
+            return super().respond(**kwargs)
+
+    step = perception.run(tmp_path, settings, client=CloseUp()).steps[0]
+    assert step.part.concept == "copper shield"
+    record = json.loads((tmp_path / "steps" / "01_part.json").read_text())
+    assert record["close_ups"][-1]["result"] == "kept" and record["tries"] == []

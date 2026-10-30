@@ -28,6 +28,7 @@ from app.schemas import Step
 logger = logging.getLogger(__name__)
 
 REVIEW_PROMPT = Path(__file__).resolve().parents[2] / "prompts" / "step_review_v1.md"
+SPOT_PROMPT = Path(__file__).resolve().parents[2] / "prompts" / "part_at_spot_v1.md"
 REVIEW_SIDE = 800  # long side of the frames of the review
 REVIEW_PAD_S = 2.0  # the review also sees a little before and after the step
 GRABS = 3  # frames read around each moment, the sharpest is kept
@@ -37,8 +38,14 @@ MAX_AREA = 0.85  # a box over nearly the whole frame points at nothing
 ZOOM_SIDE = 1280  # long side of a zoomed frame
 ZOOM_PAD = 0.15  # room kept around the object, as a share of its size
 MIN_ZOOM = 0.3  # never zoom on less than this share of the frame's width or height
+REVIEW_TOKENS = 16000  # 12 frames take a lot of reasoning, and reasoning counts against the cap
 REVIEW_FRAMES = 12  # frames of a step Spark goes through one by one
 SLOW_BOX = 28  # half a box around a pointed small part, on the 0..1000 grid
+MAX_FILL = 1.1  # a cut-out far outside its box took the neighbours too
+CLOSE_SHARE = 0.4  # the close-up around the spot, as a share of the object's width
+MIN_CLOSE_PIXELS = 160  # never a close-up on fewer video pixels than this
+MIN_INLIERS = 12  # matched points needed to follow a spot from one frame to another
+EDGE = 15  # a box this near the close-up's edge goes on outside it, on the 0..1000 grid
 WORK_MARGIN = 60  # how far from the spot being worked on a pointed part may be, on the same grid
 REVIEW_SCHEMA = {
     "type": "object",
@@ -78,6 +85,19 @@ REVIEW_SCHEMA = {
     ],
     "additionalProperties": False,
 }
+SPOT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "visible": {"type": "boolean"},
+        "name": {"type": "string"},
+        "x_min": {"type": "integer"},
+        "y_min": {"type": "integer"},
+        "x_max": {"type": "integer"},
+        "y_max": {"type": "integer"},
+    },
+    "required": ["visible", "name", "x_min", "y_min", "x_max", "y_max"],
+    "additionalProperties": False,
+}
 
 
 @dataclass
@@ -91,6 +111,7 @@ class Located:
     detection: Detection
     size_sent: tuple[int, int]
     area: tuple[int, int, int, int] | None = None  # the zoom, 0..1000 grid of the video frame
+    name: str = ""  # what Spark saw under the tool, when it differs from the guide's word
 
 
 def moments(start_s: float, end_s: float, count: int = REVIEW_FRAMES) -> list[float]:
@@ -179,6 +200,8 @@ def review_step(
                 prompt=prompt,
                 images=paths,
                 raw_path=work.parent / f"{step.index:02d}_review_raw.txt",
+                max_output_tokens=REVIEW_TOKENS,
+                effort="medium",
             )
         except spark.SparkAnswerError:
             continue
@@ -301,6 +324,20 @@ def cut_and_check(
     if near is not None and not _touches(box, near):
         tried["result"] = "another part, away from the spot being worked on"
         return None
+    return _cut_box(client, settings, path, frame, box, part, context, tried)
+
+
+def _cut_box(
+    client: Any,
+    settings: Settings,
+    path: Path,
+    frame: np.ndarray,
+    box: tuple[int, int, int, int],
+    part: str,
+    context: str,
+    tried: dict,
+) -> tuple[tuple[int, int, int, int], float, Detection, tuple[int, int]] | None:
+    """SAM cuts inside the box and Spark checks the cut-out."""
     detections, size = client.segment_boxes(path, [box])
     if not detections:
         tried["result"] = "SAM cut nothing"
@@ -313,7 +350,7 @@ def cut_and_check(
     box_area = max(1.0, (box[2] - box[0]) * width / 1000 * (box[3] - box[1]) * height / 1000)
     fill = float(mask.sum()) / box_area if mask is not None else 0.0
     tried["fill"] = round(fill, 3)
-    if confidence < MIN_CONFIDENCE or fill < MIN_FILL:
+    if confidence < MIN_CONFIDENCE or not MIN_FILL <= fill <= MAX_FILL:
         tried["result"] = "weak cut-out"
         return None
     outline = _outline(mask, width, height)
@@ -338,6 +375,139 @@ def _outline(mask: np.ndarray, width: int, height: int) -> list[list[int]]:
         return []
     points = max(contours, key=cv2.contourArea).reshape(-1, 2)[::4]
     return [[int(x * 1000 / width), int(y * 1000 / height)] for x, y in points]
+
+
+def move_spot(
+    spot: tuple[int, int], source: np.ndarray, target: np.ndarray
+) -> tuple[int, int] | None:
+    """Follow a spot (0..1000 grid) to another frame of the shot; None if the two do not match."""
+    if source is target:
+        return spot
+    orb = cv2.ORB_create(2000)
+    points_a, found_a = orb.detectAndCompute(cv2.cvtColor(source, cv2.COLOR_BGR2GRAY), None)
+    points_b, found_b = orb.detectAndCompute(cv2.cvtColor(target, cv2.COLOR_BGR2GRAY), None)
+    if found_a is None or found_b is None:
+        return None
+    pairs = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True).match(found_a, found_b)
+    if len(pairs) < MIN_INLIERS:
+        return None
+    from_xy = np.float32([points_a[pair.queryIdx].pt for pair in pairs])
+    to_xy = np.float32([points_b[pair.trainIdx].pt for pair in pairs])
+    matrix, inliers = cv2.estimateAffinePartial2D(from_xy, to_xy)
+    if matrix is None or int(inliers.sum()) < MIN_INLIERS:
+        return None
+    height, width = source.shape[:2]
+    x, y = spot[0] * width / 1000, spot[1] * height / 1000
+    moved_x = matrix[0, 0] * x + matrix[0, 1] * y + matrix[0, 2]
+    moved_y = matrix[1, 0] * x + matrix[1, 1] * y + matrix[1, 2]
+    if not (0 <= moved_x < width and 0 <= moved_y < height):
+        return None
+    return int(moved_x * 1000 / width), int(moved_y * 1000 / height)
+
+
+def close_area(
+    spot: tuple[int, int],
+    area: tuple[int, int, int, int] | None,
+    size: tuple[int, int],
+) -> tuple[int, int, int, int]:
+    """A square of the video around the spot, as a 0..1000 box of the whole frame."""
+    width, height = size
+    object_w = (area[2] - area[0]) * width / 1000 if area else width
+    side = max(object_w * CLOSE_SHARE, MIN_CLOSE_PIXELS)
+    half_w, half_h = min(side * 500 / width, 500), min(side * 500 / height, 500)
+    x = min(max(spot[0], half_w), 1000 - half_w)
+    y = min(max(spot[1], half_h), 1000 - half_h)
+    return int(x - half_w), int(y - half_h), int(x + half_w), int(y + half_h)
+
+
+def part_at_spot(
+    client: Any, settings: Settings, image: Path, part: str, context: str
+) -> dict | None:
+    """Spark names and boxes the one part under the cross of a close-up."""
+    prompt = SPOT_PROMPT.read_text(encoding="utf-8")
+    prompt = prompt.replace("<<CONTEXT>>", context).replace("<<PART>>", part)
+    try:
+        data = spark.ask_json(
+            client,
+            settings,
+            name="part_at_spot",
+            schema=SPOT_SCHEMA,
+            prompt=prompt,
+            images=[image],
+            effort="medium",
+        )
+    except spark.SparkAnswerError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def close_up(
+    client: Any,
+    settings: Settings,
+    wide: list,
+    area: tuple[int, int, int, int] | None,
+    spot: tuple[int, tuple[int, int]],
+    chosen: list[int],
+    part: str,
+    context: str,
+    work: Path,
+    record: dict,
+) -> Located | None:
+    """Cut out the part under the tool, on a close-up around the spot the review saw touched.
+
+    A clear frame comes first: the spot is followed there, because the hand is usually gone.
+    """
+    n, at = spot
+    x1, y1, _, _ = to_full((at[0], at[1], at[0], at[1]), area)
+    source = wide[n - 1][1]
+    record["close_ups"] = []
+    for m in dict.fromkeys([*chosen[:1], n]):
+        t_s, frame = wide[m - 1]
+        moved = move_spot((x1, y1), source, frame)
+        tried: dict[str, Any] = {"t_s": round(t_s, 2), "spot": moved}
+        record["close_ups"].append(tried)
+        if moved is None:
+            tried["result"] = "the spot could not be followed to this frame"
+            continue
+        height, width = frame.shape[:2]
+        crop = close_area(moved, area, (width, height))
+        tried["crop"] = list(crop)
+        image = zoomed(frame, crop)
+        crop_h, crop_w = image.shape[:2]
+        centre = (
+            (moved[0] - crop[0]) * 1000 // max(1, crop[2] - crop[0]),
+            (moved[1] - crop[1]) * 1000 // max(1, crop[3] - crop[1]),
+        )
+        marked = image.copy()
+        cv2.drawMarker(
+            marked,
+            (centre[0] * crop_w // 1000, centre[1] * crop_h // 1000),
+            (255, 0, 255),
+            cv2.MARKER_CROSS,
+            28,
+            2,
+        )
+        path_marked = _write(marked, work / f"close{m}_cross.jpg")
+        answer = part_at_spot(client, settings, path_marked, part, context)
+        if not answer or answer.get("visible") is not True:
+            tried["result"] = "Spark sees no clear part under the tool"
+            tried["answer"] = answer
+            continue
+        box = tuple(int(answer.get(key, 0)) for key in ("x_min", "y_min", "x_max", "y_max"))
+        name = str(answer.get("name", "")).strip() or part
+        tried.update(box=list(box), name=name)
+        if not _clean_box(box) or not _touches(box, centre):
+            tried["result"] = "the box is not on the spot"
+            continue
+        if sum((box[0] <= EDGE, box[1] <= EDGE, box[2] >= 1000 - EDGE, box[3] >= 1000 - EDGE)) >= 2:
+            tried["result"] = "the part is bigger than the close-up"
+            return None
+        path = _write(image, work / f"close{m}.jpg")
+        kept = _cut_box(client, settings, path, image, box, name, context, tried)
+        if kept is not None:
+            cut, confidence, detection, size = kept
+            return Located(t_s, image, to_full(cut, crop), confidence, detection, size, crop, name)
+    return None
 
 
 @dataclass
@@ -380,6 +550,17 @@ def look_at_step(
         chosen = [n for n in chosen if isinstance(n, int) and 1 <= n <= len(look.frames)][:3]
         spot = work_spot(look.review, len(look.frames))
         near = spot[1] if spot else None
+        if spot and part:
+            try:
+                look.located = close_up(
+                    client, settings, wide, look.area, spot, chosen, part, context, work, record
+                )
+            except BudgetExceeded:
+                raise
+            except MetaError as exc:
+                record["close_up_error"] = str(exc)
+            if look.located is not None:
+                return look
         if spot:  # the frame where the tool touches it comes first: its spot is exact there
             chosen = [spot[0], *(n for n in chosen if n != spot[0])][:3]
         for n in chosen:
