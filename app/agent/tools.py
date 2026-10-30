@@ -261,7 +261,10 @@ def add_step(
     clean = valid_box(to_box)
     if clean is None:
         problems.append("to_box must be [x_min, y_min, x_max, y_max] on 0..1000 (use point)")
-    if case.turns and not quote.strip():
+    spoken = any(
+        b >= start_s - QUOTE_WINDOW_S and a <= end_s + QUOTE_WINDOW_S for a, b, _ in case.turns
+    )
+    if spoken and not quote.strip():
         problems.append("copy the person's own words for this step into quote")
     elif quote.strip() and not quote_found(case, quote, start_s, end_s):
         problems.append("quote is not in the narration near this step: copy it exactly")

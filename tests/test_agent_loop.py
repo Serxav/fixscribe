@@ -355,6 +355,25 @@ def test_silent_video_needs_no_quote(tmp_path):
     assert result.ok
 
 
+def test_a_step_nobody_talks_over_needs_no_quote(tmp_path):
+    case = case_for(tmp_path, FakeMeta([]))
+    case.turns = [(100.0, 105.0, "much later someone talks")]
+    add_part(case, "A", "bolt", 1, "frames/t2.0.jpg", [100, 400, 300, 600])
+    result = add_step(
+        case,
+        1,
+        "insert",
+        "Put the bolt in.",
+        ["A"],
+        1.0,
+        3.0,
+        "frames/t2.0.jpg",
+        [100, 400, 300, 600],
+        "",
+    )
+    assert result.ok
+
+
 def test_submit_refuses_unused_parts_and_gaps(tmp_path):
     case = case_for(tmp_path, FakeMeta([]))
     add_part(case, "A", "bolt", 1, "frames/t2.0.jpg", [100, 400, 300, 600])
