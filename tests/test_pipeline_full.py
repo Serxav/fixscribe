@@ -112,6 +112,9 @@ class FakeMeta:
             return SimpleNamespace(output_text=json.dumps(IDENTITY))
         return SimpleNamespace(output_text=json.dumps(ANSWER))
 
+    def ground(self, image_path, query, *, context="", max_boxes=8):
+        return []  # Spark points at nothing: no zoom, and the part stays not proven
+
     def segment(self, image_path, concept, max_side=1280):
         FakeMeta.calls.append(("segment", concept))
         return [], (100, 100)  # SAM finds nothing: the guide must say screws are unverified

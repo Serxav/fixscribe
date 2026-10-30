@@ -11,7 +11,7 @@ import pytest
 from app import artifacts
 from app.config import Settings
 from app.meta_client import BudgetExceeded, MetaError
-from app.pipeline import fasteners, perception
+from app.pipeline import fasteners, locate, perception
 from app.pipeline.perception import part_concept, part_concepts
 from app.schemas import Frames, Plan, ScrewMap, Step, StepMedia
 
@@ -238,7 +238,7 @@ def test_a_failing_step_keeps_the_others(tmp_path):
 
 
 def test_max_steps(tmp_path):
-    steps = [_step(i, 0.0, 1.0) for i in range(1, 15)]
+    steps = [_step(i, 0.0, 1.0) for i in range(1, 25)]
     settings = _job(tmp_path, steps)
     result = perception.run(tmp_path, settings, client=FakeMeta())
     assert [step.index for step in result.steps] == list(range(1, perception.MAX_STEPS + 1))
@@ -328,3 +328,43 @@ def test_the_part_keeps_the_second_it_was_found(tmp_path):
     settings = _locate_job(tmp_path)
     step = perception.run(tmp_path, settings, client=FakeMeta()).steps[0]
     assert step.part.t_s is not None and 0 <= step.part.t_s <= 4
+
+
+def test_the_part_is_found_on_a_zoom_and_its_box_comes_back_to_the_whole_frame():
+    assert locate.to_full((0, 0, 1000, 1000), (200, 300, 600, 700)) == (200, 300, 600, 700)
+    assert locate.to_full((500, 500, 750, 750), (200, 300, 600, 700)) == (400, 500, 500, 600)
+    frame = np.zeros((720, 1280, 3), dtype=np.uint8)
+    assert locate.zoomed(frame, (250, 250, 750, 750)).shape[:2] == (720, 1280)
+    assert locate.zoomed(frame, None) is frame
+
+
+def test_a_bad_answer_from_spark_does_not_lose_the_step(tmp_path):
+    settings = _locate_job(tmp_path)
+
+    class Garbled(FakeMeta):
+        def respond(self, **kwargs):
+            return SimpleNamespace(output_text="not json")
+
+    step = perception.run(tmp_path, settings, client=Garbled()).steps[0]
+    assert step.part is None and "could not be proven" in step.notes[0]
+
+
+def test_small_fasteners_are_found_going_through_the_step_slowly(tmp_path):
+    settings = _job(tmp_path, [_step(1, 0.0, 4.0, screws=2)], task="assemble")
+
+    class Slow(FakeMeta):
+        def __init__(self):
+            super().__init__(present=lambda oid, f, c: False)  # the search finds nothing
+            self.slow = []
+
+        def respond(self, **kwargs):
+            if kwargs["text"]["format"]["name"] == "slow_look":
+                self.slow.append(len(kwargs["input"][0]["content"]) - 1)
+                answer = {"frame": 3, "points": [{"x": 300, "y": 300}, {"x": 700, "y": 700}]}
+                return SimpleNamespace(output_text=json.dumps(answer))
+            return super().respond(**kwargs)
+
+    client = Slow()
+    step = perception.run(tmp_path, settings, client=client).steps[0]
+    assert client.slow == [locate.SLOW_FRAMES]
+    assert [record.number for record in step.removed] == [1, 2]

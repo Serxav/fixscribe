@@ -32,7 +32,7 @@ from app.pipeline.fasteners import (
     step_fasteners,
 )
 from app.pipeline.ingest import IngestError, color_filter, find_original
-from app.pipeline.locate import Located, locate_part
+from app.pipeline.locate import Located, locate_part, slow_look
 from app.pipeline.media import extract_still
 from app.pipeline.overlay import draw_part, draw_screws, save_jpeg
 from app.schemas import (
@@ -50,7 +50,7 @@ from app.schemas import (
 )
 from app.text import plural
 
-MAX_STEPS = 12
+MAX_STEPS = 20
 ROI_GROW = 1.6
 MIN_ROI = 0.5  # never search fasteners in less than half the frame: a tiny part is no area
 MIN_CONFIDENCE = 0.3
@@ -229,6 +229,12 @@ def best_video(job_dir: Path, ingest: IngestInfo | None) -> tuple[Path, str]:
     return job_dir / "video.mp4", ""
 
 
+def _grid_box(box: tuple[int, int, int, int]) -> NormBox:
+    return NormBox(
+        x=box[0] / 1000, y=box[1] / 1000, w=(box[2] - box[0]) / 1000, h=(box[3] - box[1]) / 1000
+    )
+
+
 def _find_part(
     client: Any, settings: Settings, job_dir: Path, step: Step, sp: StepPerception, object_name: str
 ) -> Located | None:
@@ -246,10 +252,12 @@ def _find_part(
     if located is None:
         sp.notes.append(f"The {part} could not be proven on any frame of this step.")
         return None
-    x1, y1, x2, y2 = located.box
-    box = NormBox(x=x1 / 1000, y=y1 / 1000, w=(x2 - x1) / 1000, h=(y2 - y1) / 1000)
     sp.part = PartHighlight(
-        concept=part, box=box, confidence=round(located.confidence, 3), t_s=located.t_s
+        concept=part,
+        box=_grid_box(located.box),
+        confidence=round(located.confidence, 3),
+        t_s=located.t_s,
+        area=_grid_box(located.area) if located.area else None,
     )
     return located
 
@@ -340,12 +348,27 @@ def _process_step(
                 plan.duration_s,
                 prefilter,
             )
+            if result is not None:
+                found, image = result
+                save_found(job_dir, step.index, found)
+                next_number = fill_ledger(sp, found, next_number)
+            if not sp.removed:  # too small for the search: go through the step frame by frame
+                area = located.area if located else None
+                slow = slow_look(client, settings, job_dir, step, kind, count, context, area, work)
+                if slow is not None:
+                    image = slow.frame
+                    for box, confidence in zip(slow.boxes, slow.confidences, strict=True):
+                        sp.removed.append(
+                            ScrewRecord(
+                                id=f"S{next_number}",
+                                number=len(sp.removed) + 1,
+                                box=_grid_box(box),
+                                confidence=round(confidence, 3),
+                            )
+                        )
+                        next_number += 1
         finally:
             shutil.rmtree(work, ignore_errors=True)
-        if result is not None:
-            found, image = result
-            save_found(job_dir, step.index, found)
-            next_number = fill_ledger(sp, found, next_number)
         seen = len(sp.removed)
         if seen < count:
             verb = "put in" if adding else "taken out"
@@ -356,6 +379,27 @@ def _process_step(
     sp.overlay = make_overlay(job_dir, step, image, sp, located)
     sp.sam_calls = client.sam_calls
     return next_number
+
+
+def process_one(
+    job_dir: Path,
+    settings: Settings,
+    client: Any,
+    plan: Plan,
+    step: Step,
+    sp: StepPerception,
+    number: int,
+) -> int:
+    """One step on its own, the way ``run`` does it (for trying a few steps cheaply)."""
+    frames = artifacts.load_optional(job_dir, Frames)
+    ingest = artifacts.load_optional(job_dir, IngestInfo)
+    identity = artifacts.load_optional(job_dir, Identity)
+    adding = guide_direction(identity.task if identity else None) == "assemble"
+    name = identity.object_name if identity is not None else ""
+    return _process_step(
+        job_dir, settings, client, plan, frames, ingest, step, sp, number,
+        fastener_concept(job_dir), adding, name,
+    )  # fmt: skip
 
 
 def run(job_dir: Path, settings: Settings, client: Any = None) -> Perception:

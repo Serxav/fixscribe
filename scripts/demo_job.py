@@ -357,6 +357,7 @@ class FakeMeta:
             "film_narration": NARRATION,
             "song_lyrics": {"lyrics": []},
             "pick_frames": {"frames": [1, 2]},
+            "slow_look": {"frame": 1, "points": []},
             # the fastener check: every candidate shown is confirmed
             "check": {"tiles": [{"n": n, "real": True, "why": "demo"} for n in range(1, 17)]},
         }

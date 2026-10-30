@@ -34,7 +34,7 @@ from app.schemas import Identity, Motion, NormBox, PartHighlight, Perception, Pl
 logger = logging.getLogger(__name__)
 
 VERSION = "3"
-MAX_STEPS = 12
+MAX_STEPS = 20
 FPS = 15
 MAX_SECONDS = 5.0  # longer steps: 5 s around the part (SAM bills per frame)
 WIDTH = 720  # long side of the working clip
@@ -68,9 +68,14 @@ def clip_window(start_s: float, end_s: float, around: float | None = None) -> tu
     return first, first + MAX_SECONDS
 
 
-def cut_source(video: Path, start_s: float, end_s: float, dst: Path) -> None:
+def cut_source(
+    video: Path, start_s: float, end_s: float, dst: Path, zoom: NormBox | None = None
+) -> None:
     """A small constant-rate clip of the step: the exact frames SAM sees and we draw on."""
     scale = f"scale='if(gt(iw,ih),{WIDTH},-2)':'if(gt(iw,ih),-2,{WIDTH})'"
+    if zoom is not None:
+        crop = f"crop=iw*{zoom.w:.4f}:ih*{zoom.h:.4f}:iw*{zoom.x:.4f}:ih*{zoom.y:.4f}"
+        scale = f"{crop},{scale}"
     with artifacts.atomic_path(dst) as tmp:
         run_ffmpeg(
             ["ffmpeg", "-y", "-v", "error", "-ss", f"{start_s:.3f}", "-to", f"{end_s:.3f}",
@@ -333,13 +338,22 @@ def motion_for_step(
     start, end = clip_window(step.start_s, step.end_s, part.t_s if part else None)
     steps_dir = job_dir / "steps"
     source = steps_dir / f"{step.index:02d}_src.mp4"
-    cut_source(job_dir / "video.mp4", start, min(end, plan.duration_s or end), source)
+    # the film shows the same close-up as the photo; fasteners are tracked on the whole frame
+    zoom = part.area if part and not (found and found.kept) else None
+    cut_source(job_dir / "video.mp4", start, min(end, plan.duration_s or end), source, zoom)
     frames = read_frames(source)
     height, width = frames[0].shape[:2]
     size = (width, height)
     part_track = Track(masks={}, objects={})
     if part is not None:
         box = part.box
+        if zoom is not None:
+            box = NormBox(
+                x=(box.x - zoom.x) / zoom.w,
+                y=(box.y - zoom.y) / zoom.h,
+                w=box.w / zoom.w,
+                h=box.h / zoom.h,
+            )
         part_box = (
             int(box.x * width),
             int(box.y * height),

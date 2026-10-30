@@ -455,6 +455,7 @@ class PartHighlight(Strict):
     box: NormBox
     confidence: float | None = Field(default=None, ge=0, le=1)
     t_s: float | None = None  # the second of the video where it was found and checked
+    area: NormBox | None = None  # the zoom on the object, in the whole frame
 
 
 class StepPerception(Strict):

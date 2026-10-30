@@ -68,11 +68,22 @@ def _rounded_rectangle(image: Any, pt1: tuple[int, int], pt2: tuple[int, int]) -
     cv2.ellipse(image, (x1 + radius, y2 - radius), (radius, radius), 90, 0, 90, LIME_BGR, 2)
 
 
+def _main_piece(mask: Any) -> Any:
+    """The mask without its specks: SAM can leave small bits of mat next to the part."""
+    count, labels, stats, _ = cv2.connectedComponentsWithStats(mask.astype(np.uint8))
+    if count <= 2:
+        return mask.astype(np.uint8)
+    areas = stats[1:, cv2.CC_STAT_AREA]
+    keep = [n + 1 for n, area in enumerate(areas) if area >= 0.15 * areas.max()]
+    return np.isin(labels, keep).astype(np.uint8)
+
+
 def mark_part(image: Any, mask: Any, label: str = "", alpha: float = 1.0) -> Any:
     """The mark the site shows: the part's own shape in orange, a white dot and its name."""
     if not mask.any() or alpha <= 0:
         return image
-    full = mask.astype(np.uint8)
+    full = _main_piece(mask)
+    mask = full > 0
     tinted = image.copy()
     tinted[mask] = (image[mask] * (1 - CUT_TINT) + np.array(CUT_BGR) * CUT_TINT).astype(np.uint8)
     contours, _ = cv2.findContours(full, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
