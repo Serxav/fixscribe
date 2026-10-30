@@ -29,6 +29,18 @@ def _det(box, confidence=0.9):
     return SimpleNamespace(box=box, confidence=confidence)
 
 
+REVIEW = {
+    "matches": True,
+    "instruction": "",
+    "start_s": 0.0,
+    "end_s": 4.0,
+    "confidence": 0.9,
+    "part_frames": [1],
+    "fastener_frame": 0,
+    "points": [],
+}
+
+
 class FakeMeta:
     """SAM finds the part on stills and the ``SPOTS`` on the whole-frame region; SAM video says
     which fasteners are seen on each frame (``present(spot, frame, count)``, spot 1..3 is the
@@ -76,8 +88,8 @@ class FakeMeta:
         return [detection], (w, h)
 
     def respond(self, **kwargs):
-        if kwargs["text"]["format"]["name"] == "pick_frames":
-            return SimpleNamespace(output_text=json.dumps({"frames": [1]}))
+        if kwargs["text"]["format"]["name"] == "step_review":
+            return SimpleNamespace(output_text=json.dumps(REVIEW))
         content = kwargs["input"][0]["content"]
         tiles = [{"n": n, "real": True, "why": "t"} for n in range(1, len(content))]
         return SimpleNamespace(output_text=json.dumps({"tiles": tiles}))
@@ -181,8 +193,8 @@ def test_taking_apart_keeps_the_fasteners_that_disappear(tmp_path):
 
 class CheckingMeta(FakeMeta):
     def respond(self, **kwargs):
-        if kwargs["text"]["format"]["name"] == "pick_frames":
-            return SimpleNamespace(output_text=json.dumps({"frames": [1]}))
+        if kwargs["text"]["format"]["name"] == "step_review":
+            return SimpleNamespace(output_text=json.dumps(REVIEW))
         content = kwargs["input"][0]["content"]
         tiles = [{"n": n, "real": n != 2, "why": "t"} for n in range(1, len(content))]
         return SimpleNamespace(output_text=json.dumps({"tiles": tiles}))
@@ -303,7 +315,7 @@ def test_a_cut_out_spark_rejects_is_not_shown(tmp_path):
 
     class Rejects(FakeMeta):
         def respond(self, **kwargs):
-            if kwargs["text"]["format"]["name"] == "pick_frames":
+            if kwargs["text"]["format"]["name"] == "step_review":
                 return super().respond(**kwargs)
             tiles = [{"n": 1, "real": False, "why": "that is the mat"}]
             return SimpleNamespace(output_text=json.dumps({"tiles": tiles}))
@@ -317,11 +329,12 @@ def test_a_part_spark_cannot_see_costs_no_sam_call(tmp_path):
 
     class Hidden(FakeMeta):
         def respond(self, **kwargs):
-            return SimpleNamespace(output_text=json.dumps({"frames": []}))
+            return SimpleNamespace(output_text=json.dumps({**REVIEW, "part_frames": []}))
 
     client = Hidden()
     step = perception.run(tmp_path, settings, client=client).steps[0]
     assert step.part is None and client.calls == []
+    assert step.review.matches is True
 
 
 def test_the_part_keeps_the_second_it_was_found(tmp_path):
@@ -358,13 +371,14 @@ def test_small_fasteners_are_found_going_through_the_step_slowly(tmp_path):
             self.slow = []
 
         def respond(self, **kwargs):
-            if kwargs["text"]["format"]["name"] == "slow_look":
+            if kwargs["text"]["format"]["name"] == "step_review":
                 self.slow.append(len(kwargs["input"][0]["content"]) - 1)
-                answer = {"frame": 3, "points": [{"x": 300, "y": 300}, {"x": 700, "y": 700}]}
+                points = [{"x": 300, "y": 300}, {"x": 700, "y": 700}]
+                answer = {**REVIEW, "fastener_frame": 3, "points": points}
                 return SimpleNamespace(output_text=json.dumps(answer))
             return super().respond(**kwargs)
 
     client = Slow()
     step = perception.run(tmp_path, settings, client=client).steps[0]
-    assert client.slow == [locate.SLOW_FRAMES]
+    assert client.slow == [locate.REVIEW_FRAMES]
     assert [record.number for record in step.removed] == [1, 2]

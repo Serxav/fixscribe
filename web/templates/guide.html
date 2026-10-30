@@ -58,7 +58,7 @@
     <div class="col-r proof-row">
       <div class="ring" style="--p: {{ proof_percent }}"><div><b>{{ proof_percent }}%</b><span>verified</span></div></div>
       <div>
-        <p class="lede">{{ proof_percent }}% of this guide is backed by the video, the narration and SAM measurements.</p>
+        <p class="lede">{{ proof_percent }}% of this guide is backed by the video, a frame by frame review and SAM measurements.{% if proof_percent < 85 %} That is below FixScribe's 85% bar: check the steps marked in red.{% endif %}</p>
         <p class="muted small" style="margin:8px 0 0">Open “Proof” on any step to see where each sentence comes from.</p>
       </div>
     </div>

@@ -356,8 +356,16 @@ class FakeMeta:
             "refined_step": unsure,
             "film_narration": NARRATION,
             "song_lyrics": {"lyrics": []},
-            "pick_frames": {"frames": [1, 2]},
-            "slow_look": {"frame": 1, "points": []},
+            "step_review": {
+                "matches": True,
+                "instruction": "",
+                "start_s": 0,
+                "end_s": 0,
+                "confidence": 0.8,
+                "part_frames": [3, 6],
+                "fastener_frame": 0,
+                "points": [],
+            },
             # the fastener check: every candidate shown is confirmed
             "check": {"tiles": [{"n": n, "real": True, "why": "demo"} for n in range(1, 17)]},
         }

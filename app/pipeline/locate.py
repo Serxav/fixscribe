@@ -27,9 +27,9 @@ from app.schemas import Step
 
 logger = logging.getLogger(__name__)
 
-PICK_PROMPT = Path(__file__).resolve().parents[2] / "prompts" / "pick_frame_v1.md"
-MOMENTS = 6  # frames of the step shown to Spark
-PICK_SIDE = 640  # long side of those frames
+REVIEW_PROMPT = Path(__file__).resolve().parents[2] / "prompts" / "step_review_v1.md"
+REVIEW_SIDE = 800  # long side of the frames of the review
+REVIEW_PAD_S = 2.0  # the review also sees a little before and after the step
 GRABS = 3  # frames read around each moment, the sharpest is kept
 MIN_CONFIDENCE = 0.6  # a good cut-out scored 0.97 on a real video, a wrong one 0.46
 MIN_FILL = 0.25  # share of the box the cut-out must fill
@@ -37,13 +37,18 @@ MAX_AREA = 0.85  # a box over nearly the whole frame points at nothing
 ZOOM_SIDE = 1280  # long side of a zoomed frame
 ZOOM_PAD = 0.15  # room kept around the object, as a share of its size
 MIN_ZOOM = 0.3  # never zoom on less than this share of the frame's width or height
-SLOW_FRAMES = 12  # frames of a step Spark goes through one by one for small parts
+REVIEW_FRAMES = 12  # frames of a step Spark goes through one by one
 SLOW_BOX = 28  # half a box around a pointed small part, on the 0..1000 grid
-SLOW_PROMPT = Path(__file__).resolve().parents[2] / "prompts" / "slow_look_v1.md"
-SLOW_SCHEMA = {
+REVIEW_SCHEMA = {
     "type": "object",
     "properties": {
-        "frame": {"type": "integer"},
+        "matches": {"type": "boolean"},
+        "instruction": {"type": "string"},
+        "start_s": {"type": "number"},
+        "end_s": {"type": "number"},
+        "confidence": {"type": "number"},
+        "part_frames": {"type": "array", "items": {"type": "integer"}},
+        "fastener_frame": {"type": "integer"},
         "points": {
             "type": "array",
             "items": {
@@ -54,14 +59,16 @@ SLOW_SCHEMA = {
             },
         },
     },
-    "required": ["frame", "points"],
-    "additionalProperties": False,
-}
-
-PICK_SCHEMA = {
-    "type": "object",
-    "properties": {"frames": {"type": "array", "items": {"type": "integer"}}},
-    "required": ["frames"],
+    "required": [
+        "matches",
+        "instruction",
+        "start_s",
+        "end_s",
+        "confidence",
+        "part_frames",
+        "fastener_frame",
+        "points",
+    ],
     "additionalProperties": False,
 }
 
@@ -79,7 +86,7 @@ class Located:
     area: tuple[int, int, int, int] | None = None  # the zoom, 0..1000 grid of the video frame
 
 
-def moments(start_s: float, end_s: float, count: int = MOMENTS) -> list[float]:
+def moments(start_s: float, end_s: float, count: int = REVIEW_FRAMES) -> list[float]:
     """Seconds spread evenly inside a step, away from its two edges."""
     span = max(0.0, end_s - start_s)
     return [round(start_s + span * (n + 0.5) / count, 2) for n in range(count)]
@@ -112,7 +119,7 @@ def read_moments(video: Path, times: list[float]) -> list[tuple[float, np.ndarra
 
 def _small(frame: np.ndarray) -> np.ndarray:
     height, width = frame.shape[:2]
-    factor = PICK_SIDE / max(height, width)
+    factor = REVIEW_SIDE / max(height, width)
     if factor >= 1:
         return frame
     return cv2.resize(frame, (int(width * factor), int(height * factor)), cv2.INTER_AREA)
@@ -125,29 +132,51 @@ def _write(frame: np.ndarray, path: Path) -> Path:
     return path
 
 
-def pick_frames(
-    client: Any, settings: Settings, frames: list, part: str, context: str, work: Path
-) -> list[int]:
-    """Positions in ``frames`` where Spark sees the part best, best first."""
-    paths = [_write(_small(frame), work / f"moment{n}.jpg") for n, (_, frame) in enumerate(frames)]
-    prompt = (
-        PICK_PROMPT.read_text(encoding="utf-8")
-        .replace("<<CONTEXT>>", context)
-        .replace("<<COUNT>>", str(len(frames)))
-        .replace("<<PART>>", part)
-    )
-    try:
-        data = spark.ask_json(
-            client, settings, name="pick_frames", schema=PICK_SCHEMA, prompt=prompt, images=paths
-        )
-    except spark.SparkAnswerError:  # it happens now and then: one more try is cheap
-        data = spark.ask_json(
-            client, settings, name="pick_frames", schema=PICK_SCHEMA, prompt=prompt, images=paths
-        )
-    chosen = data.get("frames") if isinstance(data, dict) else None
-    if not isinstance(chosen, list):
-        return []
-    return [n - 1 for n in chosen if isinstance(n, int) and 1 <= n <= len(frames)][:2]
+def review_step(
+    client: Any,
+    settings: Settings,
+    step: Step,
+    part: str,
+    kind: str,
+    context: str,
+    frames: list,
+    work: Path,
+) -> dict | None:
+    """Spark goes through the zoomed frames in order; None when it gives no usable answer."""
+    paths = []
+    for n, (t_s, frame) in enumerate(frames):
+        stamped = _small(frame).copy()
+        cv2.putText(stamped, f"{t_s:.1f} s", (12, 34), cv2.FONT_HERSHEY_SIMPLEX, 0.9,
+                    (255, 255, 255), 2, cv2.LINE_AA)  # fmt: skip
+        paths.append(_write(stamped, work / f"review{n}.jpg"))
+    count = step.screws.count if step.screws else 0
+    prompt = REVIEW_PROMPT.read_text(encoding="utf-8")
+    for key, value in {
+        "CONTEXT": context,
+        "INSTRUCTION": step.instruction,
+        "START": f"{step.start_s:.1f}",
+        "END": f"{step.end_s:.1f}",
+        "PART": part or "none",
+        "KIND": kind,
+        "COUNT": str(count),
+        "N": str(len(frames)),
+    }.items():
+        prompt = prompt.replace(f"<<{key}>>", value)
+    for attempt in range(2):  # a bad answer happens now and then: one more try is cheap
+        try:
+            data = spark.ask_json(
+                client,
+                settings,
+                name="step_review",
+                schema=REVIEW_SCHEMA,
+                prompt=prompt,
+                images=paths,
+            )
+        except spark.SparkAnswerError:
+            continue
+        if isinstance(data, dict) and isinstance(data.get("matches"), bool):
+            return data
+    return None
 
 
 def work_area(
@@ -274,55 +303,70 @@ def _outline(mask: np.ndarray, width: int, height: int) -> list[list[int]]:
     return [[int(x * 1000 / width), int(y * 1000 / height)] for x, y in points]
 
 
-def locate_part(
+@dataclass
+class StepLook:
+    """What the close look at one step found."""
+
+    review: dict | None = None
+    located: Located | None = None
+    frames: list | None = None
+    area: tuple[int, int, int, int] | None = None
+
+
+def look_at_step(
     client: Any,
     settings: Settings,
     job_dir: Path,
     step: Step,
     part: str,
+    kind: str,
     context: str,
     work: Path,
-) -> Located | None:
-    """The part of the step, on the frame where it shows best, or None when it cannot be proven."""
+) -> StepLook:
+    """Zoom on the object, review the step frame by frame, cut out its part on the best frame."""
     record: dict[str, Any] = {"part": part, "tries": []}
-    located = None
+    look = StepLook()
     try:
-        wide = read_moments(job_dir / "video.mp4", moments(step.start_s, step.end_s))
-        if wide:
-            middle = _write(wide[len(wide) // 2][1], work / "wide.jpg")
-            area = work_area(client, middle, context, record)
-            frames = [(t_s, zoomed(frame, area)) for t_s, frame in wide]
-            chosen = pick_frames(client, settings, frames, part, context, work)
-            record["picked"] = [round(frames[n][0], 2) for n in chosen]
-            for n in chosen:
-                t_s, frame = frames[n]
-                tried: dict[str, Any] = {"t_s": round(t_s, 2)}
-                record["tries"].append(tried)
-                path = _write(frame, work / f"try{n}.jpg")
-                try:
-                    kept = cut_and_check(client, settings, path, frame, part, context, tried)
-                except BudgetExceeded:
-                    raise
-                except MetaError as exc:
-                    tried["result"] = f"failed: {exc}"
-                    continue
-                if kept is not None:
-                    box, confidence, detection, size = kept
-                    located = Located(
-                        t_s, frame, to_full(box, area), confidence, detection, size, area
-                    )
-                    break
-    except spark.SparkAnswerError as exc:
-        record["failed"] = str(exc)
+        first = max(0.0, step.start_s - REVIEW_PAD_S)
+        wide = read_moments(job_dir / "video.mp4", moments(first, step.end_s + REVIEW_PAD_S))
+        if not wide:
+            return look
+        middle = _write(wide[len(wide) // 2][1], work / "wide.jpg")
+        look.area = work_area(client, middle, context, record)
+        look.frames = [(t_s, zoomed(frame, look.area)) for t_s, frame in wide]
+        look.review = review_step(client, settings, step, part, kind, context, look.frames, work)
+        if look.review is None:
+            record["review"] = "no usable answer"
+            return look
+        record["review"] = look.review
+        chosen = look.review.get("part_frames") or []
+        for n in [n for n in chosen if isinstance(n, int) and 1 <= n <= len(look.frames)][:3]:
+            t_s, frame = look.frames[n - 1]
+            tried: dict[str, Any] = {"t_s": round(t_s, 2)}
+            record["tries"].append(tried)
+            path = _write(frame, work / f"try{n}.jpg")
+            try:
+                kept = cut_and_check(client, settings, path, frame, part, context, tried)
+            except BudgetExceeded:
+                raise
+            except MetaError as exc:
+                tried["result"] = f"failed: {exc}"
+                continue
+            if kept is not None:
+                box, confidence, detection, size = kept
+                look.located = Located(
+                    t_s, frame, to_full(box, look.area), confidence, detection, size, look.area
+                )
+                break
     finally:
         relative = f"steps/{step.index:02d}_part.json"
         artifacts.write_text_atomic(job_dir / relative, json.dumps(record, indent=2))
-    return located
+    return look
 
 
 @dataclass
 class SlowLook:
-    """Small parts found by going through a step frame by frame, on the frame they show best."""
+    """Small parts Spark pointed at during the review, cut out and checked."""
 
     t_s: float
     frame: np.ndarray
@@ -330,47 +374,17 @@ class SlowLook:
     confidences: list[float]
 
 
-def slow_look(
-    client: Any,
-    settings: Settings,
-    job_dir: Path,
-    step: Step,
-    kind: str,
-    count: int,
-    context: str,
-    area: tuple[int, int, int, int] | None,
-    work: Path,
+def cut_pointed(
+    client: Any, settings: Settings, look: StepLook, kind: str, count: int, context: str, work: Path
 ) -> SlowLook | None:
-    """Spark goes through the step in slow motion and points; SAM cuts; Spark checks each one."""
-    wide = read_moments(job_dir / "video.mp4", moments(step.start_s, step.end_s, SLOW_FRAMES))
-    frames = [(t_s, zoomed(frame, area)) for t_s, frame in wide]
-    if not frames:
+    """SAM cuts each small part the review pointed at; Spark checks each one on a zoomed tile."""
+    review = look.review or {}
+    n = review.get("fastener_frame", 0)
+    points = review.get("points") or []
+    if not look.frames or not isinstance(n, int) or not 1 <= n <= len(look.frames) or not points:
         return None
-    paths = []
-    for n, (t_s, frame) in enumerate(frames):
-        stamped = frame.copy()
-        cv2.putText(stamped, f"{t_s:.1f} s", (16, 44), cv2.FONT_HERSHEY_SIMPLEX, 1.1,
-                    (255, 255, 255), 3, cv2.LINE_AA)  # fmt: skip
-        paths.append(_write(stamped, work / f"slow{n}.jpg"))
-    prompt = (
-        SLOW_PROMPT.read_text(encoding="utf-8")
-        .replace("<<CONTEXT>>", context)
-        .replace("<<COUNT>>", str(len(frames)))
-        .replace("<<KIND>>", kind)
-        .replace("<<MAX>>", str(count))
-    )
-    try:
-        data = spark.ask_json(
-            client, settings, name="slow_look", schema=SLOW_SCHEMA, prompt=prompt, images=paths
-        )
-    except spark.SparkAnswerError:
-        return None
-    n = data.get("frame", 0) if isinstance(data, dict) else 0
-    points = data.get("points", []) if isinstance(data, dict) else []
-    if not isinstance(n, int) or not 1 <= n <= len(frames) or not points:
-        return None
-    t_s, frame = frames[n - 1]
-    path = _write(frame, work / "slow_best.jpg")
+    t_s, frame = look.frames[n - 1]
+    path = _write(frame, work / "fasteners.jpg")
     boxes, confidences = [], []
     for point in points[:count]:
         x, y = int(point["x"]), int(point["y"])

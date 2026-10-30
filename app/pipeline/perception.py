@@ -32,7 +32,7 @@ from app.pipeline.fasteners import (
     step_fasteners,
 )
 from app.pipeline.ingest import IngestError, color_filter, find_original
-from app.pipeline.locate import Located, locate_part, slow_look
+from app.pipeline.locate import Located, StepLook, cut_pointed, look_at_step
 from app.pipeline.media import extract_still
 from app.pipeline.overlay import draw_part, draw_screws, save_jpeg
 from app.schemas import (
@@ -46,6 +46,7 @@ from app.schemas import (
     ScrewRecord,
     Step,
     StepPerception,
+    StepReview,
     Transcript,
 )
 from app.text import plural
@@ -235,23 +236,39 @@ def _grid_box(box: tuple[int, int, int, int]) -> NormBox:
     )
 
 
-def _find_part(
-    client: Any, settings: Settings, job_dir: Path, step: Step, sp: StepPerception, object_name: str
-) -> Located | None:
-    """Spark points at the part, SAM cuts it out, Spark checks it (app/pipeline/locate.py)."""
+def _look(
+    client: Any,
+    settings: Settings,
+    job_dir: Path,
+    step: Step,
+    sp: StepPerception,
+    object_name: str,
+    fastener: str,
+) -> StepLook:
+    """The close look at the step (app/pipeline/locate.py): review it, cut out its part."""
     concepts = part_concepts(step)
-    if not concepts:
-        return None
-    part = concepts[0]
+    part = concepts[0] if concepts else ""
+    kind = step_fastener(step, fastener)
     context = f"{object_name}. Step: {step.title}. {step.instruction}"
     work = job_dir / "steps" / f"{step.index:02d}_locate"
     try:
-        located = locate_part(client, settings, job_dir, step, part, context, work)
+        look = look_at_step(client, settings, job_dir, step, part, plural(kind, 2), context, work)
     finally:
         shutil.rmtree(work, ignore_errors=True)
+    if look.review is not None:
+        confidence = min(1.0, max(0.0, float(look.review.get("confidence", 0.0))))
+        sp.review = StepReview(
+            matches=look.review["matches"],
+            instruction=str(look.review.get("instruction", "")).strip(),
+            start_s=float(look.review.get("start_s", 0.0)),
+            end_s=float(look.review.get("end_s", 0.0)),
+            confidence=confidence,
+        )
+    located = look.located
     if located is None:
-        sp.notes.append(f"The {part} could not be proven on any frame of this step.")
-        return None
+        if part:
+            sp.notes.append(f"The {part} could not be proven on any frame of this step.")
+        return look
     sp.part = PartHighlight(
         concept=part,
         box=_grid_box(located.box),
@@ -259,7 +276,7 @@ def _find_part(
         t_s=located.t_s,
         area=_grid_box(located.area) if located.area else None,
     )
-    return located
+    return look
 
 
 def fill_ledger(sp: StepPerception, found: Found, next_number: int) -> int:
@@ -318,7 +335,8 @@ def _process_step(
     adding: bool,
     object_name: str,
 ) -> int:
-    located = _find_part(client, settings, job_dir, step, sp, object_name or plan.device)
+    look = _look(client, settings, job_dir, step, sp, object_name or plan.device, fastener)
+    located = look.located
     if located is not None:
         image = located.frame
     else:
@@ -353,8 +371,8 @@ def _process_step(
                 save_found(job_dir, step.index, found)
                 next_number = fill_ledger(sp, found, next_number)
             if not sp.removed:  # too small for the search: go through the step frame by frame
-                area = located.area if located else None
-                slow = slow_look(client, settings, job_dir, step, kind, count, context, area, work)
+                work.mkdir(parents=True, exist_ok=True)
+                slow = cut_pointed(client, settings, look, kind, count, context, work)
                 if slow is not None:
                     image = slow.frame
                     for box, confidence in zip(slow.boxes, slow.confidences, strict=True):
