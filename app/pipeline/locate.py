@@ -46,6 +46,7 @@ CLOSE_SHARE = 0.4  # the close-up around the spot, as a share of the object's wi
 MIN_CLOSE_PIXELS = 160  # never a close-up on fewer video pixels than this
 MIN_INLIERS = 12  # matched points needed to follow a spot from one frame to another
 EDGE = 15  # a box this near the close-up's edge goes on outside it, on the 0..1000 grid
+NEAR_AREA = 0.08  # only parts smaller than this share of the frame can be mistaken for a neighbour
 WORK_MARGIN = 60  # how far from the spot being worked on a pointed part may be, on the same grid
 REVIEW_SCHEMA = {
     "type": "object",
@@ -276,6 +277,11 @@ def _clean_box(box: tuple) -> bool:
     return x2 - x1 >= 4 and y2 - y1 >= 4 and area <= MAX_AREA
 
 
+def _cut_by_edges(box: tuple) -> bool:
+    """True when a box reaches two edges of its image: the part goes on outside it."""
+    return sum((box[0] <= EDGE, box[1] <= EDGE, box[2] >= 1000 - EDGE, box[3] >= 1000 - EDGE)) >= 2
+
+
 def _touches(box: tuple, spot: tuple[int, int]) -> bool:
     """True when the spot is inside the box, give or take ``WORK_MARGIN``."""
     x1, y1, x2, y2 = box
@@ -321,7 +327,8 @@ def cut_and_check(
     if not _clean_box(box):
         tried["result"] = "unusable box"
         return None
-    if near is not None and not _touches(box, near):
+    small = (box[2] - box[0]) * (box[3] - box[1]) / 1_000_000 < NEAR_AREA
+    if near is not None and small and not _touches(box, near):
         tried["result"] = "another part, away from the spot being worked on"
         return None
     return _cut_box(client, settings, path, frame, box, part, context, tried)
@@ -499,7 +506,7 @@ def close_up(
         if not _clean_box(box) or not _touches(box, centre):
             tried["result"] = "the box is not on the spot"
             continue
-        if sum((box[0] <= EDGE, box[1] <= EDGE, box[2] >= 1000 - EDGE, box[3] >= 1000 - EDGE)) >= 2:
+        if _cut_by_edges(box):
             tried["result"] = "the part is bigger than the close-up"
             return None
         path = _write(image, work / f"close{m}.jpg")
@@ -580,6 +587,15 @@ def look_at_step(
                 look.located = Located(
                     t_s, frame, to_full(box, look.area), confidence, detection, size, look.area
                 )
+                if look.area is not None and _cut_by_edges(box):  # the object moved: use it all
+                    whole = wide[n - 1][1]
+                    again: dict[str, Any] = {"t_s": round(t_s, 2), "zoom": "whole frame"}
+                    record["tries"].append(again)
+                    path = _write(whole, work / f"whole{n}.jpg")
+                    kept = cut_and_check(client, settings, path, whole, part, context, again, near)
+                    if kept is not None:
+                        box, confidence, detection, size = kept
+                        look.located = Located(t_s, whole, box, confidence, detection, size, None)
                 break
     finally:
         relative = f"steps/{step.index:02d}_part.json"

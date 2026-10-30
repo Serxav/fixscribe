@@ -132,7 +132,7 @@ def test_ground_request_shape(tmp_path):
     kwargs = fake.responses.kwargs[0]
     assert kwargs["model"] == "muse-spark-1.3"
     assert kwargs["reasoning"] == {"effort": "medium"}
-    assert kwargs["max_output_tokens"] == 4000
+    assert kwargs["max_output_tokens"] == 12000
     assert kwargs["text"] == {
         "format": {
             "type": "json_schema",

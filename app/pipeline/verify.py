@@ -116,7 +116,7 @@ def _ask(client: Any, model: str, prompt: str, images: list[np.ndarray]) -> dict
             }
         },
         reasoning={"effort": "medium"},
-        max_output_tokens=4000,
+        max_output_tokens=12000,
     )
     try:
         answers = json.loads(response.output_text)["tiles"]

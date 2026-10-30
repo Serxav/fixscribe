@@ -1133,7 +1133,7 @@ class MetaClient:
                 }
             },
             reasoning={"effort": "medium"},
-            max_output_tokens=4000,
+            max_output_tokens=12000,
         )
         text = getattr(response, "output_text", "") or ""
         try:

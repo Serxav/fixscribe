@@ -477,3 +477,30 @@ def test_the_part_under_the_tool_gets_the_name_spark_sees_on_the_close_up(tmp_pa
     assert step.part.concept == "copper shield"
     record = json.loads((tmp_path / "steps" / "01_part.json").read_text())
     assert record["close_ups"][-1]["result"] == "kept" and record["tries"] == []
+
+
+def test_a_big_part_is_not_refused_for_being_away_from_the_tool(tmp_path):
+    settings = _locate_job(tmp_path)
+
+    class Big(FakeMeta):
+        def respond(self, **kwargs):
+            if kwargs["text"]["format"]["name"] == "step_review":
+                answer = {**REVIEW, "work_frame": 1, "work_x": 990, "work_y": 990}
+                return SimpleNamespace(output_text=json.dumps(answer))
+            return super().respond(**kwargs)
+
+    assert perception.run(tmp_path, settings, client=Big()).steps[0].part is not None
+
+
+def test_a_part_the_zoom_cuts_off_is_cut_again_on_the_whole_frame(tmp_path, monkeypatch):
+    settings = _locate_job(tmp_path)
+    monkeypatch.setattr(locate, "work_area", lambda *a: (100, 100, 900, 900))
+
+    class CutOff(FakeMeta):
+        def ground(self, path, query, *, context="", max_boxes=8):
+            return [SimpleNamespace(label=query, box=(500, 500, 1000, 1000), why="t")]
+
+    step = perception.run(tmp_path, settings, client=CutOff()).steps[0]
+    assert step.part.area is None
+    record = json.loads((tmp_path / "steps" / "01_part.json").read_text())
+    assert record["tries"][-1]["zoom"] == "whole frame"
