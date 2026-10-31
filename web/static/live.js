@@ -28,19 +28,11 @@
   var stillSince = Date.now();
   var synth = window.speechSynthesis || null;
 
-  function bestVoice() {
-    if (!synth) return null;
-    var voices = synth.getVoices().filter(function (v) { return v.lang.toLowerCase().indexOf(lang.split("-")[0]) === 0; });
-    var good = /premium|enhanced|mejorada|natural|neural|siri|google/i, bad = /compact|espeak/i;
-    voices.sort(function (a, b) { return (good.test(b.name) - bad.test(b.name)) - (good.test(a.name) - bad.test(a.name)); });
-    return voices[0] || null;
-  }
-
   function say(text, first) {
     if (!synth || !voiceOn || !text) return;
     if (first) synth.cancel();
     var u = new SpeechSynthesisUtterance(text);
-    var v = bestVoice();
+    var v = window.FixVoice.pick(synth, lang);
     if (v) u.voice = v;
     u.lang = v ? v.lang : lang;
     u.rate = 0.95;

@@ -15,26 +15,15 @@
     return mode === "apart" ? data.steps : data.steps.slice().reverse();
   }
 
-  var GOOD = [/premium/i, /enhanced|mejorada|améliorée|optimierte/i, /natural/i, /neural/i, /siri/i, /google/i];
-  var BAD = [/compact/i, /espeak/i, /albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|ralph|kathy/i];
   var chosen = null;
-  function score(v) {
-    var s = 0;
-    GOOD.forEach(function (re, i) { if (re.test(v.name)) s += 60 - i * 8; });
-    BAD.forEach(function (re) { if (re.test(v.name)) s -= 100; });
-    if (v.localService) s += 3;
-    return s;
-  }
   function pickVoice() {
     if (!synth) return null;
     if (chosen) return chosen;
-    var lang = (data.language || "en").toLowerCase().split("-")[0];
-    var voices = synth.getVoices().filter(function (v) { return v.lang.toLowerCase().indexOf(lang) === 0; });
-    if (!voices.length) return null;
-    chosen = voices.sort(function (a, b) { return score(b) - score(a); })[0];
+    chosen = window.FixVoice.pick(synth, data.language);
+    if (!chosen) return null;
     var label = $("film-voice-name");
     if (label) {
-      label.textContent = "Voice: " + chosen.name + (score(chosen) < 20 ? " — for a more natural voice, install a Premium/Enhanced voice in your system settings (Spoken Content)." : "");
+      label.textContent = "Voice: " + chosen.name + (window.FixVoice.score(chosen) < 20 ? " — for a more natural voice, install a Premium/Enhanced voice in your system settings (Spoken Content)." : "");
     }
     return chosen;
   }
