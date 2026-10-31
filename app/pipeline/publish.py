@@ -81,6 +81,11 @@ def with_perception(
         update: dict = {}
         if seen.overlay:
             update["overlay"] = seen.overlay
+        review = seen.review
+        if review and not review.matches and review.confidence >= 0.7 and review.instruction:
+            # the frames show something else: say what they show, and say that it changed
+            update["instruction"] = review.instruction
+            notes.append(f"Step {step.index}: rewritten after the frame by frame review.")
         if seen.removed:
             boxes = [to_box(r.number, r.box.x, r.box.y, r.box.w, r.box.h) for r in seen.removed]
             # The analysis count stays the claim; SAM's boxes are the evidence that checks it.

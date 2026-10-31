@@ -355,6 +355,17 @@ class FakeMeta:
             "repair_identity": IDENTITY,
             "refined_step": unsure,
             "film_narration": NARRATION,
+            "song_lyrics": {"lyrics": []},
+            "step_review": {
+                "matches": True,
+                "instruction": "",
+                "start_s": 0,
+                "end_s": 0,
+                "confidence": 0.8,
+                "part_frames": [3, 6],
+                "fastener_frame": 0,
+                "points": [],
+            },
             # the fastener check: every candidate shown is confirmed
             "check": {"tiles": [{"n": n, "real": True, "why": "demo"} for n in range(1, 17)]},
         }
@@ -368,6 +379,34 @@ class FakeMeta:
 
     def segment(self, image_path, concept, max_side=1280):
         return find_colored(image_path, concept, max_side)
+
+    def ground(self, image_path, query, *, context="", max_boxes=8):
+        found, size = find_colored(image_path, query)
+        boxes = []
+        for item in found[:max_boxes]:
+            x1, y1, x2, y2 = item.box
+            grid = (
+                x1 * 1000 / size[0],
+                y1 * 1000 / size[1],
+                x2 * 1000 / size[0],
+                y2 * 1000 / size[1],
+            )
+            boxes.append(SimpleNamespace(label=query, box=tuple(int(v) for v in grid), why="demo"))
+        return boxes
+
+    def segment_boxes(self, image_path, boxes, max_side=1280):
+        import cv2
+
+        from app.meta_client import Detection
+
+        image = cv2.imread(str(image_path))
+        height, width = image.shape[:2]
+        found = []
+        for n, (x1, y1, x2, y2) in enumerate(boxes, start=1):
+            box = (x1 * width / 1000, y1 * height / 1000, x2 * width / 1000, y2 * height / 1000)
+            w, h = max(1, int(box[2] - box[0])), max(1, int(box[3] - box[1]))
+            found.append(Detection(str(n), box, 0.95, bytes([1]) * (w * h), (w, h), box))
+        return found, (width, height)
 
     def segment_video(self, video_path, concept=None, boxes=(), size=None, max_frames=600):
         return track_colored(video_path, concept, boxes, size)

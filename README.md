@@ -36,6 +36,7 @@ Made for the Meta Global AI Developer Hackathon (Indie track).
 | `sam-3.1` (images) | highlights the part; finds fastener candidates on the full frame and on zoomed tiles |
 | `sam-3.1` (video) | follows each fastener through the step, so a fastener counts only if it appears or disappears where the step says; follows a point the user taps |
 | `muse-wonder-1.0` | the agent: it looks at frames, points at parts, adds steps and asks the person when unsure, then files the guide for sign-off |
+| MMS-TTS (Meta open weights, CC-BY-NC 4.0, run locally) | reads the film and the live coach aloud in English; install it with `python -m scripts.get_voice`, otherwise the device voice is used |
 
 Unexpected uses:
 

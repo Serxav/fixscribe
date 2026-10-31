@@ -26,6 +26,7 @@ from app.meta_client import MetaError
 PROMPTS = Path(__file__).resolve().parents[2] / "prompts"
 CHECK_PROMPT = PROMPTS / "check_marks_v1.md"
 TRACK_PROMPT = PROMPTS / "check_tracks_v1.md"
+PART_PROMPT = PROMPTS / "check_part_v1.md"
 TILE = 300
 MAX_TILES = 16
 
@@ -115,7 +116,7 @@ def _ask(client: Any, model: str, prompt: str, images: list[np.ndarray]) -> dict
             }
         },
         reasoning={"effort": "medium"},
-        max_output_tokens=4000,
+        max_output_tokens=12000,
     )
     try:
         answers = json.loads(response.output_text)["tiles"]

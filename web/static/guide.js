@@ -11,6 +11,18 @@
   }, { passive: true });
 
   // Tap the step photo: a missing fastener is added (SAM follows the point), a wrong one removed.
+  // each photo and film sets the shape of its own frame, so no black bands around it
+  document.querySelectorAll(".stage").forEach(function (stage) {
+    var media = stage.querySelector("img.fit, video.fit");
+    if (!media) return;
+    var fit = function () {
+      var w = media.naturalWidth || media.videoWidth, h = media.naturalHeight || media.videoHeight;
+      if (w && h && w >= h) stage.style.aspectRatio = w + " / " + h;
+    };
+    fit();
+    media.addEventListener("load", fit);
+    media.addEventListener("loadedmetadata", fit);
+  });
   document.querySelectorAll("img[data-tap-step]").forEach(function (img) {
     var markers = JSON.parse(img.getAttribute("data-markers") || "[]");
     var hint = img.parentNode.querySelector("[data-tap-hint]");

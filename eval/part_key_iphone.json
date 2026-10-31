@@ -1,0 +1,87 @@
+{
+ "context": "iPhone battery replacement, seen from above on a blue mat.",
+ "questions": [
+  {
+   "part": "back cover",
+   "t_s": 9,
+   "point": [
+    470,
+    690
+   ]
+  },
+  {
+   "part": "back cover",
+   "t_s": 35,
+   "point": [
+    354,
+    722
+   ]
+  },
+  {
+   "part": "back cover",
+   "t_s": 87.5,
+   "point": [
+    590,
+    850
+   ]
+  },
+  {
+   "part": "back cover",
+   "t_s": 102,
+   "point": [
+    470,
+    710
+   ]
+  },
+  {
+   "part": "yellow bottle",
+   "t_s": 136.5,
+   "point": [
+    854,
+    852
+   ]
+  },
+  {
+   "part": "back cover",
+   "t_s": 195.5,
+   "point": [
+    333,
+    778
+   ]
+  },
+  {
+   "part": "phone screen",
+   "t_s": 320.5,
+   "point": [
+    558,
+    722
+   ]
+  },
+  {
+   "part": "battery",
+   "t_s": 277,
+   "point": [
+    440,
+    750
+   ]
+  },
+  {
+   "part": "battery",
+   "t_s": 303.5,
+   "point": [
+    240,
+    490
+   ]
+  },
+  {
+   "part": "gas valve",
+   "t_s": 9,
+   "point": null
+  },
+  {
+   "part": "car engine",
+   "t_s": 277,
+   "point": null
+  }
+ ]
+}
