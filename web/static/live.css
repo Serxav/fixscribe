@@ -12,5 +12,27 @@
 .live-status.on_track, .live-status.done_step { color: #3ddc84; }
 .live-status.wrong { color: #ff5a5f; }
 .live-status.unclear { color: rgba(255, 255, 255, 0.6); }
-.live-say { margin: 12px 0 0; font-size: clamp(20px, 4.6vw, 26px); line-height: 1.3; font-weight: 400; letter-spacing: -0.02em; }
-.live-next { margin: 8px 0 0; color: rgba(255, 255, 255, 0.75); font-size: 16px; }
+.live-say { margin: 8px 0 0; font-size: 16px; line-height: 1.3; }
+.live-say:empty, .live-next:empty, .live-instruction:empty { display: none; }
+.live-next { margin: 4px 0 0; color: rgba(255, 255, 255, 0.75); font-size: 14px; }
+.live-rail { margin-bottom: 10px; width: 100%; }
+.live-rail button.now i { width: 100%; background: #ff5a1f; }
+.live-manual { display: flex; gap: 12px; margin-top: 10px; align-items: flex-start; }
+.live-photo { width: 84px; height: 84px; object-fit: cover; border-radius: 2px; flex: none; }
+.live-title { font-size: clamp(18px, 4.4vw, 22px); font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; }
+.live-instruction { margin: 4px 0 0; font-size: 15px; line-height: 1.35; color: rgba(255, 255, 255, 0.85); max-height: 6.8em; overflow-y: auto; }
+.live-warn { margin: 8px 0 0; color: #ffb340; font-size: 14px; line-height: 1.3; }
+.live-controls { display: flex; gap: 8px; margin-top: 10px; }
+.live-controls .film-btn { flex: 1; height: 44px; width: auto; }
+.live-marks { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; transition: opacity 0.25s; }
+.live-marks.stale { opacity: 0; }
+.live-part { opacity: 0; animation: live-in 0.3s forwards; animation-delay: calc(var(--i) * 80ms); }
+.live-part polygon { fill: #ff5a1f; fill-opacity: 0.14; stroke: #ff5a1f; stroke-width: 2.5px; vector-effect: non-scaling-stroke; }
+.live-part.target polygon { fill-opacity: 0.3; stroke-width: 4px; }
+.live-part circle { fill: #fff; }
+.live-part .live-lead { stroke: #fff; stroke-width: 1.5px; opacity: 0.8; vector-effect: non-scaling-stroke; }
+.live-part rect { fill: rgba(10, 12, 20, 0.82); }
+.live-part.target rect { fill: #ff5a1f; }
+.live-part text { fill: #fff; font-family: var(--mono); }
+@keyframes live-in { to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .live-part { animation: none; opacity: 1; } }

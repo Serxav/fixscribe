@@ -12,7 +12,10 @@
 <body class="film-body">
 <div class="film" id="live" data-job-id="{{ job_id }}" data-steps="{{ guide.steps|length }}" data-lang="{{ guide.language }}">
   <video id="live-camera" class="film-video live-camera" playsinline muted autoplay></video>
+  <svg id="live-marks" class="live-marks" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
   <canvas id="live-canvas" hidden></canvas>
+  <canvas id="live-small" width="32" height="24" hidden></canvas>
+  <script type="application/json" id="live-steps">{{ steps|tojson }}</script>
   <div class="film-shade" aria-hidden="true"></div>
 
   <header class="film-top">
@@ -24,15 +27,30 @@
   <section class="film-card" id="live-start">
     <span class="kicker">Live coach</span>
     <h1 class="film-card-title">Point the camera at your {{ guide.identity.object_name if guide.identity else guide.device }}</h1>
-    <p class="film-card-text">FixScribe watches as you work, tells you which step you are on and what to do next — out loud.</p>
+    <p class="film-card-text">FixScribe watches as you work, names and cuts out the parts it sees, tells you which step you are on and what to do next — out loud.</p>
     <button class="btn btn-primary btn-lg" type="button" id="live-go">Start the camera</button>
-    <p class="small film-note">One frame every few seconds goes to Muse Spark. Nothing is recorded.</p>
+    <p class="small film-note">Frames go to Muse Spark and SAM 3.1 when the view changes. Nothing is recorded.</p>
   </section>
 
   <div class="live-panel hidden" id="live-panel" aria-live="polite">
+    <div class="film-rail live-rail" id="live-rail"></div>
     <div class="live-row"><span class="film-step" id="live-step">Looking…</span><span class="live-status" id="live-status"></span></div>
-    <p class="live-say" id="live-say">Hold the object in view.</p>
+    <div class="live-manual">
+      <img class="live-photo hidden" id="live-photo" alt="This step in the guide">
+      <div>
+        <b class="live-title" id="live-title">Hold the object in view.</b>
+        <p class="live-instruction" id="live-instruction"></p>
+      </div>
+    </div>
+    <p class="live-warn hidden" id="live-warn"></p>
+    <p class="live-say" id="live-say"></p>
     <p class="live-next" id="live-next"></p>
+    <div class="live-controls">
+      <button class="film-btn" type="button" id="live-prev" aria-label="Previous step">‹</button>
+      <button class="film-btn" type="button" id="live-repeat" aria-label="Repeat this step">↻</button>
+      <button class="film-btn" type="button" id="live-next-step" aria-label="Next step">›</button>
+      <button class="film-btn" type="button" id="live-voice" aria-pressed="true" aria-label="Voice on">🔊</button>
+    </div>
   </div>
 </div>
 <script src="/static/live.js"></script>

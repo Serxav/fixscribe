@@ -23,6 +23,7 @@ class Settings:
     budget_usd: float = 120.0  # [BUDGET_USD]
     job_budget_usd: float = 1.0  # [JOB_BUDGET_USD]
     agent_budget_usd: float = 1.0  # [AGENT_BUDGET_USD] extra per job for the Muse Wonder agent
+    live_budget_usd: float = 2.0  # [LIVE_BUDGET_USD] per job for the live coach, on its own counter
     data_dir: Path = Path("data")  # [DATA_DIR]
 
     @property
@@ -61,5 +62,6 @@ def get_settings() -> Settings:
         budget_usd=float(env.get("BUDGET_USD", "120.0")),
         job_budget_usd=float(env.get("JOB_BUDGET_USD", "1.0")),
         agent_budget_usd=float(env.get("AGENT_BUDGET_USD", "1.0")),
+        live_budget_usd=float(env.get("LIVE_BUDGET_USD", "2.0")),
         data_dir=data_dir,
     )

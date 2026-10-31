@@ -289,7 +289,20 @@ def live_page(
     folder, guide = load_guide(job_id, settings)
     if guide is None:
         return _not_ready(request, job_id, valid_id=folder is not None)
-    return templates.TemplateResponse(request, "live.html", {"guide": guide, "job_id": job_id})
+    media = f"/media/{job_id}/"
+    steps = [
+        {
+            "index": step.index,
+            "title": step.title,
+            "instruction": step.instruction,
+            "warnings": step.warnings,
+            "photo": media + step.image if step.image else None,
+        }
+        for step in guide.steps
+    ]
+    return templates.TemplateResponse(
+        request, "live.html", {"guide": guide, "job_id": job_id, "steps": steps}
+    )
 
 
 @router.get("/media/{job_id}/{path:path}")
