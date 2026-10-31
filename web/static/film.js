@@ -4,6 +4,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var video = $("film-video");
   var synth = window.speechSynthesis || null;
+  var voice = window.FixVoice.player(location.pathname.split("/")[2], data.language, !!data.meta_voice);
   var mode = "apart";
   var index = -1;
   var playing = false;
@@ -15,39 +16,19 @@
     return mode === "apart" ? data.steps : data.steps.slice().reverse();
   }
 
-  var chosen = null;
-  function pickVoice() {
-    if (!synth) return null;
-    if (chosen) return chosen;
-    chosen = window.FixVoice.pick(synth, data.language);
-    if (!chosen) return null;
+  function showVoice() {
     var label = $("film-voice-name");
-    if (label) {
-      label.textContent = "Voice: " + chosen.name + (window.FixVoice.score(chosen) < 20 ? " — for a more natural voice, install a Premium/Enhanced voice in your system settings (Spoken Content)." : "");
-    }
-    return chosen;
+    if (!label) return;
+    var text = voice.label();
+    var chosen = !data.meta_voice && synth ? window.FixVoice.pick(synth, data.language) : null;
+    label.textContent = text + (chosen && window.FixVoice.score(chosen) < 20 ? " — for a more natural voice, install a Premium/Enhanced voice in your system settings (Spoken Content)." : "");
   }
 
   function speak(text, done) {
-    if (!synth || !voiceOn || !text) { setTimeout(done, Math.max(MIN_STEP_MS, (text || "").split(" ").length * 380)); return; }
-    synth.cancel();
-    var sentences = text.match(/[^.!?…]+[.!?…]*/g) || [text];
-    var voice = pickVoice();
-    var mine = ++speechToken;
-    (function next(i) {
-      if (mine !== speechToken) return;
-      if (i >= sentences.length) { done(); return; }
-      var utterance = new SpeechSynthesisUtterance(sentences[i].trim());
-      if (voice) utterance.voice = voice;
-      utterance.lang = voice ? voice.lang : data.language || "en";
-      utterance.rate = 0.94;
-      utterance.pitch = 1.0;
-      utterance.onend = function () { setTimeout(function () { next(i + 1); }, 260); };
-      utterance.onerror = function () { next(i + 1); };
-      synth.speak(utterance);
-    })(0);
+    if (!voice.ready() || !voiceOn || !text) { setTimeout(done, Math.max(MIN_STEP_MS, (text || "").split(" ").length * 380)); return; }
+    voice.cancel();
+    voice.say(text, done);
   }
-  var speechToken = 0;
 
   function drawRail() {
     var steps = order();
@@ -132,8 +113,8 @@
       return;
     }
     if (index === -1) {
-      speak(data.intro, function () {});
-      setTimeout(function () { playStep(0); }, 2200);
+      var opening = token;
+      speak(data.intro, function () { if (opening === token && playing) playStep(0); });
     } else {
       playStep(index);
     }
@@ -142,11 +123,12 @@
   function go(i) {
     playing = true;
     $("film-toggle").textContent = "⏸";
-    if (synth) synth.cancel();
+    voice.cancel();
     playStep(Math.max(0, Math.min(order().length - 1, i)));
   }
 
   $("film-start").addEventListener("click", function () {
+    voice.unlock();
     if (index >= order().length && mode === "apart") { setMode("back"); }
     index = -1;
     start();
@@ -154,8 +136,8 @@
   $("film-toggle").addEventListener("click", function () {
     playing = !playing;
     $("film-toggle").textContent = playing ? "⏸" : "▶";
-    if (playing) { video.play().catch(function () {}); if (synth) synth.resume(); if (index === -1) start(); }
-    else { video.pause(); if (synth) synth.pause(); }
+    if (playing) { video.play().catch(function () {}); voice.resume(); if (index === -1) start(); }
+    else { video.pause(); voice.pause(); }
   });
   $("film-prev").addEventListener("click", function () { go(index - 1); });
   $("film-next").addEventListener("click", function () { go(index + 1); });
@@ -163,7 +145,7 @@
     voiceOn = !voiceOn;
     $("film-voice").setAttribute("aria-pressed", String(voiceOn));
     $("film-voice").textContent = voiceOn ? "🔊" : "🔇";
-    if (!voiceOn && synth) synth.cancel();
+    if (!voiceOn) voice.cancel(true);
     video.muted = !voiceOn || video.loop;
   });
 
@@ -172,7 +154,7 @@
     document.querySelectorAll("[data-mode]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.mode === mode)); });
     $("film-mode-label").textContent = mode === "apart" ? data.forward_label : data.backward_label;
     token++;
-    if (synth) synth.cancel();
+    voice.cancel();
     index = -1;
     drawRail();
     showCard(mode === "apart" ? "FixScribe film" : data.backward_label, data.title, mode === "apart" ? data.intro : "The same video, backwards, step by step: every part and every fastener.");
@@ -186,8 +168,8 @@
     if (e.key === "ArrowRight") go(index + 1);
     if (e.key === "ArrowLeft") go(index - 1);
   });
-  if (synth) synth.onvoiceschanged = function () { chosen = null; pickVoice(); };
-  pickVoice();
+  if (synth) synth.onvoiceschanged = showVoice;
+  showVoice();
   var first = data.steps[0];
   if (first && first.poster) video.poster = first.poster;
   if (new URLSearchParams(location.search).get("mode") === "back") setMode("back");

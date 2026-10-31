@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="/static/live.css">
 </head>
 <body class="film-body">
-<div class="film" id="live" data-job-id="{{ job_id }}" data-steps="{{ guide.steps|length }}" data-lang="{{ guide.language }}">
+<div class="film" id="live" data-job-id="{{ job_id }}" data-steps="{{ guide.steps|length }}" data-lang="{{ guide.language }}" data-meta-voice="{{ 'yes' if meta_voice else '' }}">
   <video id="live-camera" class="film-video live-camera" playsinline muted autoplay></video>
   <svg id="live-marks" class="live-marks" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
   <canvas id="live-canvas" hidden></canvas>

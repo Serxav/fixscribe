@@ -26,17 +26,12 @@
   var marksBusy = false;
   var stillSample = null;
   var stillSince = Date.now();
-  var synth = window.speechSynthesis || null;
+  var voice = window.FixVoice.player(jobId, lang, root.dataset.metaVoice === "yes");
 
   function say(text, first) {
-    if (!synth || !voiceOn || !text) return;
-    if (first) synth.cancel();
-    var u = new SpeechSynthesisUtterance(text);
-    var v = window.FixVoice.pick(synth, lang);
-    if (v) u.voice = v;
-    u.lang = v ? v.lang : lang;
-    u.rate = 0.95;
-    synth.speak(u);
+    if (!voiceOn || !text) return;
+    if (first) voice.cancel();
+    voice.say(text);
   }
 
   function byIndex(n) {
@@ -219,10 +214,11 @@
     voiceOn = !voiceOn;
     $("live-voice").setAttribute("aria-pressed", String(voiceOn));
     $("live-voice").textContent = voiceOn ? "🔊" : "🔇";
-    if (!voiceOn && synth) synth.cancel();
+    if (!voiceOn) voice.cancel();
   });
 
   $("live-go").addEventListener("click", function () {
+    voice.unlock();
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       $("live-start").querySelector(".film-card-text").textContent =
         "This browser cannot open the camera here. Open FixScribe over https or on this computer (localhost).";
@@ -234,7 +230,6 @@
         $("live-start").classList.add("gone");
         $("live-panel").classList.remove("hidden");
         $("live-dot").className = "live-dot on";
-        if (synth) synth.getVoices();
         drawRail();
         setInterval(tick, CHECK_MS);
       })

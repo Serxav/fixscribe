@@ -1,9 +1,10 @@
 """Live mode route: one camera frame in, the current step and next action out."""
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from starlette.concurrency import run_in_threadpool
 
+from app import voice
 from app.config import Settings
 from app.pipeline.live import MAX_FRAME_BYTES, LiveError, live_marks, live_turn
 from app.routes.common import load_guide
@@ -64,3 +65,19 @@ async def live_frame_marks(
     finally:
         await frame.close()
     return JSONResponse({"parts": [part.model_dump(mode="json") for part in parts]})
+
+
+@router.post("/api/voice/{job_id}")
+async def spoken_line(
+    job_id: str,
+    text: str = Form(...),  # noqa: B008
+    settings: Settings = Depends(settings_dep),  # noqa: B008
+):
+    folder, guide = load_guide(job_id, settings)  # only a finished guide has lines to read
+    if folder is None or guide is None:
+        return JSONResponse({"error": f"unknown job: {job_id}"}, status_code=404)
+    try:
+        path = await run_in_threadpool(voice.speak, folder, settings, text)
+    except voice.VoiceError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=503)
+    return FileResponse(path, media_type="audio/wav")

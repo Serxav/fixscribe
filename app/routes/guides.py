@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import FileResponse, HTMLResponse
 
-from app import artifacts
+from app import artifacts, voice
 from app.agent import loop as agent_loop
 from app.agent import record as agent_record
 from app.artifacts import ArtifactError
@@ -275,7 +275,12 @@ def film_page(
         {
             "guide": guide,
             "job_id": job_id,
-            "film": film_playlist(guide, job_id, _transcript(folder)),
+            "film": {
+                **film_playlist(guide, job_id, _transcript(folder)),
+                "meta_voice": voice.ready(
+                    settings, guide.narration.language if guide.narration else guide.language
+                ),
+            },
         },
     )
 
@@ -301,7 +306,14 @@ def live_page(
         for step in guide.steps
     ]
     return templates.TemplateResponse(
-        request, "live.html", {"guide": guide, "job_id": job_id, "steps": steps}
+        request,
+        "live.html",
+        {
+            "guide": guide,
+            "job_id": job_id,
+            "steps": steps,
+            "meta_voice": voice.ready(settings, guide.language),
+        },
     )
 
 

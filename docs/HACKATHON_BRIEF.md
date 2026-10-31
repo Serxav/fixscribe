@@ -27,7 +27,7 @@ clip per step, the reverse reassembly guide and a check that every screw goes ba
 
 ## Rules that disqualify or hurt us
 - Only new work written from Oct 26, 2026. Never copy code from other projects.
-- Meta models only inside the product, always through `app/meta_client.py`.
+- Meta models only inside the product, always through `app/meta_client.py` (the voice is Meta's open-weights MMS-TTS, run locally in `app/voice.py`).
 - No Streamlit. Web app = FastAPI + Jinja2 + Tailwind CDN + plain JavaScript.
 - Never invent endpoints, fields or model IDs. Never leak keys.
 

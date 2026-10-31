@@ -3,6 +3,7 @@
 !.env.example
 .venv/
 data/
+models/
 samples/*
 !samples/*.expected.json
 __pycache__/
