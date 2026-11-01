@@ -28,7 +28,7 @@ from app.agent.tools import full_mask
 from app.artifacts import ArtifactError
 from app.config import Settings
 from app.meta_client import BudgetExceeded, MetaError, make_client
-from app.pipeline.verify import confirm
+from app.pipeline.verify import TARGET_PROMPT, confirm
 from app.schemas import Guide, Step, Strict, _object
 from app.spark import SparkAnswerError
 
@@ -40,7 +40,10 @@ MIN_FILL = 0.1
 SMALL_PART = 50  # boxes narrower than this (0..1000 grid) get a margin: Spark is often half off
 CROP_MARGIN = 0.2  # room around the object on the close-up
 CLOSE_UP_SIDE = 1280
-SURE = 0.8  # the next step is taken at once when Spark is this sure
+SURE = 0.7  # the next step is taken at once when Spark is this sure
+SETTLED = 2  # ...and the coach already gave this many answers on the step it stands on
+SMALL_MARK = 120  # a part narrower than this (0..1000 grid of the close-up) is hard to name
+TURN_EFFORT = "medium"  # alike steps need the reasoning; low effort got stuck or ran ahead
 GROUND_EFFORT = "low"  # pointing is the longest wait; the check keeps its full reasoning
 MAX_SPILL = 0.25  # a cut-out with more than this outside its box ran over onto something else
 SMOOTH = 0.012  # outline clean-up, as a share of the image's long side
@@ -113,9 +116,9 @@ def _describe_step(step: Step) -> str:
 
 
 def nearby_steps(guide: Guide, last_step: int) -> list[Step]:
-    """The step the user stands on and the next one: the two a new frame most likely shows."""
-    first = max(last_step, 1)
-    return [step for step in guide.steps if first <= step.index <= first + 1]
+    """The step before, the one the user is on and the next: what a new frame most likely shows."""
+    here = max(last_step, 1)
+    return [step for step in guide.steps if here - 1 <= step.index <= here + 1]
 
 
 def build_prompt(guide: Guide, last_step: int = 0, photos: list[Step] | None = None) -> str:
@@ -129,14 +132,23 @@ def build_prompt(guide: Guide, last_step: int = 0, photos: list[Step] | None = N
     return prompt.replace("<<LAST_STEP>>", str(last_step))
 
 
-def settle_step(last: int, pending: int, seen: int, confidence: float) -> tuple[int, int]:
+def settle_step(
+    last: int, pending: int, seen: int, confidence: float, stood: int = SETTLED
+) -> tuple[int, int]:
     """One odd frame never moves the coach: returns (step to stand on, step still waiting).
 
-    A different step needs two frames in a row, except the very first one and a sure next step.
+    A different step needs two frames in a row, except step 1 at the start and a sure next step
+    after standing on this one for a while: alike steps must not carry the coach away one per frame.
     """
-    if seen == 0 or seen == last:
+    if seen == 0:  # a look away says nothing: what was waiting keeps waiting
+        return last, pending
+    if seen == last:
         return last, 0
-    if last == 0 or seen == pending or (seen == last + 1 and confidence >= SURE):
+    first_step = (
+        last == 0 and seen == 1
+    )  # any other first answer waits: a closed box looks finished
+    sure_next = seen == last + 1 and confidence >= SURE and stood >= SETTLED
+    if first_step or seen == pending or sure_next:
         return seen, 0
     return last, seen
 
@@ -302,6 +314,21 @@ def manual_name(label: str, names: list[str]) -> str:
     return max(matches, key=len, default="")
 
 
+def _is_small(mark: dict) -> bool:
+    x1, y1, x2, y2 = mark["cut_box"]
+    return max(x2 - x1, y2 - y1) < SMALL_MARK
+
+
+def _look_again(
+    client: Any, settings: Settings, path: Path, crop: np.ndarray, target: str, context: str
+) -> list[dict]:
+    """The step's own part was not marked: Spark looks only for it, with more care."""
+    found = client.ground(path, f"the {target}", context=context, max_boxes=1, effort="medium")
+    named = [SimpleNamespace(label=target, box=g.box) for g in found[:1]]
+    marks = cut_marks(client, path, crop, named) if named else []
+    return confirm(client, settings.spark_model, crop, marks, context, TARGET_PROMPT)
+
+
 def is_target(label: str, target: str) -> bool:
     """True when a mark's name is the part this step works on."""
     label, target = label.strip().lower(), target.strip().lower()
@@ -347,9 +374,16 @@ def marks_stages(
         "still real parts of it."
     )
     if names:
+        others = [name for name in names if not is_target(name, target)]
+        first = (
+            f"First and above all the {target}, the part this step works on. Also "
+            if target
+            else ""
+        )
         query = (
-            f"each of these parts of the {subject} that you can clearly see: {', '.join(names)}. "
-            "One box per part, labelled with exactly one of these names; leave out everything else"
+            f"{first}each of these parts of the {subject} that you can clearly see: "
+            f"{', '.join(others) or target}. One box per part, labelled with exactly one of these "
+            "names; leave out everything else"
         )
     else:
         query = (
@@ -385,9 +419,13 @@ def marks_stages(
                 if manual_name(g.label, names)
             ]
         marks = cut_marks(client, crop_path, crop, grounded) if grounded else []
+        # only the step's own small part is worth the risk: a tiny neighbour is usually misnamed
+        marks = [m for m in marks if is_target(m["label"], target) or not _is_small(m)]
         if marks:
             yield False, to_parts(marks)
         checked = confirm(client, settings.spark_model, crop, marks, context)
+        if target and not any(m.get("checked") and is_target(m["label"], target) for m in checked):
+            checked += _look_again(client, settings, crop_path, crop, target, context)
     except BudgetExceeded as exc:
         raise LiveError(f"could not mark the parts: {exc}") from exc
     except MetaError:  # the coach keeps coaching: only the marks are lost, never an unchecked one
@@ -418,6 +456,7 @@ def live_turn(
     last_step: int = 0,
     client: Any = None,
     pending_step: int = 0,
+    stood: int = SETTLED,
 ) -> LiveAnswer:
     """Answer one camera frame: step, status, what to say, what to do next, where the object is."""
     try:
@@ -447,7 +486,7 @@ def live_turn(
             images=[frame_path, *(job_dir / step.image for step in photos)],
             max_output_tokens=12000,  # reasoning counts against this: a low cap leaves no answer
             timeout_s=30,
-            effort="low",
+            effort=TURN_EFFORT,
         )
     except SparkAnswerError as exc:
         raise LiveError(f"Spark returned an invalid live answer: {exc}") from exc
@@ -462,7 +501,7 @@ def live_turn(
         data["confidence"] = max(0.0, min(float(data.get("confidence", 0)), 1.0))
     except (TypeError, ValueError) as exc:
         raise LiveError("Spark returned an invalid live answer: bad step") from exc
-    step, pending = settle_step(last_step, pending_step, seen, data["confidence"])
+    step, pending = settle_step(last_step, pending_step, seen, data["confidence"], stood)
     data.update(step=step, seen=seen, pending=pending)
     if pending:  # the words are about a step the coach has not moved to yet: stay quiet
         data.update(status="unclear", say="", next="")

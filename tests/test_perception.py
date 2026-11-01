@@ -244,8 +244,8 @@ def test_a_failing_step_keeps_the_others(tmp_path):
     steps = [_step(1, 0.0, 3.0, screws=3), _step(2, 4.0, 7.0, screws=3)]
     settings = _job(tmp_path, steps, task="assemble")
     result = perception.run(tmp_path, settings, client=FakeMeta(meta_fail_on_call=1))
-    # the part failed, the fasteners of the same step still count
-    assert result.steps[0].part is None and len(result.steps[0].removed) == 3
+    # the first look failed: the last look can still find the part, the fasteners still count
+    assert len(result.steps[0].removed) == 3
     assert len(result.steps[1].removed) == 3
 
 
@@ -402,7 +402,7 @@ def test_a_part_away_from_the_spot_being_worked_on_is_not_shown(tmp_path):
     step = perception.run(tmp_path, settings, client=client).steps[0]
     assert step.part is None and client.calls == []
     record = json.loads((tmp_path / "steps" / "01_part.json").read_text())
-    assert [t["result"][:12] for t in record["tries"]] == ["another part"] * 2
+    assert [t["result"][:12] for t in record["tries"]] == ["another part"] * 3  # with the last look
 
 
 def test_the_frame_where_the_tool_touches_the_part_is_tried_first(tmp_path):
@@ -468,15 +468,35 @@ def test_the_part_under_the_tool_gets_the_name_spark_sees_on_the_close_up(tmp_pa
                 answer = {**REVIEW, "work_frame": 2, "work_x": 500, "work_y": 500}
                 return SimpleNamespace(output_text=json.dumps(answer))
             if name == "part_at_spot":
-                answer = {"visible": True, "name": "copper shield", "x_min": 150, "y_min": 150,
+                answer = {"visible": True, "name": "copper rail", "x_min": 150, "y_min": 150,
                           "x_max": 850, "y_max": 850}  # fmt: skip
                 return SimpleNamespace(output_text=json.dumps(answer))
             return super().respond(**kwargs)
 
     step = perception.run(tmp_path, settings, client=CloseUp()).steps[0]
-    assert step.part.concept == "copper shield"
+    assert step.part.concept == "copper rail"
     record = json.loads((tmp_path / "steps" / "01_part.json").read_text())
     assert record["close_ups"][-1]["result"] == "kept" and record["tries"] == []
+
+
+def test_a_neighbour_under_the_tool_does_not_become_the_steps_part(tmp_path):
+    settings = _locate_job(tmp_path)
+
+    class Neighbour(FakeMeta):
+        def respond(self, **kwargs):
+            name = kwargs["text"]["format"]["name"]
+            if name == "step_review":
+                answer = {**REVIEW, "work_frame": 2, "work_x": 500, "work_y": 500}
+                return SimpleNamespace(output_text=json.dumps(answer))
+            if name == "part_at_spot":
+                answer = {"visible": True, "name": "camera plate", "x_min": 150, "y_min": 150,
+                          "x_max": 850, "y_max": 850}  # fmt: skip
+                return SimpleNamespace(output_text=json.dumps(answer))
+            return super().respond(**kwargs)
+
+    perception.run(tmp_path, settings, client=Neighbour())
+    record = json.loads((tmp_path / "steps" / "01_part.json").read_text())
+    assert record["close_ups"][-1]["result"] == "another part is under the tool"
 
 
 def test_a_big_part_is_not_refused_for_being_away_from_the_tool(tmp_path):

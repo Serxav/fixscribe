@@ -23,6 +23,7 @@ from app.pipeline.live import (
     LiveError,
     LivePart,
     _coach_client,
+    _is_small,
     _spill,
     build_prompt,
     live_marks,
@@ -129,7 +130,7 @@ def test_step_is_clamped_into_range(tmp_path):
     artifacts.save(tmp_path, _guide(steps=2))
 
     high = live_turn(tmp_path, settings, _frame_bytes(), client=FakeLiveClient(_answer(step=99)))
-    assert high.step == 2
+    assert high.seen == 2 and high.pending == 2  # clamped, and waiting for a second look
 
     low = live_turn(tmp_path, settings, _frame_bytes(), client=FakeLiveClient(_answer(step=-4)))
     assert low.step == 0
@@ -304,8 +305,10 @@ def test_one_odd_frame_never_moves_the_coach():
     assert settle_step(3, 8, 5, 0.9) == (3, 5)  # they disagree: start again
     assert settle_step(3, 0, 4, 0.9) == (4, 0)  # a sure next step
     assert settle_step(3, 0, 4, 0.5) == (3, 4)  # an unsure next step
-    assert settle_step(0, 0, 6, 0.1) == (6, 0)  # the first frame sets the start
-    assert settle_step(3, 8, 0, 0.0) == (3, 0)  # nothing visible keeps the step
+    assert settle_step(0, 0, 1, 0.1) == (1, 0)  # starting at the start needs no second look
+    assert settle_step(0, 0, 6, 0.9) == (0, 6)  # starting anywhere else does
+    assert settle_step(3, 8, 0, 0.0) == (3, 8)  # a look away keeps the step and what waits
+    assert settle_step(3, 0, 4, 0.9, 0) == (3, 4)  # just arrived: sure is not enough yet
     assert settle_step(3, 8, 3, 0.5) == (3, 0)
 
 
@@ -333,8 +336,8 @@ def test_guide_photos_follow_the_frame(tmp_path):
     live_turn(tmp_path, settings, _frame_bytes(), last_step=2, client=fake)
 
     content = fake.respond_kwargs["input"][0]["content"]
-    assert len(content) == 4  # prompt, the camera first, then the photos of steps 2 and 3
-    assert "step 2, step 3" in content[0]["text"]
+    assert len(content) == 5  # prompt, the camera first, then the photos of steps 1, 2 and 3
+    assert "step 1, step 2, step 3" in content[0]["text"]
     assert fake.respond_kwargs["max_output_tokens"] >= 12000
 
 
@@ -424,6 +427,11 @@ def test_no_key_on_the_server_is_a_clear_message(tmp_path, monkeypatch):
 
     with pytest.raises(LiveError, match="not set up"):
         _coach_client(tmp_path, Settings(model_api_key="", data_dir=tmp_path))
+
+
+def test_a_tiny_part_shows_only_if_the_step_works_on_it():
+    assert _is_small({"cut_box": [10, 10, 40, 40]})
+    assert not _is_small({"cut_box": [10, 10, 200, 40]})
 
 
 def test_marks_failure_loses_only_the_marks(tmp_path):

@@ -23,6 +23,7 @@ from app.agent.tools import full_mask
 from app.config import Settings
 from app.meta_client import BudgetExceeded, Detection, MetaError
 from app.pipeline import verify
+from app.pipeline.proof import same_part
 from app.schemas import Step
 
 logger = logging.getLogger(__name__)
@@ -310,6 +311,7 @@ def cut_and_check(
     context: str,
     tried: dict,
     near: tuple[int, int] | None = None,
+    check: Path = verify.PART_PROMPT,
 ) -> tuple[tuple[int, int, int, int], float, Detection, tuple[int, int]] | None:
     """Spark points on one frame, SAM cuts, Spark checks. ``tried`` records what happened.
 
@@ -331,7 +333,7 @@ def cut_and_check(
     if near is not None and small and not _touches(box, near):
         tried["result"] = "another part, away from the spot being worked on"
         return None
-    return _cut_box(client, settings, path, frame, box, part, context, tried)
+    return _cut_box(client, settings, path, frame, box, part, context, tried, check)
 
 
 def _cut_box(
@@ -343,6 +345,7 @@ def _cut_box(
     part: str,
     context: str,
     tried: dict,
+    check: Path = verify.PART_PROMPT,
 ) -> tuple[tuple[int, int, int, int], float, Detection, tuple[int, int]] | None:
     """SAM cuts inside the box and Spark checks the cut-out."""
     detections, size = client.segment_boxes(path, [box])
@@ -363,7 +366,7 @@ def _cut_box(
     outline = _outline(mask, width, height)
     mark = {"label": part, "cut_box": box, "outline": outline}
     image = verify.tile(frame, mark, f"1: {part}")
-    prompt = verify._prompt(verify.PART_PROMPT, context, part)
+    prompt = verify._prompt(check, context, part)
     verdict = verify._ask(client, settings.spark_model, prompt, [image]).get(1, {})
     tried["why"] = str(verdict.get("why", ""))
     if verdict.get("real") is not True:
@@ -503,6 +506,11 @@ def close_up(
         box = tuple(int(answer.get(key, 0)) for key in ("x_min", "y_min", "x_max", "y_max"))
         name = str(answer.get("name", "")).strip() or part
         tried.update(box=list(box), name=name)
+        if part and not same_part(
+            name, part
+        ):  # the tool rests on a neighbour: not this step's part
+            tried["result"] = "another part is under the tool"
+            continue
         if not _clean_box(box) or not _touches(box, centre):
             tried["result"] = "the box is not on the spot"
             continue
@@ -597,6 +605,26 @@ def look_at_step(
                         box, confidence, detection, size = kept
                         look.located = Located(t_s, whole, box, confidence, detection, size, None)
                 break
+        if look.located is None and part and chosen:  # a soft video must not cost the step its part
+            n = chosen[0]
+            t_s, frame = look.frames[n - 1]
+            tried = {"t_s": round(t_s, 2), "check": "last look, blur forgiven"}
+            record["tries"].append(tried)
+            path = _write(frame, work / f"last{n}.jpg")
+            try:
+                kept = cut_and_check(
+                    client, settings, path, frame, part, context, tried, near, verify.TARGET_PROMPT
+                )
+            except BudgetExceeded:
+                raise
+            except MetaError as exc:
+                tried["result"] = f"failed: {exc}"
+                kept = None
+            if kept is not None:
+                box, confidence, detection, size = kept
+                look.located = Located(
+                    t_s, frame, to_full(box, look.area), confidence, detection, size, look.area
+                )
     finally:
         relative = f"steps/{step.index:02d}_part.json"
         artifacts.write_text_atomic(job_dir / relative, json.dumps(record, indent=2))

@@ -16,6 +16,7 @@
 
   var current = 0;
   var pending = 0;
+  var stood = 0; // answers given on this step: alike steps must not carry the coach away
   var lastStatus = "";
   var voiceOn = true;
   var busy = false;
@@ -62,7 +63,7 @@
     var step = byIndex(n);
     if (!step) return;
     current = n;
-    if (byHand) { pending = 0; clearMarks(); }
+    if (byHand) { pending = 0; stood = 0; clearMarks(); }
     lastStatus = "";
     $("live-step").textContent = "Step " + n + " of " + steps.length;
     $("live-title").textContent = step.title;
@@ -163,7 +164,7 @@
 
   function show(answer, sample, blob) {
     pending = answer.pending || 0;
-    if (answer.step && answer.step !== current) enterStep(answer.step, false);
+    if (answer.step && answer.step !== current) { stood = 0; enterStep(answer.step, false); } else { stood++; }
     var status = $("live-status");
     status.className = "live-status " + answer.status;
     status.textContent = STATUS[answer.status] || "";
@@ -212,6 +213,7 @@
       form.append("frame", blob, "frame.jpg");
       form.append("last_step", String(current));
       form.append("pending_step", String(pending));
+      form.append("stood", String(stood));
       fetch("/api/live/" + jobId, { method: "POST", body: form })
         .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
         .then(function (res) {
