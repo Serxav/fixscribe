@@ -310,6 +310,14 @@
     });
   });
 
+  function begin() {
+    $("live-start").classList.add("gone");
+    $("live-panel").classList.remove("hidden");
+    $("live-dot").className = "live-dot on";
+    drawRail();
+    setInterval(tick, CHECK_MS);
+  }
+
   $("live-go").addEventListener("click", function () {
     voice.unlock();
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -320,14 +328,29 @@
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } }, audio: false })
       .then(function (stream) {
         $("live-camera").srcObject = stream;
-        $("live-start").classList.add("gone");
-        $("live-panel").classList.remove("hidden");
-        $("live-dot").className = "live-dot on";
-        drawRail();
-        setInterval(tick, CHECK_MS);
+        begin();
       })
       .catch(function () {
         $("live-start").querySelector(".film-card-text").textContent = "Camera permission was refused.";
       });
+  });
+
+  // No object at hand: the guide's own video stands in for the camera. Parts are only marked on a
+  // still view, so holding the video is how they show.
+  $("live-sample").addEventListener("click", function () {
+    voice.unlock();
+    var video = $("live-camera");
+    video.src = root.dataset.video;
+    video.loop = true;
+    video.play().catch(function () {});
+    $("live-hold").classList.remove("hidden");
+    $("live-hint").textContent = "This is the guide's own video, not your camera. Hold it to see the parts marked.";
+    begin();
+  });
+
+  $("live-hold").addEventListener("click", function () {
+    var video = $("live-camera");
+    if (video.paused) { video.play().catch(function () {}); } else { video.pause(); }
+    $("live-hold").textContent = video.paused ? "▶" : "⏸";
   });
 })();

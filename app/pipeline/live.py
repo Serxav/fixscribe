@@ -33,7 +33,6 @@ from app.spark import SparkAnswerError
 
 MAX_FRAME_BYTES = 4 * 1024**2
 MAX_FRAME_SIDE = 1280
-MAX_LIVE_CALLS_PER_JOB = 300
 MAX_PARTS = 6
 MIN_CONFIDENCE = 0.15  # same bar as the landing photos
 MIN_FILL = 0.1
@@ -219,11 +218,11 @@ def _coach_client(job_dir: Path, settings: Settings) -> Any:
     return make_client(coach, job_dir=job_dir / "live")
 
 
-def _count_call(job_dir: Path) -> int:
+def _count_call(job_dir: Path, settings: Settings) -> int:
     """Refuse past the cap; returns the number of calls made so far."""
     calls = read_calls(job_dir)
-    if calls >= MAX_LIVE_CALLS_PER_JOB:
-        raise LiveError(f"live limit reached for this job ({MAX_LIVE_CALLS_PER_JOB} calls max)")
+    if calls >= settings.live_max_calls:
+        raise LiveError(f"live limit reached for this job ({settings.live_max_calls} calls max)")
     return calls
 
 
@@ -325,7 +324,7 @@ def marks_stages(
         yield True, []
         return
     frame_path = save_frame(job_dir, frame, "marks.jpg")
-    calls = _count_call(job_dir)
+    calls = _count_call(job_dir, settings)
     image = cv2.imread(str(frame_path))
     if image is None:
         raise LiveError("could not read the frame")
@@ -426,7 +425,7 @@ def live_turn(
         reason = safety.reasons[0] if safety.reasons else PROFESSIONAL_LINE
         return LiveAnswer(step=0, status="unclear", say=reason, next="", confidence=1)
     frame_path = save_frame(job_dir, frame)
-    calls = _count_call(job_dir)
+    calls = _count_call(job_dir, settings)
     client = client or _coach_client(job_dir, settings)
     photos = [
         step

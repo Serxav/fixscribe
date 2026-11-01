@@ -6,6 +6,12 @@
     <span class="lead">FixScribe turns one video of a person building or repairing something into a guide that proves every step.</span>
     <span class="rest">It names every part, points at it on the frame, checks each claim outside the model, and asks you when it is not sure.</span>
   </h1>
+  {% if sample %}
+  <p class="sample-links" data-reveal style="--d:.08s">
+    <a class="btn btn-primary btn-lg" href="/guides/{{ sample }}/live">Try the live coach</a>
+    <a class="btn btn-soft btn-lg" href="/guides/{{ sample }}">See a finished guide</a>
+  </p>
+  {% endif %}
   <form class="start" action="/upload" method="post" enctype="multipart/form-data" data-reveal style="--d:.12s">
     <label class="btn btn-primary btn-lg">
       Record a video

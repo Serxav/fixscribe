@@ -24,6 +24,8 @@ class Settings:
     job_budget_usd: float = 1.0  # [JOB_BUDGET_USD]
     agent_budget_usd: float = 1.0  # [AGENT_BUDGET_USD] extra per job for the Muse Wonder agent
     live_budget_usd: float = 2.0  # [LIVE_BUDGET_USD] per job for the live coach, on its own counter
+    live_max_calls: int = 300  # [LIVE_MAX_CALLS] per job: a public sample guide needs more
+    demo_job: str = ""  # [DEMO_JOB] folder under demo/: a read-only sample guide for visitors
     data_dir: Path = Path("data")  # [DATA_DIR]
     voice_model_dir: Path = Path("models/vits-mms-eng")  # [VOICE_MODEL_DIR]
 
@@ -64,6 +66,8 @@ def get_settings() -> Settings:
         job_budget_usd=float(env.get("JOB_BUDGET_USD", "1.0")),
         agent_budget_usd=float(env.get("AGENT_BUDGET_USD", "1.0")),
         live_budget_usd=float(env.get("LIVE_BUDGET_USD", "2.0")),
+        live_max_calls=int(env.get("LIVE_MAX_CALLS", "300")),
+        demo_job=env.get("DEMO_JOB", "").strip(),
         data_dir=data_dir,
         voice_model_dir=Path(env.get("VOICE_MODEL_DIR", "models/vits-mms-eng")),
     )

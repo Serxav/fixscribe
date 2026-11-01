@@ -109,7 +109,7 @@ def answer_question(
     job_dir: Path, settings: Settings, guide: Guide, step: int, question: str, frame: bytes, client
 ) -> str:
     """One short spoken answer from the guide and the camera."""
-    calls = _count_call(job_dir)
+    calls = _count_call(job_dir, settings)
     images = [save_frame(job_dir, frame, "question.jpg")] if frame else []
     try:
         data = spark.ask_json(

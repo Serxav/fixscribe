@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from app import demo
 from app.config import Settings, get_settings
 from app.jobs import create_job, jobs_created_today, update_status
 from app.pipeline.runner import start_job
@@ -27,8 +28,10 @@ router = APIRouter()
 
 
 @router.get("/", response_class=HTMLResponse)
-def index(request: Request):
-    return templates.TemplateResponse(request, "index.html", {})
+def index(request: Request, settings: Settings = Depends(settings_dep)):  # noqa: B008
+    return templates.TemplateResponse(
+        request, "index.html", {"sample": demo.ready_sample(settings)}
+    )
 
 
 @router.get("/privacy", response_class=HTMLResponse)

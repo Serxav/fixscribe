@@ -17,7 +17,6 @@ from app.meta_client import MetaError
 from app.pipeline.live import (
     LIVE_JSON_SCHEMA,
     MAX_FRAME_BYTES,
-    MAX_LIVE_CALLS_PER_JOB,
     MAX_SPILL,
     LiveAnswer,
     LiveError,
@@ -171,7 +170,7 @@ def test_limit_refuses_without_calling_spark(tmp_path):
     settings = Settings(model_api_key="", data_dir=tmp_path)
     artifacts.save(tmp_path, _guide())
     (tmp_path / "live").mkdir(parents=True, exist_ok=True)
-    (tmp_path / "live" / "calls.txt").write_text(f"{MAX_LIVE_CALLS_PER_JOB}\n")
+    (tmp_path / "live" / "calls.txt").write_text(f"{Settings().live_max_calls}\n")
     fake = FakeLiveClient(_answer())
 
     with pytest.raises(LiveError, match="live limit"):
@@ -251,7 +250,7 @@ def test_route_limit_is_429(jobs_tmp):
     job_id = _route_job(jobs_dir)
     live_dir = jobs_dir / job_id / "live"
     live_dir.mkdir(parents=True, exist_ok=True)
-    (live_dir / "calls.txt").write_text(f"{MAX_LIVE_CALLS_PER_JOB}\n")
+    (live_dir / "calls.txt").write_text(f"{Settings().live_max_calls}\n")
 
     response = TestClient(app).post(
         f"/api/live/{job_id}",
