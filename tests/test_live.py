@@ -4,6 +4,7 @@ import io
 import json
 import types
 
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
@@ -17,12 +18,17 @@ from app.pipeline.live import (
     LIVE_JSON_SCHEMA,
     MAX_FRAME_BYTES,
     MAX_LIVE_CALLS_PER_JOB,
+    MAX_SPILL,
     LiveAnswer,
     LiveError,
     LivePart,
+    _spill,
     build_prompt,
     live_marks,
     live_turn,
+    manual_name,
+    manual_parts,
+    marks_stages,
     object_region,
     read_calls,
     settle_step,
@@ -339,7 +345,7 @@ class FakeMarksClient(FakeLiveClient):
         self.error = error
         self.ground_query = ""
 
-    def ground(self, path, query, *, context="", max_boxes=8):
+    def ground(self, path, query, *, context="", max_boxes=8, effort="medium"):
         self.ground_query = query
         if self.error:
             raise self.error
@@ -378,8 +384,35 @@ def test_marks_keep_only_what_the_check_confirms_and_map_back_to_the_frame(tmp_p
     assert [p.label for p in parts] == ["back cover"]
     assert parts[0].target is True
     assert all(x >= 400 and y >= 400 for x, y in parts[0].outline)  # the close-up's own corner
-    assert "the back cover and every other" in fake.ground_query
+    assert "back cover" in fake.ground_query
+    assert "leave out everything else" in fake.ground_query
     assert read_calls(tmp_path) == 1
+
+
+def test_marks_use_only_the_parts_the_manual_has_reached():
+    guide = _guide(steps=4)
+    for step, part in zip(guide.steps, ["cover", "bracket", "battery", "display"], strict=True):
+        step.target_part = part
+
+    assert manual_parts(guide, 1) == ["cover"]
+    assert manual_parts(guide, 2) == ["bracket", "cover"]
+    assert manual_parts(guide, 0) == ["battery", "bracket", "cover", "display"]
+
+
+def test_a_mark_takes_the_manual_name_or_is_dropped():
+    names = ["back cover", "battery"]
+
+    assert manual_name("Replacement battery", names) == "battery"
+    assert manual_name("cover", names) == "back cover"
+    assert manual_name("display", names) == ""
+
+
+def test_a_cut_out_that_runs_outside_its_box_is_measured():
+    mask = np.zeros((100, 100), dtype=bool)
+    mask[40:60, 40:60] = True
+
+    assert _spill(mask, (400, 400, 600, 600)) == 0
+    assert _spill(mask, (400, 400, 500, 500)) > MAX_SPILL
 
 
 def test_marks_failure_loses_only_the_marks(tmp_path):
@@ -409,25 +442,73 @@ def test_object_region_is_checked():
     assert object_region({"visible": True, "x_min": 1, "y_min": 1, "x_max": 5, "y_max": 5}) == []
 
 
-def test_marks_route_returns_parts(jobs_tmp, monkeypatch):
+def _post_marks(job_id, **data):
+    return TestClient(app).post(
+        f"/api/live/{job_id}/marks",
+        files={"frame": ("frame.jpg", _frame_bytes(), "image/jpeg")},
+        data=data,
+    )
+
+
+def test_marks_route_sends_the_cut_outs_then_the_confirmed(jobs_tmp, monkeypatch):
     jobs_dir, _ = jobs_tmp
     job_id = _route_job(jobs_dir)
     asked = {}
+    battery = LivePart(label="battery", box=[1, 2, 3, 4], outline=[[1, 2]], confidence=0.9)
 
-    def fake_marks(folder, settings, data, step, region):
+    def fake_stages(folder, settings, data, step, region):
         asked.update(step=step, region=region)
-        return [LivePart(label="battery", box=[1, 2, 3, 4], outline=[[1, 2]], confidence=0.9)]
+        yield False, [battery]
+        yield True, []
 
-    monkeypatch.setattr("app.routes.ask.live_marks", fake_marks)
-    response = TestClient(app).post(
-        f"/api/live/{job_id}/marks",
-        files={"frame": ("frame.jpg", _frame_bytes(), "image/jpeg")},
-        data={"step": "2", "region": "10,20,300,400"},
-    )
+    monkeypatch.setattr("app.routes.ask.marks_stages", fake_stages)
+    response = _post_marks(job_id, step="2", region="10,20,300,400")
 
     assert response.status_code == 200
-    assert response.json()["parts"][0]["label"] == "battery"
+    first, last = [json.loads(line) for line in response.text.splitlines()]
+    assert first["checked"] is False and first["parts"][0]["label"] == "battery"
+    assert last == {"checked": True, "parts": []}
     assert asked == {"step": 2, "region": [10, 20, 300, 400]}
+
+
+def test_marks_route_error_before_any_mark_is_a_clear_status(jobs_tmp, monkeypatch):
+    jobs_dir, _ = jobs_tmp
+    job_id = _route_job(jobs_dir)
+
+    def fake_stages(*_):
+        raise LiveError("frame is empty")
+        yield
+
+    monkeypatch.setattr("app.routes.ask.marks_stages", fake_stages)
+    response = _post_marks(job_id)
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "frame is empty"
+
+
+def test_marks_route_error_after_the_cut_outs_clears_them(jobs_tmp, monkeypatch):
+    jobs_dir, _ = jobs_tmp
+    job_id = _route_job(jobs_dir)
+    battery = LivePart(label="battery", box=[1, 2, 3, 4], outline=[[1, 2]], confidence=0.9)
+
+    def fake_stages(*_):
+        yield False, [battery]
+        raise LiveError("spend limit")
+
+    monkeypatch.setattr("app.routes.ask.marks_stages", fake_stages)
+    last = json.loads(_post_marks(job_id).text.splitlines()[-1])
+
+    assert last == {"checked": True, "parts": [], "error": "spend limit"}
+
+
+def test_stages_show_the_cut_outs_before_the_check(tmp_path):
+    settings = _with_target(tmp_path)
+
+    stages = list(marks_stages(tmp_path, settings, _frame_bytes(), 1, [], FakeMarksClient()))
+
+    assert [checked for checked, _ in stages] == [False, True]
+    assert [p.label for p in stages[0][1]] == ["back cover"]  # "sticker" is not in the manual
+    assert [p.label for p in stages[1][1]] == ["back cover"]
 
 
 def test_coach_has_its_own_budget(tmp_path, monkeypatch):

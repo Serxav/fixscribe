@@ -100,7 +100,9 @@ def _data_url(image: np.ndarray) -> str:
     return "data:image/jpeg;base64," + base64.b64encode(buffer.tobytes()).decode("ascii")
 
 
-def _ask(client: Any, model: str, prompt: str, images: list[np.ndarray]) -> dict[int, dict]:
+def _ask(
+    client: Any, model: str, prompt: str, images: list[np.ndarray], effort: str = "medium"
+) -> dict[int, dict]:
     """Send the prompt and the images; return Spark's verdict per number."""
     content: list[dict] = [{"type": "input_text", "text": prompt}]
     content += [{"type": "input_image", "image_url": _data_url(image)} for image in images]
@@ -115,7 +117,7 @@ def _ask(client: Any, model: str, prompt: str, images: list[np.ndarray]) -> dict
                 "strict": True,
             }
         },
-        reasoning={"effort": "medium"},
+        reasoning={"effort": effort},
         max_output_tokens=12000,
     )
     try:
@@ -142,15 +144,19 @@ def _prompt(path: Path, context: str, labels: str) -> str:
 
 
 def confirm(
-    client: Any, model: str, image: np.ndarray, marks: list[dict], context: str
+    client: Any,
+    model: str,
+    image: np.ndarray,
+    marks: list[dict],
+    context: str,
+    effort: str = "medium",
 ) -> list[dict]:
     """Ask Spark to check each mark on a zoomed contact sheet; mark the confirmed ones."""
     if not marks:
         return marks
     labels = ", ".join(sorted({mark["label"] for mark in marks}))
-    verdicts = _ask(
-        client, model, _prompt(CHECK_PROMPT, context, labels), [contact_sheet(image, marks)]
-    )
+    sheet = [contact_sheet(image, marks)]
+    verdicts = _ask(client, model, _prompt(CHECK_PROMPT, context, labels), sheet, effort)
     return _apply(marks, verdicts)
 
 

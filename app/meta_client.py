@@ -1095,6 +1095,7 @@ class MetaClient:
         context: str = "",
         max_boxes: int = 8,
         max_side: int = 1280,
+        effort: str = "medium",
     ) -> list[GroundBox]:
         """Point at ``query`` objects in a still with Muse Spark grounding.
 
@@ -1132,7 +1133,7 @@ class MetaClient:
                     "strict": True,
                 }
             },
-            reasoning={"effort": "medium"},
+            reasoning={"effort": effort},
             max_output_tokens=12000,
         )
         text = getattr(response, "output_text", "") or ""

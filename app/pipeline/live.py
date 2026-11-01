@@ -4,15 +4,17 @@ While the user repairs, the phone sends a frame when the camera shows something 
 at it next to the whole guide and the photos of the steps around the user and answers which step
 this is, whether it looks right, what to do next and where the object is (``live_turn``, fast).
 When the view holds still the parts are marked the way the landing photos were: close-up on the
-object, Spark grounds and names the parts, SAM 3.1 cuts them, Spark checks every cut-out and only
-the confirmed ones are drawn (``live_marks``, slower). The calls are capped and spend has its own
-counter in ``live/``, so a guide that used up its own budget still gets a coach and a forgotten
-camera page cannot eat the budget.
+object, Spark grounds and names the parts, SAM 3.1 cuts them and they show as "checking", then
+Spark checks every cut-out and only the confirmed ones stay (``marks_stages``, slower). The calls
+are capped and spend has its own counter in ``live/``, so a guide that used up its own budget
+still gets a coach and a forgotten camera page cannot eat the budget.
 """
 
 import io
+from collections.abc import Iterator
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Literal
 
 import cv2
@@ -39,6 +41,9 @@ SMALL_PART = 50  # boxes narrower than this (0..1000 grid) get a margin: Spark i
 CROP_MARGIN = 0.2  # room around the object on the close-up
 CLOSE_UP_SIDE = 1280
 SURE = 0.8  # the next step is taken at once when Spark is this sure
+GROUND_EFFORT = "low"  # pointing is the longest wait; the check keeps its full reasoning
+MAX_SPILL = 0.25  # a cut-out with more than this outside its box ran over onto something else
+SMOOTH = 0.012  # outline clean-up, as a share of the image's long side
 
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "live_v2.md"
 
@@ -167,8 +172,15 @@ def read_calls(job_dir: Path) -> int:
 
 def _polygon(mask: np.ndarray) -> list[list[int]]:
     """A mask's largest outer contour, simplified, on the 0..1000 grid."""
+    raw = mask.astype(np.uint8)
+    side = max(3, int(max(raw.shape[:2]) * SMOOTH) | 1)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (side, side))
+    smooth = cv2.morphologyEx(
+        cv2.morphologyEx(raw, cv2.MORPH_OPEN, kernel), cv2.MORPH_CLOSE, kernel
+    )
+    # a part thinner than the clean-up would vanish: it keeps its raw outline
     contours, _ = cv2.findContours(
-        mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        smooth if smooth.any() else raw, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
     )
     if not contours:
         return []
@@ -229,6 +241,18 @@ def close_up(image: np.ndarray, region: list[int]) -> tuple[np.ndarray, list[int
     return cv2.resize(crop, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC), frame
 
 
+def _spill(mask: np.ndarray, box: Any) -> float:
+    """The share of a cut-out outside its box (with a small margin), from 0 to 1."""
+    height, width = mask.shape[:2]
+    x1, y1, x2, y2 = _padded(tuple(box))
+    mx, my = (x2 - x1) // 20, (y2 - y1) // 20
+    inside = mask[
+        max(0, y1 - my) * height // 1000 : min(1000, y2 + my) * height // 1000,
+        max(0, x1 - mx) * width // 1000 : min(1000, x2 + mx) * width // 1000,
+    ]
+    return 1 - float(inside.sum()) / max(1.0, float(mask.sum()))
+
+
 def cut_marks(client: Any, path: Path, image: np.ndarray, grounded: list[Any]) -> list[dict]:
     """SAM cuts every grounded box out of ``path``; weak cut-outs are dropped."""
     detections, sent = client.segment_boxes(path, [_padded(g.box) for g in grounded])
@@ -241,6 +265,8 @@ def cut_marks(client: Any, path: Path, image: np.ndarray, grounded: list[Any]) -
         if detection is None or mask is None or not mask.any():
             continue
         x1, y1, x2, y2 = found.box
+        if _spill(mask, found.box) > MAX_SPILL:
+            continue
         fill = float(mask.sum()) / (max(1, (x2 - x1) * (y2 - y1)) * width * height / 1e6)
         confidence = round(min(1.0, detection.confidence or 0), 2)
         points = _polygon(mask)
@@ -259,15 +285,18 @@ def cut_marks(client: Any, path: Path, image: np.ndarray, grounded: list[Any]) -
     return marks
 
 
-def _vocabulary(guide: Guide) -> str:
-    """The guide's own part names, so the coach calls a part what the manual calls it."""
-    names = {(step.target_part or "").strip().lower() for step in guide.steps}
-    names.discard("")
-    if not names:
-        return ""
-    return (
-        f" This guide calls its parts: {', '.join(sorted(names))}. Use these names when they fit."
-    )
+def manual_parts(guide: Guide, step_index: int) -> list[str]:
+    """The parts the manual has reached by this step: the only names the coach uses here."""
+    last = step_index or len(guide.steps)
+    names = [(s.target_part or "").strip().lower() for s in guide.steps if s.index <= last]
+    return sorted({name for name in names if name})
+
+
+def manual_name(label: str, names: list[str]) -> str:
+    """The manual's name for a label ("replacement battery" is "battery"), "" when it has none."""
+    label = label.strip().lower()
+    matches = [name for name in names if label and (name in label or label in name)]
+    return max(matches, key=len, default="")
 
 
 def is_target(label: str, target: str) -> bool:
@@ -276,21 +305,25 @@ def is_target(label: str, target: str) -> bool:
     return bool(target) and (target in label or label in target)
 
 
-def live_marks(
+def marks_stages(
     job_dir: Path,
     settings: Settings,
     frame: bytes,
     step_index: int = 0,
     region: list[int] | None = None,
     client: Any = None,
-) -> list[LivePart]:
-    """The parts on one frame, found like the landing photos; only what Spark confirmed."""
+) -> Iterator[tuple[bool, list[LivePart]]]:
+    """The parts on one frame, like the landing photos: (False, cut out), then (True, confirmed).
+
+    The check is the longest wait, so the cut-outs are shown first, marked as still being checked.
+    """
     try:
         guide = artifacts.load(job_dir, Guide)
     except ArtifactError as exc:
         raise LiveError(f"no guide for this job: {exc}") from exc
     if guide.safety is not None and guide.safety.level == "professional_only":
-        return []
+        yield True, []
+        return
     frame_path = save_frame(job_dir, frame, "marks.jpg")
     calls = _count_call(job_dir)
     image = cv2.imread(str(frame_path))
@@ -305,41 +338,74 @@ def live_marks(
     target = (step.target_part or "").strip() if step else ""
     subject = guide.identity.object_name if guide.identity else guide.device
     action = f" Now: {step.title}." if step else ""
+    names = manual_parts(guide, step_index)
     context = (
         f"A {subject} being repaired.{action} Parts already taken off and lying beside it are "
-        f"still real parts of it.{_vocabulary(guide)}"
+        "still real parts of it."
     )
-    wanted = f"the {target} and " if target else ""
-    query = (
-        f"{wanted}every other distinct part of the {subject} that you can clearly see, one box "
-        "per part, each labelled with its own short specific name"
-    )
+    if names:
+        query = (
+            f"each of these parts of the {subject} that you can clearly see: {', '.join(names)}. "
+            "One box per part, labelled with exactly one of these names; leave out everything else"
+        )
+    else:
+        query = (
+            f"every distinct part of the {subject} that you can clearly see, one box per part, "
+            "each labelled with its own short specific name"
+        )
+
+    def to_parts(marks: list[dict]) -> list[LivePart]:
+        sx, sy = (shown[2] - shown[0]) / 1000, (shown[3] - shown[1]) / 1000
+
+        def back(x: int, y: int) -> list[int]:
+            return [round(shown[0] + x * sx), round(shown[1] + y * sy)]
+
+        return [
+            LivePart(
+                label=mark["label"],
+                target=is_target(mark["label"], target),
+                box=back(*mark["cut_box"][:2]) + back(*mark["cut_box"][2:]),
+                outline=[back(x, y) for x, y in mark["outline"]],
+                confidence=mark["confidence"],
+            )
+            for mark in marks
+        ]
+
     try:
-        grounded = client.ground(crop_path, query, context=context, max_boxes=MAX_PARTS)
+        grounded = client.ground(
+            crop_path, query, context=context, max_boxes=MAX_PARTS, effort=GROUND_EFFORT
+        )
+        if names:  # a name outside the manual is a wrong name: never shown
+            grounded = [
+                SimpleNamespace(label=manual_name(g.label, names), box=g.box)
+                for g in grounded
+                if manual_name(g.label, names)
+            ]
         marks = cut_marks(client, crop_path, crop, grounded) if grounded else []
+        if marks:
+            yield False, to_parts(marks)
         checked = confirm(client, settings.spark_model, crop, marks, context)
     except BudgetExceeded as exc:
         raise LiveError(f"could not mark the parts: {exc}") from exc
     except MetaError:  # the coach keeps coaching: only the marks are lost, never an unchecked one
-        return []
+        yield True, []
+        return
     finally:
         artifacts.write_text_atomic(job_dir / "live" / "calls.txt", f"{calls + 1}\n")
-    sx, sy = (shown[2] - shown[0]) / 1000, (shown[3] - shown[1]) / 1000
+    yield True, to_parts([mark for mark in checked if mark.get("checked")])
 
-    def back(x: int, y: int) -> list[int]:
-        return [round(shown[0] + x * sx), round(shown[1] + y * sy)]
 
-    return [
-        LivePart(
-            label=mark["label"],
-            target=is_target(mark["label"], target),
-            box=back(*mark["cut_box"][:2]) + back(*mark["cut_box"][2:]),
-            outline=[back(x, y) for x, y in mark["outline"]],
-            confidence=mark["confidence"],
-        )
-        for mark in checked
-        if mark.get("checked")
-    ]
+def live_marks(
+    job_dir: Path,
+    settings: Settings,
+    frame: bytes,
+    step_index: int = 0,
+    region: list[int] | None = None,
+    client: Any = None,
+) -> list[LivePart]:
+    """Only the parts Spark confirmed on one frame."""
+    stages = marks_stages(job_dir, settings, frame, step_index, region, client)
+    return [stage for stage in stages][-1][1]
 
 
 def live_turn(

@@ -25,8 +25,30 @@ from app.meta_client import make_client
 from app.pipeline.live import LiveError, live_marks, live_turn
 from app.schemas import Guide
 
-CAP_USD = 0.6
+CAP_USD = 0.35
 ORANGE = (31, 90, 255)
+
+
+class Timed:
+    """The real client, noting how long each stage of the marks takes."""
+
+    def __init__(self, client):
+        self._client = client
+        self.seconds = {}
+
+    def __getattr__(self, name):
+        method = getattr(self._client, name)
+        if name not in ("ground", "segment_boxes", "respond"):
+            return method
+
+        def timed(*args, **kwargs):
+            started = time.monotonic()
+            try:
+                return method(*args, **kwargs)
+            finally:
+                self.seconds[name] = round(time.monotonic() - started, 1)
+
+        return timed
 
 
 def grab(video: Path, seconds: float, target: Path) -> bytes:
@@ -72,6 +94,7 @@ def main(argv: list[str]) -> int:
     client = make_client(replace(settings, job_budget_usd=CAP_USD), job_dir=copy / "live")
     right = 0
     times = []
+    marks_times = []
     for step in steps:
         shot = copy / f"camera_{step.index:02d}.jpg"
         frame = grab(source / "video.mp4", (step.start_s + step.end_s) / 2, shot)
@@ -80,21 +103,27 @@ def main(argv: list[str]) -> int:
             answer = live_turn(copy, settings, frame, step.index - 1, client)
             times.append(time.monotonic() - started)
             started = time.monotonic()
-            parts = live_marks(copy, settings, frame, step.index, answer.object_box, client)
+            timed = Timed(client)
+            parts = live_marks(copy, settings, frame, step.index, answer.object_box, timed)
         except LiveError as exc:
             print(step.index, "failed:", exc)
             continue
         marks_time = time.monotonic() - started
+        marks_times.append(marks_time)
         right += answer.seen == step.index
         draw(copy / "live" / "marks.jpg", parts, copy / f"coach_{step.index:02d}.jpg")
         names = [("*" if p.target else "") + p.label for p in parts]
         print(
             f"real {step.index} seen {answer.seen} {answer.status} {answer.confidence:.2f} "
-            f"{times[-1]:.1f}s marks {marks_time:.1f}s {names} | {answer.say}"
+            f"{times[-1]:.1f}s marks {marks_time:.1f}s {timed.seconds} {names} | {answer.say}"
         )
     median = sorted(times)[len(times) // 2] if times else 0
+    marks_median = sorted(marks_times)[len(marks_times) // 2] if marks_times else 0
     spent = client.job_spend.total()
-    print(f"steps right {right}/{len(steps)}, median step answer {median:.1f}s, spent ${spent:.3f}")
+    print(
+        f"steps right {right}/{len(steps)}, median step answer {median:.1f}s, "
+        f"median marks {marks_median:.1f}s, spent ${spent:.3f}"
+    )
     return 0
 
 

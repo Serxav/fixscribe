@@ -11,6 +11,7 @@
   var STILL_REFRESH_MS = 15000; // an unchanged view is looked at again this often
   var STILL_PAUSE_MS = 120000; // nothing moved for this long: stop spending until it does
   var MOVED = 14; // mean grey difference that means the camera shows something else
+  var STEADY = 5; // below this the view is held still: hands moving would give a blurred, wrong mark
   var STATUS = { on_track: "On track", done_step: "Step done", wrong: "Check this", unclear: "Looking…" };
 
   var current = 0;
@@ -24,6 +25,7 @@
   var askedSample = null;
   var askedStep = 0;
   var marksBusy = false;
+  var waiting = null; // the last answer, until the view holds still long enough to mark its parts
   var stillSample = null;
   var stillSince = Date.now();
   var voice = window.FixVoice.player(jobId, lang, root.dataset.metaVoice === "yes");
@@ -85,7 +87,7 @@
   }
 
   // Drawn like the landing photos: outline, dot on the part, a line up to its name.
-  function drawMarks(parts, sample) {
+  function drawMarks(parts, sample, checked) {
     var svg = $("live-marks");
     var video = $("live-camera");
     var w = video.videoWidth, h = video.videoHeight;
@@ -97,7 +99,7 @@
       var cx = points.reduce(function (a, p) { return a + p[0]; }, 0) / points.length;
       var cy = points.reduce(function (a, p) { return a + p[1]; }, 0) / points.length;
       var top = Math.min.apply(null, points.map(function (p) { return p[1]; }));
-      var g = node("g", { "class": "live-part" + (part.target ? " target" : ""), style: "--i:" + i }, svg);
+      var g = node("g", { "class": "live-part" + (part.target ? " target" : "") + (checked ? "" : " checking"), style: "--i:" + i }, svg);
       node("polygon", { points: points.map(function (p) { return p.join(","); }).join(" ") }, g);
       node("path", { d: "M" + cx + " " + cy + "L" + cx + " " + top, "class": "live-lead" }, g);
       node("circle", { cx: cx, cy: cy, r: 5 * unit }, g);
@@ -107,18 +109,34 @@
       var y = Math.max(0, top - high);
       node("rect", { x: left, y: y, width: width, height: high, rx: 14 * unit }, g);
       var text = node("text", { x: left + 12 * unit, y: y + 19 * unit, "font-size": size }, g);
-      text.textContent = part.label;
+      text.textContent = part.label + (checked ? "" : "…");
     });
     marksSample = parts.length ? sample : null;
     svg.classList.remove("stale");
+  }
+
+  // The answer comes one JSON line at a time: the cut-outs first, the confirmed ones after.
+  function readLines(response, onLine) {
+    var reader = response.body.getReader();
+    var decoder = new TextDecoder();
+    var held = "";
+    function pump() {
+      return reader.read().then(function (part) {
+        held += decoder.decode(part.value || new Uint8Array(), { stream: !part.done });
+        var lines = held.split("\n");
+        held = lines.pop();
+        lines.forEach(function (line) { if (line.trim()) onLine(JSON.parse(line)); });
+        return part.done ? null : pump();
+      });
+    }
+    return pump();
   }
 
   // The parts take longer than the step: asked once per still view, drawn only if it stayed.
   function askMarks(answer, sample, blob) {
     var video = $("live-camera");
     var step = answer.step || current;
-    if (marksBusy || !answer.object_box || !answer.object_box.length) return;
-    if (apart(grey(video), sample) > MOVED) return;
+    if (!answer.object_box || !answer.object_box.length) return;
     if (step === askedStep && apart(sample, askedSample) <= MOVED) return;
     marksBusy = true;
     askedSample = sample;
@@ -128,9 +146,11 @@
     form.append("step", String(step));
     form.append("region", answer.object_box.join(","));
     fetch("/api/live/" + jobId + "/marks", { method: "POST", body: form })
-      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-      .then(function (res) {
-        if (res.ok && apart(grey(video), sample) <= MOVED) drawMarks(res.d.parts || [], sample);
+      .then(function (r) {
+        if (!r.ok) return;
+        return readLines(r, function (line) {
+          if (apart(grey(video), sample) <= MOVED) drawMarks(line.parts || [], sample, line.checked);
+        });
       })
       .catch(function () {})
       .finally(function () { marksBusy = false; });
@@ -144,7 +164,7 @@
     status.textContent = STATUS[answer.status] || "";
     if (answer.say) $("live-say").textContent = answer.say;
     if (answer.next) $("live-next").textContent = "Next: " + answer.next;
-    askMarks(answer, sample, blob);
+    waiting = { answer: answer, sample: sample, blob: blob };
     // Only news is spoken: a coach that keeps talking is not listened to.
     if (answer.status !== lastStatus && (answer.status === "wrong" || answer.status === "done_step")) say(answer.say, false);
     if (answer.status !== "unclear") lastStatus = answer.status;
@@ -201,6 +221,10 @@
     // The marks belong to the frame they were cut on: they go when the view does.
     $("live-marks").classList.toggle("stale", !!marksSample && apart(sample, marksSample) > MOVED);
     if (apart(sample, stillSample) > MOVED) { stillSample = sample; stillSince = now; }
+    if (waiting && !marksBusy && apart(sample, waiting.sample) <= STEADY) {
+      askMarks(waiting.answer, waiting.sample, waiting.blob);
+      waiting = null;
+    }
     if (busy || now - sentAt < MIN_GAP_MS) return;
     var isNew = apart(sample, sentSample) > MOVED;
     var refresh = now - sentAt >= STILL_REFRESH_MS && now - stillSince < STILL_PAUSE_MS;

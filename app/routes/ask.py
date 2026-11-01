@@ -1,12 +1,15 @@
 """Live mode route: one camera frame in, the current step and next action out."""
 
+import json
+from collections.abc import Iterator
+
 from fastapi import APIRouter, Depends, File, Form, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from starlette.concurrency import run_in_threadpool
 
 from app import voice
 from app.config import Settings
-from app.pipeline.live import MAX_FRAME_BYTES, LiveError, live_marks, live_turn
+from app.pipeline.live import MAX_FRAME_BYTES, LiveError, LivePart, live_turn, marks_stages
 from app.routes.common import load_guide
 from app.routes.upload import settings_dep
 
@@ -39,6 +42,18 @@ async def live_frame(
     return JSONResponse(answer.model_dump(mode="json"))
 
 
+def _marks_line(checked: bool, parts: list[LivePart]) -> str:
+    return json.dumps({"checked": checked, "parts": [p.model_dump(mode="json") for p in parts]})
+
+
+def _remaining_marks(stages: Iterator) -> Iterator[str]:
+    try:
+        for checked, parts in stages:
+            yield _marks_line(checked, parts) + "\n"
+    except LiveError as exc:
+        yield json.dumps({"checked": True, "parts": [], "error": str(exc)}) + "\n"
+
+
 @router.post("/api/live/{job_id}/marks")
 async def live_frame_marks(
     job_id: str,
@@ -58,13 +73,20 @@ async def live_frame_marks(
         box = []
     try:
         data = await frame.read(MAX_FRAME_BYTES + 1)
-        parts = await run_in_threadpool(live_marks, folder, settings, data, step, box)
+        stages = marks_stages(folder, settings, data, step, box)
+        checked, parts = await run_in_threadpool(next, stages)
     except LiveError as exc:
         status = 429 if "live limit" in str(exc) else 400
         return JSONResponse({"error": str(exc)}, status_code=status)
     finally:
         await frame.close()
-    return JSONResponse({"parts": [part.model_dump(mode="json") for part in parts]})
+    first = _marks_line(checked, parts) + "\n"
+
+    def lines() -> Iterator[str]:  # one JSON line per stage: cut out first, confirmed after
+        yield first
+        yield from _remaining_marks(stages)
+
+    return StreamingResponse(lines(), media_type="application/x-ndjson")
 
 
 @router.post("/api/voice/{job_id}")
