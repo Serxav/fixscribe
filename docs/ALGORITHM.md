@@ -71,21 +71,24 @@ part box is large and the hand boxes overlap it least.
 ## 5. Agent (Muse Wonder)
 Starts by itself when a guide is finished (`app/pipeline/runner.py` main, unless
 `ENABLE_INSPECTOR=false`), in its own background process, with `AGENT_BUDGET_USD` on top of the
-job's budget. One tool per turn, at most 30 turns: `look` (a frame), `point` (Spark grounding on
+job's budget. One tool per turn, within `max_turns`: `look` (a frame), `point` (Spark grounding on
 that frame), `add_part` (SAM cuts the part out of the box; refused when the cut-out barely fills
 it), `add_step`, `ask_person` (one question on the exact frame) and `submit_guide`. Code checks
 every tool call; refusals go back to the agent. Every turn is saved (`agent/turns.jsonl`,
 `agent/record.json`) and shown live in the console (`/jobs/<id>/console`); the guide page says
 what the agent is doing and links to it. The person signs off or sends notes back.
 
+The agent is optional. On its one real video it spent its budget after 18 of 45 turns, so a whole
+guide by the agent is not yet proven.
+
 ## 6. Cost and latency control
-- Per-job budget (default 1 $) on top of the global budget; a job stops cleanly when it would pass it.
+- Per-job budget (default 2.5 $) on top of the global budget; a job stops cleanly when it would pass it.
 - Spark pass 2 only for uncertain steps or steps with screws; SAM only on 2–3 frames per step.
 - Cache by video SHA-256: the same video never pays twice.
 - Measure, don't guess: the effect of a lower-resolution proxy on Spark tokens is an experiment
   in `eval/`, not an assumption.
 
 ## 7. Evaluation (technical depth)
-`eval/` keeps a small dataset (`samples/*.mp4` + `*.expected.json`) and writes one JSON per run:
-step F1, mean IoU, boundaries within ±2 s, screw count accuracy, cost per minute of video,
-latency per stage, prompt version. A table in the README compares v1 (Spark only) with v2 (fusion).
+`eval/` scores results against answer keys written by eye: step F1, boundaries within ±2 s, fastener
+positions and counts, cost and time per stage, and the live coach's steps and marks. The README
+gives the results and their limits.

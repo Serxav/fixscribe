@@ -18,10 +18,18 @@ The camera and microphone only work over https, so judges need a hosted address.
 | `DEMO_JOB` | the folder in `demo/` | the sample guide on the landing |
 
 Before the first judge: open the address on a phone, try the camera and the microphone over https,
-and run one short video through.
+and run one short video through. Then, inside the running image, check that ffmpeg refuses a playlist
+named as a video (expect an error, and no secret in the output):
+
+```bash
+printf '#EXTM3U\n#EXTINF:1,\n/proc/self/environ\n#EXT-X-ENDLIST\n' > /tmp/fake.mp4
+ffprobe -v error -format_whitelist mov,mp4,m4a,3gp,3g2,mj2 -protocol_whitelist file \
+  -show_format /tmp/fake.mp4
+```
 
 The spend counter on the server starts at zero, separate from local runs. Check Usage on
-dev.meta.ai every day, and turn the service off after judging.
+dev.meta.ai every day. Judging runs until Nov 8: keep the service on until then, and turn it off
+after.
 
 To change the sample: `python -m scripts.pack_demo data/jobs/<id>`, commit `demo/<id>`. Only pack a
 video you have the right to publish.

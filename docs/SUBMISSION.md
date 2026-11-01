@@ -4,6 +4,8 @@ Fill the items in brackets before sending. Every number here comes from the READ
 
 **Name:** FixScribe
 
+**Track and theme:** Indie · Build for Your World
+
 **One line:** Record a repair on your phone and get a step-by-step guide that shows the part, the
 screws and the second of video behind each step.
 

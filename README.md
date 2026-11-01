@@ -19,8 +19,7 @@ Made for the Meta Global AI Developer Hackathon (Indie track).
 4. **Proof on every claim**: each step boundary, instruction, fastener count and part is graded
    verified / supported / unverified, with the video seconds and words behind it.
 5. **Safety first**: fixed rules (`app/safety.py`) refuse professional-only jobs (gas, electrical
-   panel, airbag, refrigerant, high-voltage battery, microwave). A model can only make it
-   stricter.
+   panel, airbag, refrigerant, high-voltage battery, microwave). No model can lower that decision.
 6. **Fix it by hand**: tap a fastener the guide missed and SAM 3.1 follows it through the step;
    tap a wrong number to remove it.
 7. **While repairing**: "Ask FixScribe" by voice or text (answers point to the video second),
@@ -82,6 +81,13 @@ is confirmed: the video is 720p.
 Honest limits: fasteners hidden inside the wood or under a hand cannot be seen; then the count
 comes from the analysis and the guide says so. Small fasteners need a 1080p or 4K video, and the
 guide warns when the video is smaller.
+
+## Safe to leave public
+
+No login: a job's unguessable link is its key, and no route lists jobs. The original video and raw
+model answers are never served, uploads open only as real phone video files, the location is
+dropped from working copies, and every path to Meta has a budget. See
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#limits-on-a-public-server).
 
 ## Run locally
 

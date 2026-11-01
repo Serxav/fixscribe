@@ -14,6 +14,10 @@ clip per step, the reverse reassembly guide and a check that every screw goes ba
 | Technical depth | 20 % | Solid engineering: tests that mock Meta, atomic job files, retries, a spend counter, and **evaluation with numbers** (`eval/`). |
 | Demo | 25 % | A live demo that does not break, and a 3-minute video. Every feature must be easy to *see*. |
 
+Published on the event page (checked 2026-11-01): Indie is judged on creativity, technical ambition
+and whether it works; judging runs Nov 4 to Nov 8, with winners on Nov 9; every project picks one
+theme, "Build for Your World" or "Push the Frontier". Official rules were not linked on that page.
+
 ## Our unexpected capabilities (say them, show them)
 1. **SAM 3.1 as a screw counter and verifier**: it segments every screw, numbers them on a map
    and checks that the same screws go back in the reassembly.

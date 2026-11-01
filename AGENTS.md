@@ -20,6 +20,9 @@ Hackathon: Meta Global AI Developer Hackathon, Indie track. Deadline: Nov 4, 202
 
 ## 2. Who does what (two agents work at the same time)
 
+Since Oct 27, 2026 Claude Code writes the code and Muse Code is no longer used for programming; the
+table and section 3 describe how the first days worked, and `tasks/` keeps that record.
+
 | | Muse Code | Claude Code |
 |---|---|---|
 | Folder | `~/fixscribe-muse` and `~/fixscribe-muse2` (two git worktrees, two tasks in parallel on different files) | `~/fixscribe` (main repo) |
@@ -78,8 +81,9 @@ app/meta_client.py     the ONLY place that talks to Meta (retries, 429 backoff, 
 app/schemas.py         Guide and Step models (Pydantic)
 app/jobs.py            create job folder, read/write status.json
 app/routes/            upload, jobs, guides, ask, export
-app/pipeline/          ingest, transcribe, scenes, analyze, frames, segment, assembly, inspector, ask, runner
-prompts/               analyze_v1.md, inspector_v1.md, assembly_v1.md, ask_v1.md
+app/pipeline/          the stages (see docs/ARCHITECTURE.md), live and ask for the coach, runner
+app/agent/             the Muse Wonder agent
+prompts/               one versioned file per model task
 web/templates, web/static
 tests/  eval/  demo/  docs/  tasks/
 ```
