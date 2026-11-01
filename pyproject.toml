@@ -21,6 +21,7 @@ dependencies = [
     "python-dotenv",
     "python-multipart",
     "meta_sam_parser",
+    "sherpa-onnx",
 ]
 
 [project.optional-dependencies]

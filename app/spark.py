@@ -48,9 +48,10 @@ def ask_json(
     images: Sequence[Path] = (),
     video: Path | None = None,
     raw_path: Path | None = None,
-    max_output_tokens: int = 4000,
+    max_output_tokens: int = 12000,  # reasoning counts against this: a low cap leaves no answer
     timeout_s: float | None = None,
     retry_timeouts: bool = True,
+    effort: str | None = None,
 ) -> Any:
     """Ask Spark for strict JSON and return the parsed answer.
 
@@ -62,6 +63,7 @@ def ask_json(
     content: list[dict] = [{"type": "input_text", "text": prompt}]
     for path in images:
         content.append(image_block(path))
+    extra = {"reasoning": {"effort": effort}} if effort else {}
     file_id: str | None = None
     if video is not None:
         file_id = client.upload_file(video)
@@ -75,6 +77,7 @@ def ask_json(
             max_output_tokens=max_output_tokens,
             timeout_s=timeout_s,
             retry_timeouts=retry_timeouts,
+            **extra,
         )
     finally:
         if file_id is not None:

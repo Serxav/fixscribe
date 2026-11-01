@@ -5,7 +5,7 @@ tools check your proof; a refused tool call means your proof was not good enough
 tool is broken.
 
 ## What you get
-- The video itself (watch it: images and sound together).
+- The `look` tool: it shows you the frame at any second of the video.
 - A case file: what the object is, the task, the narration with timestamps, and a DRAFT list of
   steps written by a faster model. The draft is a starting point. It can be wrong: check it.
 

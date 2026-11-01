@@ -17,7 +17,7 @@ from app.agent import record as rec
 from app.agent.record import SignOff
 from app.agent.tools import Case, add_part, add_step, normalize, submit_guide, valid_box
 from app.config import Settings
-from app.meta_client import BudgetExceeded, Detection
+from app.meta_client import BudgetExceeded, Detection, MetaError
 from app.schemas import Identity, IngestInfo, Transcript, Turn
 
 
@@ -177,7 +177,7 @@ def test_rehearsal_good_run_end_to_end(tmp_path, settings):
     rec.write_signoff(job, SignOff(approved=True))
     record = loop.run(job, settings, resume=True, client=meta)
     assert record.status == "done"
-    assert meta.deleted == ["file-1"]
+    assert meta.deleted == []  # the agent works on frames: no video is uploaded
 
     turns = rec.load_turns(job)
     assert [t.turn for t in turns] == list(range(1, 9))
@@ -224,6 +224,29 @@ def test_budget_pauses_without_losing_the_record(tmp_path, settings):
     record = loop.run(job, settings, client=meta)
     assert record.status == "paused" and "budget" in record.notes[-1]
     assert rec.load_record(job).turn == 1
+
+
+def test_a_lost_response_restarts_the_conversation_and_keeps_working(tmp_path, settings):
+    job = make_job(tmp_path)
+    meta = FakeMeta([("look", {"t_s": 1.0}), ("look", {"t_s": 2.0})])
+    original = meta.respond
+    failed = []
+
+    def respond(**kwargs):
+        if kwargs.get("previous_response_id") and not failed:
+            failed.append(kwargs)
+            raise MetaError("meta api failed with status 400 on attempt 1", status_code=400)
+        if not meta.script:
+            raise BudgetExceeded("the test ends here")
+        return original(**kwargs)
+
+    meta.respond = respond
+    record = loop.run(job, settings, client=meta)
+    assert failed and record.turn >= 2
+    retry = meta.calls[1]
+    assert "previous_response_id" not in retry
+    assert "1. look" in json.dumps(retry["input"])
+    assert not any(item.get("type") == "function_call_output" for item in retry["input"])
 
 
 def test_bad_tool_calls_are_refusals_not_crashes(tmp_path, settings, monkeypatch):
@@ -316,6 +339,25 @@ def test_step_refusals(tmp_path):
 
 def test_silent_video_needs_no_quote(tmp_path):
     case = case_for(tmp_path, FakeMeta([]), narrated=False)
+    add_part(case, "A", "bolt", 1, "frames/t2.0.jpg", [100, 400, 300, 600])
+    result = add_step(
+        case,
+        1,
+        "insert",
+        "Put the bolt in.",
+        ["A"],
+        1.0,
+        3.0,
+        "frames/t2.0.jpg",
+        [100, 400, 300, 600],
+        "",
+    )
+    assert result.ok
+
+
+def test_a_step_nobody_talks_over_needs_no_quote(tmp_path):
+    case = case_for(tmp_path, FakeMeta([]))
+    case.turns = [(100.0, 105.0, "much later someone talks")]
     add_part(case, "A", "bolt", 1, "frames/t2.0.jpg", [100, 400, 300, 600])
     result = add_step(
         case,

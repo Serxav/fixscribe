@@ -164,3 +164,11 @@ may have changed.
 - perception and step checks: `sam-3.1`, $0.0025/image (`PRICES` also lists $0.0002/video frame).
 - Caps: `BUDGET_USD` 120 global, `JOB_BUDGET_USD` 1.0 per job (`app/config.py`); calls past
   budget raise before sending. Per-stage spend lands in `manifest.json`.
+
+## How a part is found
+
+`app/pipeline/locate.py`: Muse Spark picks the frames of the step where the part shows best, points
+at it, SAM 3.1 cuts inside that box, and Spark checks the cut-out on a zoomed tile. A cut-out below
+the confidence or fill limits, or one Spark rejects, is not shown. Each attempt is saved in
+`steps/NN_part.json`. The motion stage only follows a part that passed. `eval/part_exam.py` scores
+this against points placed by hand on a real repair video.

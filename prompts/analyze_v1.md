@@ -27,9 +27,10 @@ Task: <<TASK_SENTENCE>>
 5. `removes` lists the parts handled in this step (taken off, or added when building), with
    short names. Use the same name every time you mention the same part.
 6. `target_part` is the main part of the step, as the person would call it.
-   `sam_concept` is 1-3 common English words for something clearly visible on screen in this step
-   that an image model can find: a simple noun, no letters or codes ("wooden leg", "metal bolt",
-   "table top", "back cover", "drain hose"). Never "rail c" or "part 3".
+   `sam_concept` is 1-3 common English words for that same part, as it looks on screen, that an
+   image model can find: a simple noun, no letters or codes ("wooden leg", "metal bolt",
+   "table top", "back cover", "drain hose"). Never "rail c" or "part 3". Never a tool, a bottle,
+   a hand or anything else that is only being used on the part.
 7. `screw_count` is the number of fasteners (screws, bolts, nuts, dowels, clips... see above)
    <<FASTENER_VERB>> in this step. Count them on the video, or take the number the person says
    ("doce tornillos" = 12). Use 0 if none.

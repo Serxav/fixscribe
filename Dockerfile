@@ -7,6 +7,7 @@ RUN apt-get update \
 WORKDIR /srv
 COPY . .
 RUN pip install --no-cache-dir .
+RUN python -m scripts.get_voice
 
 ENV PORT=8000
 EXPOSE 8000

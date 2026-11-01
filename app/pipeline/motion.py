@@ -1,15 +1,14 @@
-"""Motion stage: SAM 3.1 tracks the part through each step clip; fasteners come from perception.
+"""Motion stage: SAM 3.1 follows the part through each step clip; fasteners come from perception.
 
-SAM is used the way it works best: first FIND, then FOLLOW. On the sharpest frame of the step,
-SAM image segmentation finds the part (text concept), and that box is sent as a prompt to SAM
-video tracking. If finding fails we fall back to tracking the text concept. Masks are smoothed
+SAM follows what the perception stage already proved: the box Spark pointed at and SAM cut out,
+on the second it was found, propagated both ways through the clip. A step whose part was not
+proven gets no clip, so a film never shows the wrong thing. Masks are smoothed
 over time so the outline does not shake. The fasteners are not searched again here: the
 perception stage already found, chose and followed them (``steps/NN_fasteners.json``), and
 their tracks are drawn on this clip.
 
-From the per-frame masks we render a
-"cinematic" clip: the scene dims and loses colour, the part stays in full colour with a soft glow
-and a crisp outline that follows it, and every fastener gets a numbered ring that moves with it.
+From the per-frame masks we render a clip with the same mark the site shows: the part's own shape
+in orange with its name, following it, and every fastener with a numbered ring that moves with it.
 We also cut the part out along its mask (transparent PNG) and keep its outline as an SVG path, so
 the web page can lift the real shape of the part in 3D instead of a rectangle.
 """
@@ -29,24 +28,21 @@ from app.meta_client import BudgetExceeded, make_client
 from app.pipeline.analyze import guide_direction
 from app.pipeline.fasteners import Found, load_found
 from app.pipeline.ingest import run_ffmpeg
-from app.pipeline.perception import part_concepts
-from app.schemas import Identity, Motion, NormBox, Plan, StepMotion
+from app.pipeline.overlay import mark_part
+from app.schemas import Identity, Motion, NormBox, PartHighlight, Perception, Plan, StepMotion
 
 logger = logging.getLogger(__name__)
 
 VERSION = "3"
-MAX_STEPS = 6
+MAX_STEPS = 20
 FPS = 15
-MAX_SECONDS = 8.0  # longer steps: the middle 8 s (SAM bills per frame)
+MAX_SECONDS = 5.0  # longer steps: 5 s around the part (SAM bills per frame)
 WIDTH = 720  # long side of the working clip
 HOLD_FRAMES = 4  # a mask SAM skipped on a frame is kept this many frames, then fades
 SMOOTH = 0.6  # weight of this frame's mask against the previous one (removes jitter)
-SEED_MIN_CONFIDENCE = 0.3
 POP_FRAMES = 8  # a fastener that comes out leaves an expanding ring for this many frames
 MAX_RING = 0.03  # ring radius at most this share of the frame's long side
 
-ACCENT = (255, 132, 10)  # BGR of #0a84ff
-OUTLINE = (255, 214, 120)  # light cyan-blue, BGR
 RING = (10, 214, 255)  # yellow #ffd60a, BGR
 
 
@@ -62,18 +58,24 @@ class Track:
     objects: dict[int, dict[int, tuple[float, float, float, float]]]  # frame -> id -> box
 
 
-def clip_window(start_s: float, end_s: float) -> tuple[float, float]:
-    """The part of the step we track: all of it, or its middle MAX_SECONDS."""
+def clip_window(start_s: float, end_s: float, around: float | None = None) -> tuple[float, float]:
+    """The part of the step we track: all of it, or MAX_SECONDS around ``around`` or its middle."""
     length = max(0.0, end_s - start_s)
     if length <= MAX_SECONDS:
         return start_s, end_s
-    middle = (start_s + end_s) / 2
-    return middle - MAX_SECONDS / 2, middle + MAX_SECONDS / 2
+    middle = (start_s + end_s) / 2 if around is None else around
+    first = min(max(start_s, middle - MAX_SECONDS / 2), end_s - MAX_SECONDS)
+    return first, first + MAX_SECONDS
 
 
-def cut_source(video: Path, start_s: float, end_s: float, dst: Path) -> None:
+def cut_source(
+    video: Path, start_s: float, end_s: float, dst: Path, zoom: NormBox | None = None
+) -> None:
     """A small constant-rate clip of the step: the exact frames SAM sees and we draw on."""
     scale = f"scale='if(gt(iw,ih),{WIDTH},-2)':'if(gt(iw,ih),-2,{WIDTH})'"
+    if zoom is not None:
+        crop = f"crop=iw*{zoom.w:.4f}:ih*{zoom.h:.4f}:iw*{zoom.x:.4f}:ih*{zoom.y:.4f}"
+        scale = f"{crop},{scale}"
     with artifacts.atomic_path(dst) as tmp:
         run_ffmpeg(
             ["ffmpeg", "-y", "-v", "error", "-ss", f"{start_s:.3f}", "-to", f"{end_s:.3f}",
@@ -152,36 +154,15 @@ def render_frame(
     numbers: dict[int, int],
     t: float,
     pops: list[tuple[tuple[float, float, float, float], float]] = (),
+    label: str = "",
 ) -> np.ndarray:
-    """One cinematic frame. `t` is 0..1 along the clip (for the intro and the glow pulse).
+    """One frame with the marks the site shows; the video itself stays as it was filmed.
 
     `pops` are fasteners that just came out: (last box, 0..1 progress) -> an expanding ring.
     """
-    intro = min(1.0, t * 6)  # the first ~15 % of the clip eases from normal to styled
-    gray = cv2.cvtColor(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), cv2.COLOR_GRAY2BGR)
-    dim = cv2.addWeighted(frame, 0.35, gray, 0.65, 0) * 0.42
-    dim = dim + np.array([18, 10, 4], dtype=np.float32)  # a cool blue cast in the shadows
-    styled = dim.astype(np.float32)
-
-    if part_alpha > 0 and part.any():
-        soft = cv2.GaussianBlur(part.astype(np.float32), (0, 0), 2.0)[..., None] * part_alpha
-        lit = np.clip(frame.astype(np.float32) * 1.08 + 6, 0, 255)
-        styled = styled * (1 - soft) + lit * soft
-        ring = cv2.dilate(part.astype(np.uint8), np.ones((9, 9), np.uint8)) - part.astype(np.uint8)
-        pulse = 0.75 + 0.25 * np.sin(t * np.pi * 4)
-        glow = cv2.GaussianBlur(ring.astype(np.float32), (0, 0), 9.0)[..., None]
-        styled = styled + glow * np.array(ACCENT, dtype=np.float32) * 1.6 * pulse * part_alpha
-
-    out = frame.astype(np.float32) * (1 - intro) + styled * intro
-    out = np.clip(out, 0, 255).astype(np.uint8)
-
-    if part_alpha > 0 and part.any():
-        contours, _ = cv2.findContours(
-            part.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-        )
-        overlay = out.copy()
-        cv2.drawContours(overlay, contours, -1, OUTLINE, 2, cv2.LINE_AA)
-        out = cv2.addWeighted(overlay, part_alpha * intro, out, 1 - part_alpha * intro, 0)
+    out = mark_part(frame, part, label, part_alpha)
+    if out is frame:
+        out = frame.copy()
 
     for object_id, (x1, y1, x2, y2) in fasteners.items():
         cx, cy = int((x1 + x2) / 2), int((y1 + y2) / 2)
@@ -295,51 +276,6 @@ def outline_path(mask: np.ndarray) -> str:
     return " ".join(parts)
 
 
-def sharpest_frame(frames: list[np.ndarray], first: int, last: int) -> int:
-    """The least blurry frame in [first, last) (variance of the Laplacian on a small copy)."""
-    best, best_score = first, -1.0
-    for index in range(first, max(first + 1, last)):
-        gray = cv2.cvtColor(frames[index], cv2.COLOR_BGR2GRAY)
-        small = cv2.resize(gray, (gray.shape[1] // 2, gray.shape[0] // 2))
-        score = float(cv2.Laplacian(small, cv2.CV_64F).var())
-        if score > best_score:
-            best, best_score = index, score
-    return best
-
-
-def _write_png(image: np.ndarray, path: Path) -> Path:
-    with artifacts.atomic_path(path) as tmp:
-        if not cv2.imwrite(str(tmp), image):
-            raise MotionError(f"cannot write {path.name}")
-    return path
-
-
-def _found(client: Any, image: np.ndarray, path: Path, concept: str) -> list[tuple]:
-    """SAM image segmentation: [(confidence, (l, t, r, b) in `image` pixels), ...]."""
-    detections, sent = client.segment(_write_png(image, path), concept)
-    height, width = image.shape[:2]
-    sx, sy = width / max(1, sent[0]), height / max(1, sent[1])
-    found = []
-    for item in detections:
-        confidence = item.confidence if item.confidence is not None else 0.5
-        if confidence < SEED_MIN_CONFIDENCE:
-            continue
-        x1, y1, x2, y2 = item.box
-        box = (int(x1 * sx), int(y1 * sy), int(round(x2 * sx)), int(round(y2 * sy)))
-        if box[2] > box[0] and box[3] > box[1]:
-            found.append((confidence, box))
-    return found
-
-
-def seed_part(client: Any, frame: np.ndarray, concept: str, work: Path) -> tuple | None:
-    """The single best box of the part on the seed frame (most confident, then largest)."""
-    found = _found(client, frame, work / "seed.png", concept)
-    if not found:
-        return None
-    area = lambda b: (b[2] - b[0]) * (b[3] - b[1])  # noqa: E731
-    return max(found, key=lambda item: (round(item[0], 2), area(item[1])))[1]
-
-
 def follow(client: Any, clip: Path, size: tuple[int, int], boxes: list, frame: int, concept: str):
     """SAM video: follow the given boxes from `frame` (one id each), or the concept if none."""
     if boxes:
@@ -388,35 +324,50 @@ def gone_frames(found: Found, start: float, count: int) -> dict[int, tuple[int, 
 
 
 def motion_for_step(
-    job_dir: Path, client: Any, step, plan: Plan, direction: str = "disassemble"
+    job_dir: Path,
+    client: Any,
+    step,
+    plan: Plan,
+    direction: str = "disassemble",
+    part: PartHighlight | None = None,
 ) -> StepMotion | None:
-    concepts = part_concepts(step)
-    if not concepts:
-        return None
-    concept = concepts[0]
-    start, end = clip_window(step.start_s, step.end_s)
+    found = load_found(job_dir, step.index)
+    if part is None and not (found and found.kept):
+        return None  # nothing proven to follow: the step opens on its photo
+    concept = part.concept if part else ""
+    start, end = clip_window(step.start_s, step.end_s, part.t_s if part else None)
     steps_dir = job_dir / "steps"
     source = steps_dir / f"{step.index:02d}_src.mp4"
-    cut_source(job_dir / "video.mp4", start, min(end, plan.duration_s or end), source)
+    # the film shows the same close-up as the photo; fasteners are tracked on the whole frame
+    zoom = part.area if part and not (found and found.kept) else None
+    cut_source(job_dir / "video.mp4", start, min(end, plan.duration_s or end), source, zoom)
     frames = read_frames(source)
     height, width = frames[0].shape[:2]
-
     size = (width, height)
-    work = steps_dir / f"{step.index:02d}_work"
-    seed = sharpest_frame(frames, 0, max(1, len(frames) // 2))
-    part_box = None
-    for candidate in concepts:  # plain words first, then shorter fallbacks
-        part_box = seed_part(client, frames[seed], candidate, work)
-        if part_box is not None:
-            concept = candidate
-            break
-    part_track = to_track(
-        follow(client, source, size, [part_box] if part_box else [], seed, concept), size
-    )
-    found = load_found(job_dir, step.index)
+    part_track = Track(masks={}, objects={})
+    if part is not None:
+        box = part.box
+        if zoom is not None:
+            box = NormBox(
+                x=(box.x - zoom.x) / zoom.w,
+                y=(box.y - zoom.y) / zoom.h,
+                w=box.w / zoom.w,
+                h=box.h / zoom.h,
+            )
+        part_box = (
+            int(box.x * width),
+            int(box.y * height),
+            int((box.x + box.w) * width),
+            int((box.y + box.h) * height),
+        )
+        seed = min(len(frames) - 1, max(0, int(((part.t_s or start) - start) * FPS)))
+        part_track = to_track(follow(client, source, size, [part_box], seed, concept), size)
     numbers = {oid: n for n, oid in enumerate(found.kept, start=1)} if found else {}
     gone = gone_frames(found, start, len(frames)) if found and direction != "assemble" else {}
 
+    if not part_track.masks and not numbers:
+        source.unlink(missing_ok=True)
+        return None  # SAM followed nothing: the step opens on its photo, not on an empty film
     masks = smoothed(part_track, len(frames), (height, width))
     rendered = []
     for index, frame in enumerate(frames):
@@ -428,7 +379,9 @@ def motion_for_step(
             if 0 < index - at <= POP_FRAMES
         ]
         rendered.append(
-            render_frame(frame, part, alpha, boxes, numbers, index / max(1, len(frames) - 1), pops)
+            render_frame(
+                frame, part, alpha, boxes, numbers, index / max(1, len(frames) - 1), pops, concept
+            )
         )
     clip = f"steps/{step.index:02d}_motion.mp4"
     clip_reverse = f"steps/{step.index:02d}_motion_rev.mp4"
@@ -453,10 +406,6 @@ def motion_for_step(
         motion.cutout_box = cutout(frames[best], mask, job_dir / motion.cutout)
         motion.outline = outline_path(mask)
     source.unlink(missing_ok=True)
-    for leftover in work.glob("*") if work.is_dir() else []:
-        leftover.unlink(missing_ok=True)
-    if work.is_dir():
-        work.rmdir()
     return motion
 
 
@@ -466,10 +415,12 @@ def run(job_dir: Path, settings: Settings, client: Any = None) -> Motion:
         client = make_client(settings, job_dir=job_dir)
     identity = artifacts.load_optional(job_dir, Identity)
     direction = guide_direction(identity.task if identity else None)
+    perception = artifacts.load_optional(job_dir, Perception)
+    proven = {item.index: item.part for item in perception.steps} if perception else {}
     result = Motion()
     for step in plan.steps[:MAX_STEPS]:
         try:
-            motion = motion_for_step(job_dir, client, step, plan, direction)
+            motion = motion_for_step(job_dir, client, step, plan, direction, proven.get(step.index))
         except BudgetExceeded:
             result.notes.append("SAM budget reached: later steps have no motion clip.")
             break

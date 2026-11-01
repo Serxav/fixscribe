@@ -557,3 +557,18 @@ mark.cut { background: var(--accent); color: #fff; padding: 0 5px; border-radius
 .agent-note span { flex: 1; min-width: 0; }
 .agent-note b { font-weight: 500; white-space: nowrap; }
 .agent-note.needs_input { border-color: var(--accent); background: var(--accent-soft); }
+
+/* The parts FixScribe proved, the same panel the home page shows */
+.found { display: grid; grid-template-columns: 1fr; margin: 32px 0; border-radius: var(--r-md); overflow: hidden; background: #0b1020; color: #fff; }
+@media (min-width: 700px) { .found { grid-template-columns: 1.3fr 1fr; } }
+.found-photo { width: 100%; height: 100%; max-height: 520px; object-fit: cover; display: block; }
+.found { align-items: stretch; max-height: 720px; }
+.found-panel { padding: 28px; }
+.found-kicker { margin: 0; font-size: 11px; color: rgba(255,255,255,.55); text-transform: uppercase; }
+.found-title { margin: 8px 0 14px; font-size: 26px; font-weight: 500; letter-spacing: -.02em; }
+.found-rows { list-style: none; margin: 0; padding: 0; }
+.found-rows li { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid rgba(255,255,255,.1); font-size: 15px; }
+.found-rows .mono { font-size: 11px; color: rgba(255,255,255,.5); }
+.found-rows a { color: #fff; text-decoration: none; }
+.found-rows i { margin-left: auto; font-style: normal; font-size: 11px; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 50%; background: #1f8f4d; }
+.found-foot { margin: 14px 0 0; font-size: 12px; color: #ff5a1f; }

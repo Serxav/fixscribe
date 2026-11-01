@@ -182,6 +182,13 @@ def test_select_steps_without_fusion_uses_draft_confidence_and_time_order():
     assert select_steps(analysis, None) == [3, 1]
 
 
+def test_select_steps_leaves_out_a_step_longer_than_the_clip():
+    analysis = Analysis(
+        steps=[_draft("long", 0, 99, confidence=0.3), _draft("short", 100, 110, confidence=0.3)]
+    )
+    assert select_steps(analysis, None) == [2]
+
+
 def test_select_steps_caps_at_max_steps():
     analysis = Analysis(
         steps=[_draft(f"s{i}", i * 10, i * 10 + 10, confidence=0.1) for i in range(6)]

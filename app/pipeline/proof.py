@@ -21,6 +21,7 @@ from app.schemas import (
     Step,
     StepPerception,
     StepProof,
+    StepReview,
     Transcript,
 )
 from app.text import plural
@@ -34,11 +35,16 @@ TURN_CUT = 80  # characters kept per quoted turn
 # Index rule: fusion and refine number Spark's drafts 1, 2, 3... in time order; the plan keeps
 # that number in `step.source_index` (it can differ from `step.index` when the plan drops a
 # step). Perception entries carry the plan step index.
+REVIEW_CONFIDENCE = 0.7  # a frame by frame review below this proves nothing
+REVIEW_TOLERANCE_S = 3.0  # how far its times may be from the step's and still agree
 SCORES = {"verified": 1.0, "supported": 0.5, "unverified": 0.0}
 
 
 def boundaries_claim(
-    step: Step, fusion_step: FusionStep | None, refined: RefinedStep | None
+    step: Step,
+    fusion_step: FusionStep | None,
+    refined: RefinedStep | None,
+    review: StepReview | None = None,
 ) -> Claim:
     """Where the step starts and ends, from fusion signals and the timecode re-check."""
     names = {"voice": "voice cut at {}", "pause": "pause at {}", "scene": "scene change at {}"}
@@ -55,7 +61,15 @@ def boundaries_claim(
     rechecked = refined is not None and refined.confidence >= REFINE_CONFIDENCE
     if rechecked:
         sources.append(f"timecode re-check: {refined.start_s:.1f}–{refined.end_s:.1f} s")
-    if signal and rechecked:
+    agrees = (
+        review is not None
+        and review.confidence >= REVIEW_CONFIDENCE
+        and abs(review.start_s - step.start_s) <= REVIEW_TOLERANCE_S
+        and abs(review.end_s - step.end_s) <= REVIEW_TOLERANCE_S
+    )
+    if agrees:
+        sources.append(f"frame by frame review: {review.start_s:.1f}–{review.end_s:.1f} s")
+    if agrees or (signal and rechecked):
         status = "verified"
     elif signal or rechecked:
         status = "supported"
@@ -64,7 +78,9 @@ def boundaries_claim(
     return Claim(field="boundaries", status=status, sources=sources)
 
 
-def instruction_claim(step: Step, transcript: Transcript | None) -> Claim:
+def instruction_claim(
+    step: Step, transcript: Transcript | None, review: StepReview | None = None
+) -> Claim:
     """What to do, from the step evidence and the spoken turns overlapping it."""
     sources = []
     for item in step.evidence:
@@ -82,7 +98,17 @@ def instruction_claim(step: Step, transcript: Transcript | None) -> Claim:
             sources.append(f"voice {turn.start_s:.1f} s: '{turn.text[:TURN_CUT]}'")
     video = any(source.startswith("video") for source in sources)
     voice = any(source.startswith("voice") for source in sources)
-    if video and voice:
+    confident = review is not None and review.confidence >= REVIEW_CONFIDENCE
+    if confident and not review.matches:
+        # the frames say otherwise: whatever else agrees, this sentence is not proven
+        return Claim(
+            field="instruction",
+            status="unverified",
+            sources=[*sources, f"frame by frame review disagrees: {review.instruction}"],
+        )
+    if confident:
+        sources.append("frame by frame review: the frames show this")
+    if confident or (video and voice):
         status = "verified"
     elif sources:
         status = "supported"
@@ -155,9 +181,11 @@ def build_proof(
     steps = []
     for step in plan.steps:
         source = step.source_index if step.source_index is not None else step.index
+        found = seen.get(step.index)
+        review = found.review if found else None
         claims = [
-            boundaries_claim(step, fused.get(source), refined.get(source)),
-            instruction_claim(step, transcript),
+            boundaries_claim(step, fused.get(source), refined.get(source), review),
+            instruction_claim(step, transcript, review),
         ]
         fasteners = fastener_claim(step, seen.get(step.index), refined.get(source))
         if fasteners is not None:

@@ -58,7 +58,7 @@
     <div class="col-r proof-row">
       <div class="ring" style="--p: {{ proof_percent }}"><div><b>{{ proof_percent }}%</b><span>verified</span></div></div>
       <div>
-        <p class="lede">{{ proof_percent }}% of this guide is backed by the video, the narration and SAM measurements.</p>
+        <p class="lede">{{ proof_percent }}% of this guide is backed by the video, a frame by frame review and SAM measurements.{% if proof_percent < 85 %} That is below FixScribe's 85% bar: check the steps marked in red.{% endif %}</p>
         <p class="muted small" style="margin:8px 0 0">Open “Proof” on any step to see where each sentence comes from.</p>
       </div>
     </div>
@@ -89,6 +89,20 @@
 {% endif %}
 
 {% if guide.tools or guide.parts %}
+{% if found and found.rows %}
+<section class="found" aria-label="Parts found">
+  {% if found.hero %}<img class="found-photo" src="{{ found.hero }}" alt="" loading="lazy">{% endif %}
+  <div class="found-panel">
+    <p class="found-kicker mono">Muse Spark · SAM 3.1</p>
+    <h2 class="found-title">{{ guide.device or guide.title }}</h2>
+    <ol class="found-rows">
+      {% for row in found.rows %}<li><span class="mono">{{ '%02d' % loop.index }}</span><a href="#step-{{ row.step }}">{{ row.name }}</a><i aria-hidden="true">✓</i></li>{% endfor %}
+    </ol>
+    <p class="found-foot mono">{{ found.rows|length }} part{{ '' if found.rows|length == 1 else 's' }} found · each one cut out{% if found.missed %} · {{ found.missed }} step{{ '' if found.missed == 1 else 's' }} not proven{% endif %}</p>
+  </div>
+</section>
+{% endif %}
+
 <section>
   <div class="sect"><span class="num">III</span><span>Tools and parts</span></div>
   <div class="grid12 guide-sect">
@@ -131,7 +145,7 @@
     <div class="view on" data-view-panel="sam"><video class="fit" src="{{ v.motion }}" muted loop playsinline autoplay preload="metadata"></video><span class="hint">SAM 3.1 is tracking the {{ v.part.label if v.part else 'part' }}</span></div>
     {% endif %}
     {% if v.image %}
-    <div class="view{% if first == 'photo' %} on{% endif %}" data-view-panel="photo"><img class="fit" src="{{ v.overlay or v.image }}" alt="Step {{ s.index }}: {{ s.title }}" loading="lazy"{% if s.screws and s.screws.count and v.overlay %} data-tap-step="{{ s.index }}" data-markers='{{ s.screws.model_dump()["boxes"] | tojson }}'{% endif %}>{% if s.screws and s.screws.count and v.overlay %}<span class="hint" data-tap-hint>Tap a missing {{ s.screws.kind }} to add it · tap a wrong number to remove it</span>{% endif %}</div>
+    <div class="view{% if first == 'photo' %} on{% endif %}" data-view-panel="photo"><img class="fit" src="{{ v.overlay or v.image }}" alt="Step {{ s.index }}: {{ s.title }}" loading="lazy"{% if s.screws and s.screws.count and v.overlay %} data-tap-step="{{ s.index }}" data-markers='{{ s.screws.model_dump()["boxes"] | tojson }}'{% endif %}>{% if v.part and v.part.label %}<span class="hint">Muse Spark pointed · SAM 3.1 cut out the {{ v.part.label }}</span>{% endif %}</div>
     {% endif %}
     {% if v.clip %}
     <div class="view{% if first == 'clip' %} on{% endif %}" data-view-panel="clip"><video class="fit" src="{{ v.clip }}" muted loop playsinline preload="none"></video></div>

@@ -32,6 +32,7 @@ from app.pipeline.fasteners import (
     step_fasteners,
 )
 from app.pipeline.ingest import IngestError, color_filter, find_original
+from app.pipeline.locate import Located, StepLook, cut_pointed, look_at_step
 from app.pipeline.media import extract_still
 from app.pipeline.overlay import draw_part, draw_screws, save_jpeg
 from app.schemas import (
@@ -45,11 +46,12 @@ from app.schemas import (
     ScrewRecord,
     Step,
     StepPerception,
+    StepReview,
     Transcript,
 )
 from app.text import plural
 
-MAX_STEPS = 12
+MAX_STEPS = 20
 ROI_GROW = 1.6
 MIN_ROI = 0.5  # never search fasteners in less than half the frame: a tiny part is no area
 MIN_CONFIDENCE = 0.3
@@ -69,6 +71,10 @@ class Counted:
         self.sam_calls += 1
         return self._client.segment(*args, **kwargs)
 
+    def segment_boxes(self, *args: Any, **kwargs: Any) -> Any:
+        self.sam_calls += 1
+        return self._client.segment_boxes(*args, **kwargs)
+
     def segment_video(self, *args: Any, **kwargs: Any) -> Any:
         self.sam_calls += 1
         return self._client.segment_video(*args, **kwargs)
@@ -80,10 +86,13 @@ class Counted:
 def part_concepts(step: Step) -> list[str]:
     """The words to ask SAM for the part, best first, without repeats.
 
-    Spark's `sam_concept` (a plain noun chosen to be visible) comes first; then the part names;
-    then their last word alone, because SAM finds "leg" when it cannot find "leg frame c".
+    The part of the step comes first, so SAM marks what the step is about and not a tool next to
+    it; then Spark's `sam_concept` (a plain noun chosen to be visible) and the other part names.
+    Each is also tried by its last word, because SAM finds "leg" when it cannot find "leg frame c".
     """
-    names = [step.sam_concept, step.target_part, *(step.removes or [])]
+    names = [step.target_part, step.sam_concept, *(step.removes or [])]
+    if clean_phrase(step.target_part) and len(clean_phrase(step.target_part).split()[-1]) == 1:
+        names = [step.sam_concept, step.target_part, *(step.removes or [])]  # "frame c" is a code
     found: list[str] = []
     for name in names:
         phrase = clean_phrase(name)
@@ -173,7 +182,9 @@ def _keyframe_still(
     return dst
 
 
-def make_overlay(job_dir: Path, step: Step, image: np.ndarray, sp: StepPerception) -> str:
+def make_overlay(
+    job_dir: Path, step: Step, image: np.ndarray, sp: StepPerception, located: Located | None = None
+) -> str:
     """Draw the part (on the keyframe) or the fasteners (on the frame they were chosen on)."""
     height, width = image.shape[:2]
     longest = max(width, height)
@@ -189,6 +200,8 @@ def make_overlay(job_dir: Path, step: Step, image: np.ndarray, sp: StepPerceptio
         result = draw_screws(
             image, [record.box for record in sp.removed], [record.number for record in sp.removed]
         )
+    elif located is not None:  # the cut-out itself, not a rectangle
+        result = draw_part(image, located.detection, located.size_sent, sp.part.concept)
     elif sp.part is not None:
         box = sp.part.box
         detection = Detection(
@@ -217,18 +230,53 @@ def best_video(job_dir: Path, ingest: IngestInfo | None) -> tuple[Path, str]:
     return job_dir / "video.mp4", ""
 
 
-def _find_part(client: Any, keyframe: Path, step: Step, sp: StepPerception) -> None:
+def _grid_box(box: tuple[int, int, int, int]) -> NormBox:
+    return NormBox(
+        x=box[0] / 1000, y=box[1] / 1000, w=(box[2] - box[0]) / 1000, h=(box[3] - box[1]) / 1000
+    )
+
+
+def _look(
+    client: Any,
+    settings: Settings,
+    job_dir: Path,
+    step: Step,
+    sp: StepPerception,
+    object_name: str,
+    fastener: str,
+) -> StepLook:
+    """The close look at the step (app/pipeline/locate.py): review it, cut out its part."""
     concepts = part_concepts(step)
-    for concept in concepts:  # plain words first, then shorter fallbacks
-        detections, sent_size = client.segment(keyframe, concept, max_side=1600)
-        usable = [d for d in detections if _confidence_value(d) >= MIN_CONFIDENCE]
-        best = max(usable, key=_confidence_value, default=None)
-        part_box = _norm_box(best.box, sent_size) if best is not None else None
-        if best is not None and part_box is not None:
-            sp.part = PartHighlight(concept=concept, box=part_box, confidence=best.confidence)
-            return
-    if concepts:
-        sp.notes.append(f"No part found for '{concepts[0]}'.")
+    part = concepts[0] if concepts else ""
+    kind = step_fastener(step, fastener)
+    context = f"{object_name}. Step: {step.title}. {step.instruction}"
+    work = job_dir / "steps" / f"{step.index:02d}_locate"
+    try:
+        look = look_at_step(client, settings, job_dir, step, part, plural(kind, 2), context, work)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    if look.review is not None:
+        confidence = min(1.0, max(0.0, float(look.review.get("confidence", 0.0))))
+        sp.review = StepReview(
+            matches=look.review["matches"],
+            instruction=str(look.review.get("instruction", "")).strip(),
+            start_s=float(look.review.get("start_s", 0.0)),
+            end_s=float(look.review.get("end_s", 0.0)),
+            confidence=confidence,
+        )
+    located = look.located
+    if located is None:
+        if part:
+            sp.notes.append(f"The {part} could not be proven on any frame of this step.")
+        return look
+    sp.part = PartHighlight(
+        concept=located.name or part,
+        box=_grid_box(located.box),
+        confidence=round(located.confidence, 3),
+        t_s=located.t_s,
+        area=_grid_box(located.area) if located.area else None,
+    )
+    return look
 
 
 def fill_ledger(sp: StepPerception, found: Found, next_number: int) -> int:
@@ -287,9 +335,12 @@ def _process_step(
     adding: bool,
     object_name: str,
 ) -> int:
-    keyframe = _keyframe_still(job_dir, ingest, frames, step, plan.duration_s)
-    _find_part(client, keyframe, step, sp)
-    image = _read_image(keyframe)
+    look = _look(client, settings, job_dir, step, sp, object_name or plan.device, fastener)
+    located = look.located
+    if located is not None:
+        image = located.frame
+    else:
+        image = _read_image(_keyframe_still(job_dir, ingest, frames, step, plan.duration_s))
     count = _screw_count(step)
     if count:
         kind = step_fastener(step, fastener)
@@ -315,12 +366,29 @@ def _process_step(
                 plan.duration_s,
                 prefilter,
             )
+            if result is not None:
+                found, found_image = result
+                save_found(job_dir, step.index, found)
+                next_number = fill_ledger(sp, found, next_number)
+                if sp.removed:  # a kept cut-out belongs to its own zoomed frame, not this one
+                    image = found_image
+            if not sp.removed:  # too small for the search: go through the step frame by frame
+                work.mkdir(parents=True, exist_ok=True)
+                slow = cut_pointed(client, settings, look, kind, count, context, work)
+                if slow is not None:
+                    image = slow.frame
+                    for box, confidence in zip(slow.boxes, slow.confidences, strict=True):
+                        sp.removed.append(
+                            ScrewRecord(
+                                id=f"S{next_number}",
+                                number=len(sp.removed) + 1,
+                                box=_grid_box(box),
+                                confidence=round(confidence, 3),
+                            )
+                        )
+                        next_number += 1
         finally:
             shutil.rmtree(work, ignore_errors=True)
-        if result is not None:
-            found, image = result
-            save_found(job_dir, step.index, found)
-            next_number = fill_ledger(sp, found, next_number)
         seen = len(sp.removed)
         if seen < count:
             verb = "put in" if adding else "taken out"
@@ -328,9 +396,30 @@ def _process_step(
                 f"{seen} of {count} {plural(kind.split()[-1])} {verb} are clearly visible in "
                 "the video; the count comes from the analysis."
             )
-    sp.overlay = make_overlay(job_dir, step, image, sp)
+    sp.overlay = make_overlay(job_dir, step, image, sp, located)
     sp.sam_calls = client.sam_calls
     return next_number
+
+
+def process_one(
+    job_dir: Path,
+    settings: Settings,
+    client: Any,
+    plan: Plan,
+    step: Step,
+    sp: StepPerception,
+    number: int,
+) -> int:
+    """One step on its own, the way ``run`` does it (for trying a few steps cheaply)."""
+    frames = artifacts.load_optional(job_dir, Frames)
+    ingest = artifacts.load_optional(job_dir, IngestInfo)
+    identity = artifacts.load_optional(job_dir, Identity)
+    adding = guide_direction(identity.task if identity else None) == "assemble"
+    name = identity.object_name if identity is not None else ""
+    return _process_step(
+        job_dir, settings, client, plan, frames, ingest, step, sp, number,
+        fastener_concept(job_dir), adding, name,
+    )  # fmt: skip
 
 
 def run(job_dir: Path, settings: Settings, client: Any = None) -> Perception:

@@ -1,4 +1,5 @@
 from app import artifacts
+from app.pipeline import proof
 from app.pipeline.proof import (
     boundaries_claim,
     build_proof,
@@ -23,6 +24,7 @@ from app.schemas import (
     ScrewRecord,
     Step,
     StepPerception,
+    StepReview,
     Transcript,
     Turn,
 )
@@ -289,3 +291,27 @@ def test_proof_pairs_refine_by_source_index_not_plan_index():
     )
     proof = build_proof(plan, refine=Refine(steps=[refined]))
     assert proof.steps[0].claims[0].status == "supported"  # the refine of draft 2 was used
+
+
+def _reviewed(step, **fields):
+    review = StepReview(**{"matches": True, "start_s": step.start_s, "end_s": step.end_s,
+                           "confidence": 0.9, **fields})  # fmt: skip
+    return proof.instruction_claim(step, None, review), proof.boundaries_claim(
+        step, None, None, review
+    )
+
+
+def test_a_confident_frame_by_frame_review_proves_a_silent_step():
+    step = Step(index=1, title="t", instruction="i", start_s=10, end_s=20)
+    instruction, boundaries = _reviewed(step)
+    assert instruction.status == "verified" and boundaries.status == "verified"
+
+
+def test_a_review_that_disagrees_or_doubts_proves_nothing():
+    step = Step(index=1, title="t", instruction="i", start_s=10, end_s=20)
+    instruction, _ = _reviewed(step, matches=False, instruction="they pry the cover")
+    assert instruction.status == "unverified" and "disagrees" in instruction.sources[-1]
+    instruction, boundaries = _reviewed(step, confidence=0.4)
+    assert instruction.status == "unverified" and boundaries.status == "unverified"
+    _, boundaries = _reviewed(step, start_s=2.0)  # its times are far from the step's
+    assert boundaries.status == "unverified"

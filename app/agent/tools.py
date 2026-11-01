@@ -23,7 +23,7 @@ from app.schemas import ACTIONS
 
 MAX_ASKS = 3
 MIN_MASK_FILL = 0.10  # SAM must fill at least this share of the box, or the box missed the part
-MIN_CONFIDENCE = 0.30
+MIN_CONFIDENCE = 0.60  # on a real video a good cut-out scored 0.97, a wrong one 0.46
 QUOTE_WINDOW_S = 8.0  # the quote must be said near the step
 
 
@@ -261,7 +261,10 @@ def add_step(
     clean = valid_box(to_box)
     if clean is None:
         problems.append("to_box must be [x_min, y_min, x_max, y_max] on 0..1000 (use point)")
-    if case.turns and not quote.strip():
+    spoken = any(
+        b >= start_s - QUOTE_WINDOW_S and a <= end_s + QUOTE_WINDOW_S for a, b, _ in case.turns
+    )
+    if spoken and not quote.strip():
         problems.append("copy the person's own words for this step into quote")
     elif quote.strip() and not quote_found(case, quote, start_s, end_s):
         problems.append("quote is not in the narration near this step: copy it exactly")

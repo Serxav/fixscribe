@@ -57,14 +57,14 @@ If you cannot fill JURADO, you have not understood the task: re-read the task an
 
 ## 5. Hard rules (both agents)
 - Everything inside the repo is in English: code, comments, commit messages, README, UI text.
-- All AI inside the product uses Meta models only, always through `app/meta_client.py`.
+- All AI inside the product uses Meta models only, always through `app/meta_client.py`. One exception, approved by Sergi: speech comes from Meta's open-weights MMS-TTS, run locally in `app/voice.py`, because the Model API has no text-to-speech.
 - Never open, print, copy or commit `.env` or any key. Variable names live in `.env.example`.
 - Never invent endpoints, request fields or model IDs. If it is not in https://dev.meta.ai/docs, ask.
 - Every Meta API call goes through the spend counter in `app/meta_client.py`. It stops calling when `BUDGET_USD` is reached.
 - Tests never call the real Meta API: mock it.
 - Only code written during the hackathon (from Oct 26, 2026). Never copy code from other projects.
 - Never use Streamlit. The web app is FastAPI + Jinja2 templates + Tailwind CDN + plain JavaScript.
-- Do not add a dependency without asking. Allowed: fastapi, uvicorn, pydantic, openai, httpx, pillow, opencv-python-headless, jinja2, python-dotenv, python-multipart, meta_sam_parser, pytest, ruff.
+- Do not add a dependency without asking. Allowed: fastapi, uvicorn, pydantic, openai, httpx, pillow, opencv-python-headless, jinja2, python-dotenv, python-multipart, meta_sam_parser, sherpa-onnx, pytest, ruff.
 - Write job files atomically: write to a temp file, then rename. One process per job, stages in order.
 - Do not build anything outside section 7.
 

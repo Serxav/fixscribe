@@ -454,11 +454,24 @@ class PartHighlight(Strict):
     concept: str
     box: NormBox
     confidence: float | None = Field(default=None, ge=0, le=1)
+    t_s: float | None = None  # the second of the video where it was found and checked
+    area: NormBox | None = None  # the zoom on the object, in the whole frame
+
+
+class StepReview(Strict):
+    """Spark going through the zoomed frames of the step, one by one."""
+
+    matches: bool
+    instruction: str = ""  # what really happens, when it does not match
+    start_s: float = 0.0
+    end_s: float = 0.0
+    confidence: float = Field(default=0.0, ge=0, le=1)
 
 
 class StepPerception(Strict):
     index: int = Field(ge=1)
     part: PartHighlight | None = None
+    review: StepReview | None = None
     screws_before: int = Field(default=0, ge=0)
     screws_after: int = Field(default=0, ge=0)
     removed: list[ScrewRecord] = Field(default_factory=list)

@@ -93,7 +93,7 @@ def test_ask_json_text_only(tmp_path):
     assert len(client.respond_calls) == 1
     kwargs = client.respond_calls[0]
     assert kwargs["model"] == "muse-spark-1.3"
-    assert kwargs["max_output_tokens"] == 4000
+    assert kwargs["max_output_tokens"] == 12000
     assert kwargs["text"] == json_format("repair_analysis", {"type": "object"})
     assert len(kwargs["input"]) == 1
     assert kwargs["input"][0]["role"] == "user"
