@@ -65,6 +65,11 @@ def find_original(job_dir: Path) -> Path:
     return matches[0]
 
 
+# An upload is only ever a phone video read from disk, whatever its bytes pretend to be: this stops
+# a playlist named .mp4 from making ffmpeg open other files or the network.
+UPLOAD_INPUT = ["-format_whitelist", "mov,mp4,m4a,3gp,3g2,mj2", "-protocol_whitelist", "file"]
+
+
 def _ffprobe_json(path: Path) -> dict:
     try:
         proc = subprocess.run(
@@ -72,6 +77,7 @@ def _ffprobe_json(path: Path) -> dict:
                 "ffprobe",
                 "-v",
                 "error",
+                *UPLOAD_INPUT,
                 "-show_streams",
                 "-show_format",
                 "-of",
@@ -124,6 +130,7 @@ def _detect_vfr(path: Path) -> bool:
                 "ffprobe",
                 "-v",
                 "error",
+                *UPLOAD_INPUT,
                 "-select_streams",
                 "v:0",
                 "-read_intervals",
@@ -230,6 +237,7 @@ def normalize_video(src: Path, dst: Path, source: SourceVideo) -> None:
             "-y",
             "-v",
             "error",
+            *UPLOAD_INPUT,
             "-i",
             str(src),
             "-map_metadata",
@@ -275,6 +283,7 @@ def extract_audio(src: Path, dst: Path) -> None:
             "-y",
             "-v",
             "error",
+            *UPLOAD_INPUT,
             "-i",
             str(src),
             "-vn",

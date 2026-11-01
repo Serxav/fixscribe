@@ -82,6 +82,22 @@ def seconds_since_update(status: JobStatus) -> float:
     return (datetime.now(UTC) - datetime.fromisoformat(status.updated_at)).total_seconds()
 
 
+def claim_daily_slot(jobs_dir: Path, limit: int) -> bool:
+    """Take one of today's uploads, or False at the limit. Deleting a job never gives one back."""
+    jobs_dir.mkdir(parents=True, exist_ok=True)
+    path = jobs_dir.parent / f"uploads-{now_iso()[:10]}.txt"
+    with open(path, "a+", encoding="utf-8") as counter:
+        fcntl.flock(counter.fileno(), fcntl.LOCK_EX)
+        counter.seek(0)
+        text = counter.read().strip()
+        used = max(int(text) if text.isdigit() else 0, jobs_created_today(jobs_dir))
+        if used >= limit:
+            return False
+        counter.truncate(0)
+        counter.write(f"{used + 1}\n")
+    return True
+
+
 def jobs_created_today(jobs_dir: Path) -> int:
     """Count jobs created today (UTC), to enforce DAILY_JOB_LIMIT."""
     if not jobs_dir.exists():

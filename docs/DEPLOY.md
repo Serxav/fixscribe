@@ -12,8 +12,8 @@ The camera and microphone only work over https, so judges need a hosted address.
 | `BUDGET_USD` | `35` | total this server may spend |
 | `JOB_BUDGET_USD` | `2.5` | one 8.5-minute video cost $1.47; a lower cap cuts the guide short |
 | `DAILY_JOB_LIMIT` | `3` | at most 3 new videos a day |
-| `LIVE_BUDGET_USD` | `10` | the coach on the sample guide |
-| `LIVE_MAX_CALLS` | `2000` | coach calls on the sample guide |
+| `LIVE_BUDGET_USD` | `10` | the coach on the sample guide; any other guide stops at $2 |
+| `LIVE_MAX_CALLS` | `2000` | coach calls on the sample guide; any other guide stops at 300 |
 | `ENABLE_INSPECTOR` | `false` | the agent costs more per job |
 | `DEMO_JOB` | the folder in `demo/` | the sample guide on the landing |
 

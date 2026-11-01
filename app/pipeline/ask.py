@@ -23,6 +23,7 @@ from app.pipeline.live import (
     _count_call,
     _describe_step,
     save_frame,
+    scratch_folder,
 )
 from app.schemas import Guide, Strict, _object
 from app.spark import SparkAnswerError
@@ -110,19 +111,21 @@ def answer_question(
 ) -> str:
     """One short spoken answer from the guide and the camera."""
     calls = _count_call(job_dir, settings)
-    images = [save_frame(job_dir, frame, "question.jpg")] if frame else []
     try:
-        data = spark.ask_json(
-            client,
-            settings,
-            name="live_question",
-            schema=ANSWER_SCHEMA,
-            prompt=build_prompt(guide, step, question),
-            images=images,
-            max_output_tokens=12000,  # reasoning counts against this: a low cap leaves no answer
-            timeout_s=30,
-            effort="low",
-        )
+        with scratch_folder(job_dir) as folder:
+            images = [save_frame(folder, frame, "question.jpg")] if frame else []
+            data = spark.ask_json(
+                client,
+                settings,
+                name="live_question",
+                schema=ANSWER_SCHEMA,
+                prompt=build_prompt(guide, step, question),
+                images=images,
+                # reasoning counts against this: a low cap leaves no answer
+                max_output_tokens=12000,
+                timeout_s=30,
+                effort="low",
+            )
     except (SparkAnswerError, BudgetExceeded, MetaError) as exc:
         raise LiveError(f"could not answer the question: {exc}") from exc
     finally:
@@ -148,11 +151,11 @@ def live_voice(
     except ArtifactError as exc:
         raise LiveError(f"no guide for this job: {exc}") from exc
     client = client or _coach_client(job_dir, settings)
-    path = job_dir / "live" / "voice.wav"
     try:
-        with artifacts.atomic_path(path) as tmp:
-            Path(tmp).write_bytes(clip)
-        data = client.transcribe(path, language_bias=LANGUAGES, keywords=KEYWORDS)
+        with scratch_folder(job_dir) as folder:
+            path = folder / "voice.wav"
+            path.write_bytes(clip)
+            data = client.transcribe(path, language_bias=LANGUAGES, keywords=KEYWORDS)
     except (BudgetExceeded, MetaError) as exc:
         raise LiveError(f"could not hear that: {exc}") from exc
     heard = data.get("transcript")

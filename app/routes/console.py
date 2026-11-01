@@ -26,6 +26,10 @@ def _folder_or_none(job_id: str, settings: Settings):
     return folder
 
 
+def _agent_off() -> JSONResponse:
+    return JSONResponse({"error": "The agent is off on this server."}, status_code=403)
+
+
 def _page_404() -> HTMLResponse:
     return HTMLResponse("<h1>job not found</h1>", status_code=404)
 
@@ -93,6 +97,8 @@ def api_agent_start(
     job_id: str,
     settings: Settings = Depends(settings_dep),  # noqa: B008
 ):
+    if not settings.enable_inspector:
+        return _agent_off()
     folder = _folder_or_none(job_id, settings)
     if folder is None:
         return _api_404()
@@ -104,6 +110,8 @@ def api_agent_resume(
     job_id: str,
     settings: Settings = Depends(settings_dep),  # noqa: B008
 ):
+    if not settings.enable_inspector:
+        return _agent_off()
     folder = _folder_or_none(job_id, settings)
     if folder is None:
         return _api_404()
@@ -116,6 +124,8 @@ async def api_agent_answer(
     job_id: str,
     settings: Settings = Depends(settings_dep),  # noqa: B008
 ):
+    if not settings.enable_inspector:
+        return _agent_off()
     folder = _folder_or_none(job_id, settings)
     if folder is None:
         return _api_404()
@@ -143,6 +153,8 @@ async def api_agent_signoff(
     job_id: str,
     settings: Settings = Depends(settings_dep),  # noqa: B008
 ):
+    if not settings.enable_inspector:
+        return _agent_off()
     folder = _folder_or_none(job_id, settings)
     if folder is None:
         return _api_404()

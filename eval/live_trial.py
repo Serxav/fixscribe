@@ -111,7 +111,9 @@ def main(argv: list[str]) -> int:
         marks_time = time.monotonic() - started
         marks_times.append(marks_time)
         right += answer.seen == step.index
-        draw(copy / "live" / "marks.jpg", parts, copy / f"coach_{step.index:02d}.jpg")
+        shown = copy / "frame_now.jpg"
+        shown.write_bytes(frame)
+        draw(shown, parts, copy / f"coach_{step.index:02d}.jpg")
         names = [("*" if p.target else "") + p.label for p in parts]
         print(
             f"real {step.index} seen {answer.seen} {answer.status} {answer.confidence:.2f} "

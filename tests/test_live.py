@@ -3,6 +3,7 @@
 import io
 import json
 import types
+from dataclasses import replace
 
 import numpy as np
 import pytest
@@ -23,6 +24,7 @@ from app.pipeline.live import (
     LiveError,
     LivePart,
     _coach_client,
+    _count_call,
     _is_small,
     _spill,
     build_prompt,
@@ -33,6 +35,7 @@ from app.pipeline.live import (
     marks_stages,
     object_region,
     read_calls,
+    save_frame,
     settle_step,
 )
 from app.routes.upload import settings_dep
@@ -118,10 +121,7 @@ def test_normal_answer_saves_frame_and_counts_call(tmp_path):
     assert "<<LAST_STEP>>" not in fake.respond_kwargs["input"][0]["content"][0]["text"]
     assert "1. Step 1" in fake.respond_kwargs["input"][0]["content"][0]["text"]
     assert len(fake.respond_kwargs["input"][0]["content"]) == 2  # prompt + the frame
-    frame_path = tmp_path / "live" / "frame.jpg"
-    assert frame_path.is_file()
-    with Image.open(frame_path) as saved:
-        assert max(saved.size) <= 1280
+    assert not list((tmp_path / "live").glob("now-*"))  # nothing of the camera stays on the server
     assert read_calls(tmp_path) == 1
 
 
@@ -152,7 +152,7 @@ def test_professional_only_answers_without_spark(tmp_path):
     assert answer.object_box == []
     assert answer.confidence == 1
     assert fake.calls == 0
-    assert not (tmp_path / "live" / "frame.jpg").exists()
+    assert not list((tmp_path / "live").glob("now-*"))
 
 
 def test_too_big_and_bad_frames(tmp_path):
@@ -194,8 +194,25 @@ def test_exif_rotated_jpeg_is_accepted(tmp_path):
     answer = live_turn(tmp_path, settings, buf.getvalue(), client=FakeLiveClient(_answer()))
 
     assert answer.step == 1
-    with Image.open(tmp_path / "live" / "frame.jpg") as saved:
+    with Image.open(save_frame(tmp_path, buf.getvalue())) as saved:
         assert saved.size == (40, 20)
+
+
+def test_a_big_frame_is_made_smaller(tmp_path):
+    buf = io.BytesIO()
+    Image.new("RGB", (2000, 1000)).save(buf, format="JPEG")
+    with Image.open(save_frame(tmp_path, buf.getvalue())) as saved:
+        assert max(saved.size) <= 1280
+
+
+def test_a_guide_that_is_not_the_sample_has_a_smaller_coach_limit(tmp_path):
+    settings = Settings(model_api_key="", data_dir=tmp_path, live_max_calls=2000)
+    (tmp_path / "live").mkdir()
+    (tmp_path / "live" / "calls.txt").write_text("300\n")
+    with pytest.raises(LiveError, match="300 calls"):
+        _count_call(tmp_path, settings)
+    sample = replace(settings, demo_job=tmp_path.name)
+    assert _count_call(tmp_path, sample) == 300
 
 
 def test_prompt_lists_steps_and_last_step(tmp_path):

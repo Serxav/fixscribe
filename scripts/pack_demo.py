@@ -10,7 +10,8 @@ import sys
 from pathlib import Path
 
 LEFT_OUT = (
-    "original.mp4", "audio.wav", "live", "voice", "runner.log", "*.lock", "spend.*", "*_raw.txt",
+    "original.*", "audio.wav", "live", "voice", "runner.log", "agent.log", "state.json", "*.lock",
+    "spend.*", "*_raw.txt",
 )  # fmt: skip
 
 

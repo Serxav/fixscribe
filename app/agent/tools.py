@@ -297,7 +297,7 @@ def ask_person(case: Case, text: str, frame: str, box: list[int], options: list[
         return Result(False, f"you already asked {MAX_ASKS} times: decide from the video")
     if not 3 <= len(text.strip()) <= 200 or len(options) > 4:
         return Result(False, "question must be 3-200 characters with at most 4 options")
-    if frame and not case.path(frame).exists():
+    if frame and (frame_time(frame) is None or not case.path(frame).exists()):
         return Result(False, f"unknown frame {frame!r}")
     case.asks += 1
     case.record.question = Question(

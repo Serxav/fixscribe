@@ -11,7 +11,10 @@ still gets a coach and a forgotten camera page cannot eat the budget.
 """
 
 import io
+import shutil
+import uuid
 from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
@@ -44,6 +47,8 @@ SURE = 0.7  # the next step is taken at once when Spark is this sure
 SETTLED = 2  # ...and the coach already gave this many answers on the step it stands on
 SMALL_MARK = 120  # a part narrower than this (0..1000 grid of the close-up) is hard to name
 TURN_EFFORT = "medium"  # alike steps need the reasoning; low effort got stuck or ran ahead
+OWN_JOB_LIVE_BUDGET_USD = 2.0  # LIVE_BUDGET_USD and LIVE_MAX_CALLS are sized for the sample guide
+OWN_JOB_LIVE_CALLS = 300
 GROUND_EFFORT = "low"  # pointing is the longest wait; the check keeps its full reasoning
 MAX_SPILL = 0.25  # a cut-out with more than this outside its box ran over onto something else
 SMOOTH = 0.012  # outline clean-up, as a share of the image's long side
@@ -153,7 +158,18 @@ def settle_step(
     return last, seen
 
 
-def save_frame(job_dir: Path, frame: bytes, name: str = "frame.jpg") -> Path:
+@contextmanager
+def scratch_folder(job_dir: Path) -> Iterator[Path]:
+    """One request's camera or voice files: visitors never share them and nothing is kept."""
+    folder = job_dir / "live" / f"now-{uuid.uuid4().hex}"
+    folder.mkdir(parents=True)
+    try:
+        yield folder
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def save_frame(folder: Path, frame: bytes, name: str = "frame.jpg") -> Path:
     """Phone frame bytes to an upright JPEG (max side 1280), written atomically."""
     if len(frame) > MAX_FRAME_BYTES:
         raise LiveError(f"frame is too big ({len(frame)} bytes, max {MAX_FRAME_BYTES} bytes)")
@@ -165,7 +181,7 @@ def save_frame(job_dir: Path, frame: bytes, name: str = "frame.jpg") -> Path:
     except Exception as exc:
         raise LiveError(f"could not read the frame: {exc}") from exc
     upright.thumbnail((MAX_FRAME_SIDE, MAX_FRAME_SIDE), Image.Resampling.LANCZOS)
-    dst = job_dir / "live" / name
+    dst = folder / name
     try:
         with artifacts.atomic_path(dst) as tmp:
             upright.save(tmp, format="JPEG", quality=85)
@@ -225,9 +241,16 @@ def _padded(box: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
     return (max(0, x1 - mx), max(0, y1 - my), min(1000, x2 + mx), min(1000, y2 + my))
 
 
+def _is_sample(job_dir: Path, settings: Settings) -> bool:
+    return bool(settings.demo_job) and job_dir.name == settings.demo_job
+
+
 def _coach_client(job_dir: Path, settings: Settings) -> Any:
     """A client that counts the coach's spend apart from the guide's."""
-    coach = replace(settings, job_budget_usd=settings.live_budget_usd)
+    budget = settings.live_budget_usd
+    if not _is_sample(job_dir, settings):
+        budget = min(budget, OWN_JOB_LIVE_BUDGET_USD)
+    coach = replace(settings, job_budget_usd=budget)
     try:
         return make_client(coach, job_dir=job_dir / "live")
     except OpenAIError as exc:  # no key on this server: a clear message, never a crash
@@ -237,8 +260,11 @@ def _coach_client(job_dir: Path, settings: Settings) -> Any:
 def _count_call(job_dir: Path, settings: Settings) -> int:
     """Refuse past the cap; returns the number of calls made so far."""
     calls = read_calls(job_dir)
-    if calls >= settings.live_max_calls:
-        raise LiveError(f"live limit reached for this job ({settings.live_max_calls} calls max)")
+    limit = settings.live_max_calls
+    if not _is_sample(job_dir, settings):
+        limit = min(limit, OWN_JOB_LIVE_CALLS)
+    if calls >= limit:
+        raise LiveError(f"live limit reached for this job ({limit} calls max)")
     return calls
 
 
@@ -343,6 +369,20 @@ def marks_stages(
     region: list[int] | None = None,
     client: Any = None,
 ) -> Iterator[tuple[bool, list[LivePart]]]:
+    """``_marks_stages`` with its camera files in a folder of their own."""
+    with scratch_folder(job_dir) as folder:
+        yield from _marks_stages(job_dir, folder, settings, frame, step_index, region, client)
+
+
+def _marks_stages(
+    job_dir: Path,
+    folder: Path,
+    settings: Settings,
+    frame: bytes,
+    step_index: int,
+    region: list[int] | None,
+    client: Any,
+) -> Iterator[tuple[bool, list[LivePart]]]:
     """The parts on one frame, like the landing photos: (False, cut out), then (True, confirmed).
 
     The check is the longest wait, so the cut-outs are shown first, marked as still being checked.
@@ -354,14 +394,14 @@ def marks_stages(
     if guide.safety is not None and guide.safety.level == "professional_only":
         yield True, []
         return
-    frame_path = save_frame(job_dir, frame, "marks.jpg")
+    frame_path = save_frame(folder, frame, "marks.jpg")
     calls = _count_call(job_dir, settings)
     image = cv2.imread(str(frame_path))
     if image is None:
         raise LiveError("could not read the frame")
     client = client or _coach_client(job_dir, settings)
     crop, shown = close_up(image, region or [])
-    crop_path = job_dir / "live" / "close_up.jpg"
+    crop_path = folder / "close_up.jpg"
     with artifacts.atomic_path(crop_path) as tmp:
         cv2.imwrite(str(tmp), crop)
     step = next((s for s in guide.steps if s.index == step_index), None)
@@ -467,31 +507,33 @@ def live_turn(
     if safety is not None and safety.level == "professional_only":
         reason = safety.reasons[0] if safety.reasons else PROFESSIONAL_LINE
         return LiveAnswer(step=0, status="unclear", say=reason, next="", confidence=1)
-    frame_path = save_frame(job_dir, frame)
-    calls = _count_call(job_dir, settings)
-    client = client or _coach_client(job_dir, settings)
-    photos = [
-        step
-        for step in nearby_steps(guide, last_step)
-        if step.image and (job_dir / step.image).is_file()
-    ]
-    prompt = build_prompt(guide, last_step, photos)
-    try:
-        data = spark.ask_json(
-            client,
-            settings,
-            name="live_turn",
-            schema=LIVE_JSON_SCHEMA,
-            prompt=prompt,
-            images=[frame_path, *(job_dir / step.image for step in photos)],
-            max_output_tokens=12000,  # reasoning counts against this: a low cap leaves no answer
-            timeout_s=30,
-            effort=TURN_EFFORT,
-        )
-    except SparkAnswerError as exc:
-        raise LiveError(f"Spark returned an invalid live answer: {exc}") from exc
-    except (BudgetExceeded, MetaError) as exc:
-        raise LiveError(f"could not answer the frame: {exc}") from exc
+    with scratch_folder(job_dir) as folder:
+        frame_path = save_frame(folder, frame)
+        calls = _count_call(job_dir, settings)
+        client = client or _coach_client(job_dir, settings)
+        photos = [
+            step
+            for step in nearby_steps(guide, last_step)
+            if step.image and (job_dir / step.image).is_file()
+        ]
+        prompt = build_prompt(guide, last_step, photos)
+        try:
+            data = spark.ask_json(
+                client,
+                settings,
+                name="live_turn",
+                schema=LIVE_JSON_SCHEMA,
+                prompt=prompt,
+                images=[frame_path, *(job_dir / step.image for step in photos)],
+                # reasoning counts against this: a low cap leaves no answer
+                max_output_tokens=12000,
+                timeout_s=30,
+                effort=TURN_EFFORT,
+            )
+        except SparkAnswerError as exc:
+            raise LiveError(f"Spark returned an invalid live answer: {exc}") from exc
+        except (BudgetExceeded, MetaError) as exc:
+            raise LiveError(f"could not answer the frame: {exc}") from exc
     if not isinstance(data, dict):
         raise LiveError("Spark returned an invalid live answer")
     data = dict(data)

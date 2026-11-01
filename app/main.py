@@ -33,7 +33,7 @@ app = FastAPI(title="FixScribe", lifespan=lifespan)
 
 @app.middleware("http")
 async def sample_guide_is_read_only(request: Request, call_next):
-    if demo.is_write_to_sample(request.method, request.url.path, get_settings().demo_job):
+    if demo.is_write_to_sample(request.method, request.scope["path"], get_settings().demo_job):
         return JSONResponse({"error": "The sample guide cannot be changed."}, status_code=403)
     return await call_next(request)
 

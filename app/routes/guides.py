@@ -275,6 +275,7 @@ def guide_page(
         {
             "guide": guide,
             "job_id": job_id,
+            "agent_on": settings.enable_inspector,
             "valid_id": True,
             "steps": step_views(guide, job_id, _part_boxes(folder)),
             "found": found_parts(folder, guide, f"/media/{job_id}/"),
