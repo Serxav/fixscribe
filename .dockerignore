@@ -10,5 +10,9 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .claude/
+.DS_Store
+.muse-runs/
+*.egg-info/
+docs/BACKEND_REVIEW.md
 tasks/
 models/

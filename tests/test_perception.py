@@ -12,7 +12,7 @@ from app import artifacts
 from app.config import Settings
 from app.meta_client import BudgetExceeded, MetaError
 from app.pipeline import fasteners, locate, perception
-from app.pipeline.perception import part_concept, part_concepts
+from app.pipeline.perception import part_concepts
 from app.schemas import Frames, Plan, ScrewMap, Step, StepMedia
 
 W, H = 320, 240
@@ -262,21 +262,6 @@ def test_job_fastener_word_comes_from_the_domain(tmp_path):
     data = {"object_name": "sedan", "category": "automotive", "task": "repair"}
     (tmp_path / "identity.json").write_text(json.dumps(data), encoding="utf-8")
     assert fasteners.fastener_concept(tmp_path) == "bolt"
-
-
-@pytest.mark.parametrize(
-    ("target", "removes", "expected"),
-    [
-        ("the battery connector bracket", [], "connector bracket"),
-        ("", [], None),
-        (None, [], None),
-        ("Back cover", [], "back cover"),
-        (None, ["the back cover"], "back cover"),
-        ("battery", [], "battery"),
-    ],
-)
-def test_part_concept(target, removes, expected):
-    assert part_concept(target, removes) == expected
 
 
 def test_part_concepts_prefer_plain_words_then_the_head_noun():

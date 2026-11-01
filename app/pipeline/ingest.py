@@ -232,6 +232,8 @@ def normalize_video(src: Path, dst: Path, source: SourceVideo) -> None:
             "error",
             "-i",
             str(src),
+            "-map_metadata",
+            "-1",  # a phone's video can carry the place it was filmed: never copy it
             "-vf",
             chain,
             "-fps_mode",

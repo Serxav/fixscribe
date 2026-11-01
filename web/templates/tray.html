@@ -13,6 +13,8 @@ body { margin: 0; background: #fff; color: #000; font-family: Georgia, "Times Ne
 .header h1 { margin: 0; font-size: 22pt; line-height: 1.15; }
 .header p { margin: 1.5mm 0 0; font-size: 12pt; }
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+.way-back { list-style: none; padding: 0; }
+@media screen and (max-width: 600px) { .grid { grid-template-columns: minmax(0, 1fr); } }
 .cell { border: 0.8mm solid #000; padding: 4mm; break-inside: avoid; }
 .cell-top { display: flex; gap: 4mm; align-items: baseline; }
 .cell-number { font-size: 34pt; font-weight: bold; line-height: 1; min-width: 16mm; }
@@ -82,7 +84,7 @@ body { margin: 0; background: #fff; color: #000; font-family: Georgia, "Times Ne
 {% if reassembly_lines %}
 <div class="reassembly">
 <h2>Reassembly order</h2>
-<ol>
+<ol class="way-back">
 {% for line in reassembly_lines %}
 <li>{{ line }}</li>
 {% endfor %}

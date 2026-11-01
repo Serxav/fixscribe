@@ -228,3 +228,24 @@ def test_original_is_byte_identical_and_ingest_json_loads(tmp_path):
     raw = json.loads((tmp_path / "ingest.json").read_text(encoding="utf-8"))
     assert raw["source"]["filename"] == "original.mp4"
     assert raw["fps"] == pytest.approx(30)
+
+
+def test_the_working_copy_never_keeps_where_it_was_filmed(tmp_path):
+    source = tmp_path / "phone.mov"
+    subprocess.run(
+        [
+            "ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=d=1:s=320x240:r=10",
+            "-metadata", "location=+41.3851+002.1734+100/", "-movflags", "use_metadata_tags",
+            str(source),
+        ],
+        check=True,
+    )  # fmt: skip
+    copy = tmp_path / "video.mp4"
+    ingest.normalize_video(source, copy, ingest.probe_source(source))
+    tags = subprocess.run(
+        ["ffprobe", "-v", "quiet", "-show_entries", "format_tags", "-of", "json", str(copy)],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert "41.3851" not in tags

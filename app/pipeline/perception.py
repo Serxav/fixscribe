@@ -106,24 +106,8 @@ def part_concepts(step: Step) -> list[str]:
     return found[:MAX_CONCEPT_TRIES]
 
 
-def part_concept(target_part: str | None, removes: list[str]) -> str | None:
-    """One short noun phrase for SAM, from the target part or what it removes."""
-    concept = clean_phrase(target_part)
-    if concept is not None:
-        return concept
-    for item in removes or []:
-        concept = clean_phrase(item)
-        if concept is not None:
-            return concept
-    return None
-
-
 def _screw_count(step: Step) -> int:
     return step.screws.count if step.screws else 0
-
-
-def _confidence_value(detection: Detection) -> float:
-    return detection.confidence if detection.confidence is not None else 0.0
 
 
 def _norm_box(box: tuple[float, float, float, float], size: tuple[int, int]) -> NormBox | None:
