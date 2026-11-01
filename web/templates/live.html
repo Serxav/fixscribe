@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="/static/live.css">
 </head>
 <body class="film-body">
-<div class="film" id="live" data-job-id="{{ job_id }}" data-steps="{{ guide.steps|length }}" data-lang="{{ guide.language }}" data-meta-voice="{{ 'yes' if meta_voice else '' }}">
+<div class="film" id="live" data-job-id="{{ job_id }}" data-steps="{{ guide.steps|length }}" data-lang="{{ guide.language }}" data-meta-voice="{{ 'yes' if meta_voice else '' }}" data-video="/media/{{ job_id }}/video.mp4">
   <video id="live-camera" class="film-video live-camera" playsinline muted autoplay></video>
   <svg id="live-marks" class="live-marks" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
   <canvas id="live-canvas" hidden></canvas>
@@ -29,6 +29,7 @@
     <h1 class="film-card-title">Point the camera at your {{ guide.identity.object_name if guide.identity else guide.device }}</h1>
     <p class="film-card-text">FixScribe watches as you work, names and cuts out the parts it sees, tells you which step you are on and what to do next — out loud.</p>
     <button class="btn btn-primary btn-lg" type="button" id="live-go">Start the camera</button>
+    <button class="btn btn-soft btn-lg" type="button" id="live-sample">Nothing to repair right now? Use this guide's video</button>
     <p class="small film-note">Frames go to Muse Spark and SAM 3.1 when the view changes. If you turn the microphone on, what you say goes to Muse Voice. Nothing is recorded.</p>
   </section>
 
@@ -48,11 +49,12 @@
     <p class="live-heard" id="live-heard"></p>
     <p class="live-hint" id="live-hint"></p>
     <div class="live-controls">
+      <button class="film-btn hidden" type="button" id="live-hold" aria-label="Hold the video to see the parts">⏸</button>
       <button class="film-btn" type="button" id="live-prev" aria-label="Previous step">‹</button>
       <button class="film-btn" type="button" id="live-repeat" aria-label="Repeat this step">↻</button>
       <button class="film-btn" type="button" id="live-next-step" aria-label="Next step">›</button>
       <button class="film-btn" type="button" id="live-voice" aria-pressed="true" aria-label="Voice on">🔊</button>
-      <button class="film-btn" type="button" id="live-mic" aria-pressed="false" aria-label="Listen for voice commands">🎙️ off</button>
+      <button class="film-btn" type="button" id="live-mic" aria-pressed="false" aria-label="Listen for voice commands">🎙️</button>
     </div>
   </div>
 </div>

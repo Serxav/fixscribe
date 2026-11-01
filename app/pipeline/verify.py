@@ -27,6 +27,7 @@ PROMPTS = Path(__file__).resolve().parents[2] / "prompts"
 CHECK_PROMPT = PROMPTS / "check_marks_v1.md"
 TRACK_PROMPT = PROMPTS / "check_tracks_v1.md"
 PART_PROMPT = PROMPTS / "check_part_v1.md"
+TARGET_PROMPT = PROMPTS / "check_target_v1.md"
 TILE = 300
 MAX_TILES = 16
 
@@ -149,15 +150,14 @@ def confirm(
     image: np.ndarray,
     marks: list[dict],
     context: str,
-    effort: str = "medium",
+    prompt: Path = CHECK_PROMPT,
 ) -> list[dict]:
     """Ask Spark to check each mark on a zoomed contact sheet; mark the confirmed ones."""
     if not marks:
         return marks
     labels = ", ".join(sorted({mark["label"] for mark in marks}))
     sheet = [contact_sheet(image, marks)]
-    verdicts = _ask(client, model, _prompt(CHECK_PROMPT, context, labels), sheet, effort)
-    return _apply(marks, verdicts)
+    return _apply(marks, _ask(client, model, _prompt(prompt, context, labels), sheet))
 
 
 def confirm_tracks(client: Any, model: str, marks: list[dict], context: str) -> list[dict]:

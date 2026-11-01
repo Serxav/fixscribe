@@ -29,7 +29,7 @@ import numpy as np
 from app import artifacts
 from app.domains import profile_for
 from app.meta_client import MetaError
-from app.pipeline.ingest import run_ffmpeg
+from app.pipeline.ingest import UPLOAD_INPUT, run_ffmpeg
 from app.pipeline.verify import MAX_TILES, confirm_tracks
 from app.schemas import Identity, Step
 from app.text import ARTICLES, singular
@@ -275,8 +275,8 @@ def cut_step_clip(
     chain = ",".join(part for part in (prefilter, f"fps={fps:g}", SCALE_1080) if part)
     with artifacts.atomic_path(dst) as tmp:
         run_ffmpeg(
-            ["ffmpeg", "-y", "-v", "error", "-ss", f"{start_s:.3f}", "-to", f"{end_s:.3f}",
-             "-i", str(video), "-an", "-vf", chain,
+            ["ffmpeg", "-y", "-v", "error", *UPLOAD_INPUT, "-ss", f"{start_s:.3f}",
+             "-to", f"{end_s:.3f}", "-i", str(video), "-an", "-vf", chain,
              "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p",
              str(tmp)]
         )  # fmt: skip

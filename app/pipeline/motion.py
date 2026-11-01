@@ -15,6 +15,7 @@ the web page can lift the real shape of the part in 3D instead of a rectangle.
 
 import logging
 import subprocess
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,7 @@ from app.pipeline.analyze import guide_direction
 from app.pipeline.fasteners import Found, load_found
 from app.pipeline.ingest import run_ffmpeg
 from app.pipeline.overlay import mark_part
+from app.pipeline.together import in_parallel
 from app.schemas import Identity, Motion, NormBox, PartHighlight, Perception, Plan, StepMotion
 
 logger = logging.getLogger(__name__)
@@ -417,18 +419,26 @@ def run(job_dir: Path, settings: Settings, client: Any = None) -> Motion:
     direction = guide_direction(identity.task if identity else None)
     perception = artifacts.load_optional(job_dir, Perception)
     proven = {item.index: item.part for item in perception.steps} if perception else {}
-    result = Motion()
-    for step in plan.steps[:MAX_STEPS]:
+    out_of_budget = threading.Event()
+
+    def one_step(step) -> tuple[StepMotion | None, str | None]:
+        if out_of_budget.is_set():
+            return None, None
         try:
-            motion = motion_for_step(job_dir, client, step, plan, direction, proven.get(step.index))
+            part = proven.get(step.index)
+            return motion_for_step(job_dir, client, step, plan, direction, part), None
         except BudgetExceeded:
-            result.notes.append("SAM budget reached: later steps have no motion clip.")
-            break
+            out_of_budget.set()
+            return None, None
         except Exception as exc:  # one bad step never stops the others
             logger.warning("motion failed for step %d: %s", step.index, exc)
-            result.notes.append(f"Step {step.index}: no motion clip ({exc}).")
-            continue
-        if motion is not None:
-            result.steps.append(motion)
+            return None, f"Step {step.index}: no motion clip ({exc})."
+
+    result = Motion()
+    answers = in_parallel(plan.steps[:MAX_STEPS], one_step, settings.pipeline_workers)
+    result.steps = [motion for motion, _ in answers if motion is not None]
+    result.notes = [note for _, note in answers if note]
+    if out_of_budget.is_set():
+        result.notes.append("SAM budget reached: later steps have no motion clip.")
     artifacts.save(job_dir, result)
     return result

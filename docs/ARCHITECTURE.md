@@ -4,7 +4,7 @@ A phone video of any repair goes in; a verified step-by-step guide comes out. Th
 first identifies what it is looking at (object, category, task, hazards, language), then picks
 a domain profile for that category (`domains/<category>.json`), so a new category is one JSON
 file, never new code. Safety is rules first (`app/safety.py`): professional-only jobs get no
-instructions, and a model may only raise the level, never lower it. Every claim of the guide
+instructions, and no model can lower that decision. Every claim of the guide
 carries its proof: each step's boundaries, instruction, fastener count and part are graded
 verified / supported / unverified with the video seconds, spoken words and SAM measurements
 behind them (`proof.json`).
@@ -22,7 +22,7 @@ behind them (`proof.json`).
 | Route helpers | `app/routes/common.py` (`job_folder`, `load_guide`) | URL id → job folder and guide, in one place |
 | Meta door | `app/meta_client.py` (`make_client`, `set_client_factory`) | the only code that talks to Meta: Spark, Voice, SAM; retries, global and per-job budget, spend log; pipeline code gets its client only via `make_client`, and tests and the offline demo swap in a fake with `set_client_factory` |
 | Domains | `app/domains.py`, `domains/*.json` | one validated profile per category: fasteners, parts, tools, prechecks, hazards |
-| Safety rules | `app/safety.py` | fixed levels and regex rules; `evaluate`, `stricter` (models may only raise) |
+| Safety rules | `app/safety.py` | fixed levels and regex rules; `evaluate` decides, `stricter` combines two decisions and can only raise |
 | Tray data | `app/tray.py` | printable fastener-tray cells + reassembly lines from a guide (pure data, no web) |
 | Step check | `app/pipeline/stepcheck.py` | "ghost camera": a user photo answered done / not_yet / unclear via SAM |
 | Routes | `app/routes/checks.py`, `app/routes/tray.py` | `POST /guides/{id}/steps/{n}/check`, `GET /guides/{id}/tray` |
@@ -53,19 +53,13 @@ failure; required stages fail the job. A stage's owned artifact is deleted befor
 | 16 | publish | `guide.json` | no | none | plan + media + perception + reassembly; pro-only redaction |
 | 17 | learn | `profile_suggestions.json` | yes | none | new vocabulary the profile does not know yet |
 
-After a guide is finished, the Muse Wonder agent starts in the background (see
-`docs/ALGORITHM.md` §5). While a job runs, the progress page polls `/api/jobs/<id>`, whose
+Perception and motion work on `PIPELINE_WORKERS` steps at once (4 by default), because most of a
+step's time is waiting for Meta; fasteners are numbered across the guide once all steps finish.
+After a guide is finished, the Muse Wonder agent starts in the background if `ENABLE_INSPECTOR` is
+on (see `docs/ALGORITHM.md` §5). While a job runs, the progress page polls `/api/jobs/<id>`, whose
 `story` (`app/progress.py`) carries each finished stage's real findings: the video, what was
 identified, the narration, the steps, the stills and SAM's marks. `?replay=1` replays a finished
 job stage by stage.
-
-Attempt jobs (`attempt_stages()` in `app/pipeline/runner.py`: a user's own repair video vs a reference guide):
-
-| # | Stage | Owns | Optional | Model | Job |
-|---|---|---|---|---|---|
-| 1 | ingest | `ingest.json` | no | none | same normalize as above |
-| 2 | transcribe | `transcript.json` | yes | voice | same transcription as above |
-| 3 | attempt | `attempt_review.json` | no | planned | planned (`app/pipeline/attempt.py` does not exist on this branch) |
 
 ## Domain profiles
 
@@ -88,8 +82,8 @@ high_voltage_battery) or any `PRO_RULES` regex hit (gas line, electrical panel, 
 refrigerant, high-voltage battery, microwave capacitor/magnetron/transformer with microwave
 context) → `professional_only` with the rule reason and the operation in `blocked`; any other
 hazard → `caution`. The domain `prechecks` are always kept. `stricter(current, proposed)` takes
-the higher level and unions reasons, prechecks and blocked — the only way a model opinion
-enters, so it can never lower the rules. For `professional_only`, publish replaces every
+the higher level and unions reasons, prechecks and blocked. No model decides the level today, and
+`stricter` is the only door one could use, so it could never lower the rules. For `professional_only`, publish replaces every
 instruction with the pro-only sentence, empties the reassembly, and appends
 `Professional-only job: <reasons>` to `guide.checks`.
 
@@ -103,7 +97,11 @@ only when the step removes fasteners, `part` only when it names a target part. S
 instruction is verified with video and voice evidence, supported with any source; fastener
 count is verified when SAM ran and removed == claimed, supported when SAM removed some but a
 different number or the re-check agrees; part is verified at SAM confidence ≥ 0.5, supported
-when found with lower or unknown confidence. Scores: verified 1, supported 0.5, unverified 0;
+when found with lower or unknown confidence. The per-step frame review (`prompts/step_review_v1.md`)
+can also correct the guide: a confident review that disagrees rewrites the instruction, which then
+counts as verified, and a part it does not back is dropped. A fastener placed only from where the
+tool points (`ScrewRecord.pointed`) is at most supported. So the score is the guide's own measure,
+not an independent test: the README gives the checks made by eye. Scores: verified 1, supported 0.5, unverified 0;
 step score is the claim mean, `proof.score` the step mean. `Step.source_index` exists because
 fusion and refine key steps by Spark's draft numbers (1, 2, 3… in time order) while the plan
 may drop or reorder steps: proof joins fusion/refine on `source_index` and perception on
@@ -122,11 +120,41 @@ Tray page (`GET /guides/{job_id}/tray`): a print-ready A4 sheet with one cell pe
 removes fasteners (step, title, kind, count, numbers, image) plus reassembly lines naming the
 tray cell each line draws its fasteners from.
 
+## Live coach
+
+`app/pipeline/live.py`, `app/pipeline/ask.py`, `web/static/live.js`, `web/static/ear.js`. The page
+sends a frame only when the view changes. Two tiers run apart:
+
+- **Step** (`live_turn`, Spark, `prompts/live_v2.md`): the frame plus the guide's photos of the
+  previous, current and next step give the step, the status and what to say. `settle_step` moves on
+  only with agreement, so one odd frame does not jump the guide.
+- **Marks** (`marks_stages`, streamed as NDJSON): close-up, Spark names and points using only the
+  manual's names up to this step, SAM cuts out (shown dashed), Spark checks them (shown solid), and
+  a second look searches for the step's own part.
+
+Voice: `ear.js` cuts speech into 16 kHz WAV clips, Muse Voice transcribes them, and next / back /
+repeat / quiet run without AI in English and Spanish. Anything phrased as a question goes to Spark
+(`prompts/ask_v1.md`). Measured with `python -m eval.coach_exam` against `eval/coach_key.json`.
+
+## Limits on a public server
+
+There is no login: a job's link, 48 random bits, is its only key, and no route lists jobs.
+
+- `/media` serves an allow-list of generated files, never the original or raw model answers.
+- `app/demo.py` and a middleware keep the sample guide read-only; only the coach's routes run on it.
+- Uploads: `claim_daily_slot` counts them in a file that deleting a job does not touch, and ffmpeg
+  opens them with a format and protocol whitelist (`UPLOAD_INPUT`), so a playlist named `.mp4` is
+  refused. Working copies drop metadata such as the place of filming.
+- The agent's routes answer 403 when `ENABLE_INSPECTOR` is off.
+- The coach stops at `LIVE_BUDGET_USD` and `LIVE_MAX_CALLS` on the sample guide, and at $2 and 300
+  calls on any other. Camera frames and voice clips stay in a per-request folder deleted with the
+  answer (`scratch_folder`).
+
 ## Failure and recovery
 
 Required stages (ingest, scenes, analyze, plan, safety, publish) fail the job when they
 fail; optional stages (transcribe, identify, signals, fusion, refine, frames, perception,
-proof, learn) add a short warning to `status.json` and the job continues without them. A
+motion, proof, narrate, learn) add a short warning to `status.json` and the job continues without them. A
 stage's owned artifact is deleted before it runs, so a retry never reads a stale result.
 
 What the user sees: the progress bar (stage weights in `default_stages()`), the current
@@ -153,7 +181,7 @@ may have changed.
   **native original**, not the proxy.
 - Every number shown to a technician has its evidence; what is not verified is said so in
   `guide.checks`.
-- Rules-first safety: a model opinion enters only via `stricter()`, which can only raise.
+- Rules-first safety: the rules decide, and no model can lower what they set.
 - Job files are written atomically; one process per job, stages in order.
 
 ## Cost per job
@@ -162,7 +190,7 @@ may have changed.
 - identify, analyze, refine: `muse-spark-1.3`, $1.25/M input tokens ($0.15/M cached),
   $4.25/M output tokens (`PRICES` in `app/meta_client.py`).
 - perception and step checks: `sam-3.1`, $0.0025/image (`PRICES` also lists $0.0002/video frame).
-- Caps: `BUDGET_USD` 120 global, `JOB_BUDGET_USD` 1.0 per job (`app/config.py`); calls past
+- Caps: `BUDGET_USD` 120 global, `JOB_BUDGET_USD` 2.5 per job (`app/config.py`; a real 8.5-minute video cost $1.47); calls past
   budget raise before sending. Per-stage spend lands in `manifest.json`.
 
 ## How a part is found

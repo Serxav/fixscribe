@@ -11,7 +11,10 @@ still gets a coach and a forgotten camera page cannot eat the budget.
 """
 
 import io
+import shutil
+import uuid
 from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
@@ -19,6 +22,7 @@ from typing import Any, Literal
 
 import cv2
 import numpy as np
+from openai import OpenAIError
 from PIL import Image, ImageOps
 from pydantic import Field, ValidationError
 
@@ -27,20 +31,24 @@ from app.agent.tools import full_mask
 from app.artifacts import ArtifactError
 from app.config import Settings
 from app.meta_client import BudgetExceeded, MetaError, make_client
-from app.pipeline.verify import confirm
+from app.pipeline.verify import TARGET_PROMPT, confirm
 from app.schemas import Guide, Step, Strict, _object
 from app.spark import SparkAnswerError
 
 MAX_FRAME_BYTES = 4 * 1024**2
 MAX_FRAME_SIDE = 1280
-MAX_LIVE_CALLS_PER_JOB = 300
 MAX_PARTS = 6
 MIN_CONFIDENCE = 0.15  # same bar as the landing photos
 MIN_FILL = 0.1
 SMALL_PART = 50  # boxes narrower than this (0..1000 grid) get a margin: Spark is often half off
 CROP_MARGIN = 0.2  # room around the object on the close-up
 CLOSE_UP_SIDE = 1280
-SURE = 0.8  # the next step is taken at once when Spark is this sure
+SURE = 0.7  # the next step is taken at once when Spark is this sure
+SETTLED = 2  # ...and the coach already gave this many answers on the step it stands on
+SMALL_MARK = 120  # a part narrower than this (0..1000 grid of the close-up) is hard to name
+TURN_EFFORT = "medium"  # alike steps need the reasoning; low effort got stuck or ran ahead
+OWN_JOB_LIVE_BUDGET_USD = 2.0  # LIVE_BUDGET_USD and LIVE_MAX_CALLS are sized for the sample guide
+OWN_JOB_LIVE_CALLS = 300
 GROUND_EFFORT = "low"  # pointing is the longest wait; the check keeps its full reasoning
 MAX_SPILL = 0.25  # a cut-out with more than this outside its box ran over onto something else
 SMOOTH = 0.012  # outline clean-up, as a share of the image's long side
@@ -113,9 +121,9 @@ def _describe_step(step: Step) -> str:
 
 
 def nearby_steps(guide: Guide, last_step: int) -> list[Step]:
-    """The step the user stands on and the next one: the two a new frame most likely shows."""
-    first = max(last_step, 1)
-    return [step for step in guide.steps if first <= step.index <= first + 1]
+    """The step before, the one the user is on and the next: what a new frame most likely shows."""
+    here = max(last_step, 1)
+    return [step for step in guide.steps if here - 1 <= step.index <= here + 1]
 
 
 def build_prompt(guide: Guide, last_step: int = 0, photos: list[Step] | None = None) -> str:
@@ -129,19 +137,39 @@ def build_prompt(guide: Guide, last_step: int = 0, photos: list[Step] | None = N
     return prompt.replace("<<LAST_STEP>>", str(last_step))
 
 
-def settle_step(last: int, pending: int, seen: int, confidence: float) -> tuple[int, int]:
+def settle_step(
+    last: int, pending: int, seen: int, confidence: float, stood: int = SETTLED
+) -> tuple[int, int]:
     """One odd frame never moves the coach: returns (step to stand on, step still waiting).
 
-    A different step needs two frames in a row, except the very first one and a sure next step.
+    A different step needs two frames in a row, except step 1 at the start and a sure next step
+    after standing on this one for a while: alike steps must not carry the coach away one per frame.
     """
-    if seen == 0 or seen == last:
+    if seen == 0:  # a look away says nothing: what was waiting keeps waiting
+        return last, pending
+    if seen == last:
         return last, 0
-    if last == 0 or seen == pending or (seen == last + 1 and confidence >= SURE):
+    first_step = (
+        last == 0 and seen == 1
+    )  # any other first answer waits: a closed box looks finished
+    sure_next = seen == last + 1 and confidence >= SURE and stood >= SETTLED
+    if first_step or seen == pending or sure_next:
         return seen, 0
     return last, seen
 
 
-def save_frame(job_dir: Path, frame: bytes, name: str = "frame.jpg") -> Path:
+@contextmanager
+def scratch_folder(job_dir: Path) -> Iterator[Path]:
+    """One request's camera or voice files: visitors never share them and nothing is kept."""
+    folder = job_dir / "live" / f"now-{uuid.uuid4().hex}"
+    folder.mkdir(parents=True)
+    try:
+        yield folder
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def save_frame(folder: Path, frame: bytes, name: str = "frame.jpg") -> Path:
     """Phone frame bytes to an upright JPEG (max side 1280), written atomically."""
     if len(frame) > MAX_FRAME_BYTES:
         raise LiveError(f"frame is too big ({len(frame)} bytes, max {MAX_FRAME_BYTES} bytes)")
@@ -153,7 +181,7 @@ def save_frame(job_dir: Path, frame: bytes, name: str = "frame.jpg") -> Path:
     except Exception as exc:
         raise LiveError(f"could not read the frame: {exc}") from exc
     upright.thumbnail((MAX_FRAME_SIDE, MAX_FRAME_SIDE), Image.Resampling.LANCZOS)
-    dst = job_dir / "live" / name
+    dst = folder / name
     try:
         with artifacts.atomic_path(dst) as tmp:
             upright.save(tmp, format="JPEG", quality=85)
@@ -213,17 +241,30 @@ def _padded(box: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
     return (max(0, x1 - mx), max(0, y1 - my), min(1000, x2 + mx), min(1000, y2 + my))
 
 
+def _is_sample(job_dir: Path, settings: Settings) -> bool:
+    return bool(settings.demo_job) and job_dir.name == settings.demo_job
+
+
 def _coach_client(job_dir: Path, settings: Settings) -> Any:
     """A client that counts the coach's spend apart from the guide's."""
-    coach = replace(settings, job_budget_usd=settings.live_budget_usd)
-    return make_client(coach, job_dir=job_dir / "live")
+    budget = settings.live_budget_usd
+    if not _is_sample(job_dir, settings):
+        budget = min(budget, OWN_JOB_LIVE_BUDGET_USD)
+    coach = replace(settings, job_budget_usd=budget)
+    try:
+        return make_client(coach, job_dir=job_dir / "live")
+    except OpenAIError as exc:  # no key on this server: a clear message, never a crash
+        raise LiveError("the coach is not set up on this server") from exc
 
 
-def _count_call(job_dir: Path) -> int:
+def _count_call(job_dir: Path, settings: Settings) -> int:
     """Refuse past the cap; returns the number of calls made so far."""
     calls = read_calls(job_dir)
-    if calls >= MAX_LIVE_CALLS_PER_JOB:
-        raise LiveError(f"live limit reached for this job ({MAX_LIVE_CALLS_PER_JOB} calls max)")
+    limit = settings.live_max_calls
+    if not _is_sample(job_dir, settings):
+        limit = min(limit, OWN_JOB_LIVE_CALLS)
+    if calls >= limit:
+        raise LiveError(f"live limit reached for this job ({limit} calls max)")
     return calls
 
 
@@ -299,6 +340,21 @@ def manual_name(label: str, names: list[str]) -> str:
     return max(matches, key=len, default="")
 
 
+def _is_small(mark: dict) -> bool:
+    x1, y1, x2, y2 = mark["cut_box"]
+    return max(x2 - x1, y2 - y1) < SMALL_MARK
+
+
+def _look_again(
+    client: Any, settings: Settings, path: Path, crop: np.ndarray, target: str, context: str
+) -> list[dict]:
+    """The step's own part was not marked: Spark looks only for it, with more care."""
+    found = client.ground(path, f"the {target}", context=context, max_boxes=1, effort="medium")
+    named = [SimpleNamespace(label=target, box=g.box) for g in found[:1]]
+    marks = cut_marks(client, path, crop, named) if named else []
+    return confirm(client, settings.spark_model, crop, marks, context, TARGET_PROMPT)
+
+
 def is_target(label: str, target: str) -> bool:
     """True when a mark's name is the part this step works on."""
     label, target = label.strip().lower(), target.strip().lower()
@@ -313,6 +369,20 @@ def marks_stages(
     region: list[int] | None = None,
     client: Any = None,
 ) -> Iterator[tuple[bool, list[LivePart]]]:
+    """``_marks_stages`` with its camera files in a folder of their own."""
+    with scratch_folder(job_dir) as folder:
+        yield from _marks_stages(job_dir, folder, settings, frame, step_index, region, client)
+
+
+def _marks_stages(
+    job_dir: Path,
+    folder: Path,
+    settings: Settings,
+    frame: bytes,
+    step_index: int,
+    region: list[int] | None,
+    client: Any,
+) -> Iterator[tuple[bool, list[LivePart]]]:
     """The parts on one frame, like the landing photos: (False, cut out), then (True, confirmed).
 
     The check is the longest wait, so the cut-outs are shown first, marked as still being checked.
@@ -324,14 +394,14 @@ def marks_stages(
     if guide.safety is not None and guide.safety.level == "professional_only":
         yield True, []
         return
-    frame_path = save_frame(job_dir, frame, "marks.jpg")
-    calls = _count_call(job_dir)
+    frame_path = save_frame(folder, frame, "marks.jpg")
+    calls = _count_call(job_dir, settings)
     image = cv2.imread(str(frame_path))
     if image is None:
         raise LiveError("could not read the frame")
     client = client or _coach_client(job_dir, settings)
     crop, shown = close_up(image, region or [])
-    crop_path = job_dir / "live" / "close_up.jpg"
+    crop_path = folder / "close_up.jpg"
     with artifacts.atomic_path(crop_path) as tmp:
         cv2.imwrite(str(tmp), crop)
     step = next((s for s in guide.steps if s.index == step_index), None)
@@ -344,9 +414,16 @@ def marks_stages(
         "still real parts of it."
     )
     if names:
+        others = [name for name in names if not is_target(name, target)]
+        first = (
+            f"First and above all the {target}, the part this step works on. Also "
+            if target
+            else ""
+        )
         query = (
-            f"each of these parts of the {subject} that you can clearly see: {', '.join(names)}. "
-            "One box per part, labelled with exactly one of these names; leave out everything else"
+            f"{first}each of these parts of the {subject} that you can clearly see: "
+            f"{', '.join(others) or target}. One box per part, labelled with exactly one of these "
+            "names; leave out everything else"
         )
     else:
         query = (
@@ -382,9 +459,13 @@ def marks_stages(
                 if manual_name(g.label, names)
             ]
         marks = cut_marks(client, crop_path, crop, grounded) if grounded else []
+        # only the step's own small part is worth the risk: a tiny neighbour is usually misnamed
+        marks = [m for m in marks if is_target(m["label"], target) or not _is_small(m)]
         if marks:
             yield False, to_parts(marks)
         checked = confirm(client, settings.spark_model, crop, marks, context)
+        if target and not any(m.get("checked") and is_target(m["label"], target) for m in checked):
+            checked += _look_again(client, settings, crop_path, crop, target, context)
     except BudgetExceeded as exc:
         raise LiveError(f"could not mark the parts: {exc}") from exc
     except MetaError:  # the coach keeps coaching: only the marks are lost, never an unchecked one
@@ -415,6 +496,7 @@ def live_turn(
     last_step: int = 0,
     client: Any = None,
     pending_step: int = 0,
+    stood: int = SETTLED,
 ) -> LiveAnswer:
     """Answer one camera frame: step, status, what to say, what to do next, where the object is."""
     try:
@@ -425,31 +507,33 @@ def live_turn(
     if safety is not None and safety.level == "professional_only":
         reason = safety.reasons[0] if safety.reasons else PROFESSIONAL_LINE
         return LiveAnswer(step=0, status="unclear", say=reason, next="", confidence=1)
-    frame_path = save_frame(job_dir, frame)
-    calls = _count_call(job_dir)
-    client = client or _coach_client(job_dir, settings)
-    photos = [
-        step
-        for step in nearby_steps(guide, last_step)
-        if step.image and (job_dir / step.image).is_file()
-    ]
-    prompt = build_prompt(guide, last_step, photos)
-    try:
-        data = spark.ask_json(
-            client,
-            settings,
-            name="live_turn",
-            schema=LIVE_JSON_SCHEMA,
-            prompt=prompt,
-            images=[frame_path, *(job_dir / step.image for step in photos)],
-            max_output_tokens=12000,  # reasoning counts against this: a low cap leaves no answer
-            timeout_s=30,
-            effort="low",
-        )
-    except SparkAnswerError as exc:
-        raise LiveError(f"Spark returned an invalid live answer: {exc}") from exc
-    except (BudgetExceeded, MetaError) as exc:
-        raise LiveError(f"could not answer the frame: {exc}") from exc
+    with scratch_folder(job_dir) as folder:
+        frame_path = save_frame(folder, frame)
+        calls = _count_call(job_dir, settings)
+        client = client or _coach_client(job_dir, settings)
+        photos = [
+            step
+            for step in nearby_steps(guide, last_step)
+            if step.image and (job_dir / step.image).is_file()
+        ]
+        prompt = build_prompt(guide, last_step, photos)
+        try:
+            data = spark.ask_json(
+                client,
+                settings,
+                name="live_turn",
+                schema=LIVE_JSON_SCHEMA,
+                prompt=prompt,
+                images=[frame_path, *(job_dir / step.image for step in photos)],
+                # reasoning counts against this: a low cap leaves no answer
+                max_output_tokens=12000,
+                timeout_s=30,
+                effort=TURN_EFFORT,
+            )
+        except SparkAnswerError as exc:
+            raise LiveError(f"Spark returned an invalid live answer: {exc}") from exc
+        except (BudgetExceeded, MetaError) as exc:
+            raise LiveError(f"could not answer the frame: {exc}") from exc
     if not isinstance(data, dict):
         raise LiveError("Spark returned an invalid live answer")
     data = dict(data)
@@ -459,7 +543,7 @@ def live_turn(
         data["confidence"] = max(0.0, min(float(data.get("confidence", 0)), 1.0))
     except (TypeError, ValueError) as exc:
         raise LiveError("Spark returned an invalid live answer: bad step") from exc
-    step, pending = settle_step(last_step, pending_step, seen, data["confidence"])
+    step, pending = settle_step(last_step, pending_step, seen, data["confidence"], stood)
     data.update(step=step, seen=seen, pending=pending)
     if pending:  # the words are about a step the coach has not moved to yet: stay quiet
         data.update(status="unclear", say="", next="")

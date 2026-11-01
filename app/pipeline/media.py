@@ -10,7 +10,7 @@ from pathlib import Path
 from PIL import Image
 
 from app import artifacts
-from app.pipeline.ingest import color_filter, run_ffmpeg
+from app.pipeline.ingest import UPLOAD_INPUT, color_filter, run_ffmpeg
 from app.schemas import SourceVideo
 
 
@@ -41,6 +41,7 @@ def extract_still(
             "-y",
             "-v",
             "error",
+            *UPLOAD_INPUT,
             "-ss",
             str(t),
             "-i",

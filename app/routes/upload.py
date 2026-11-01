@@ -6,8 +6,9 @@ from fastapi import APIRouter, Depends, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from app import demo
 from app.config import Settings, get_settings
-from app.jobs import create_job, jobs_created_today, update_status
+from app.jobs import claim_daily_slot, create_job, update_status
 from app.pipeline.runner import start_job
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -27,8 +28,10 @@ router = APIRouter()
 
 
 @router.get("/", response_class=HTMLResponse)
-def index(request: Request):
-    return templates.TemplateResponse(request, "index.html", {})
+def index(request: Request, settings: Settings = Depends(settings_dep)):  # noqa: B008
+    return templates.TemplateResponse(
+        request, "index.html", {"sample": demo.ready_sample(settings)}
+    )
 
 
 @router.get("/privacy", response_class=HTMLResponse)
@@ -54,7 +57,7 @@ async def upload_video(
             "<h1>Unsupported video type</h1><p>Please upload a .mp4, .mov or .m4v video.</p>",
             status_code=400,
         )
-    if jobs_created_today(jobs_dir) >= settings.daily_job_limit:
+    if not claim_daily_slot(jobs_dir, settings.daily_job_limit):
         return HTMLResponse(
             "<h1>Daily limit reached, try tomorrow.</h1>",
             status_code=429,

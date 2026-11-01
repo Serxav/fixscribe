@@ -23,6 +23,7 @@ async def live_frame(
     frame: UploadFile = File(...),  # noqa: B008
     last_step: int = Form(0),  # noqa: B008
     pending_step: int = Form(0),  # noqa: B008
+    stood: int = Form(2),  # noqa: B008
     settings: Settings = Depends(settings_dep),  # noqa: B008
 ):
     folder, guide = load_guide(job_id, settings)
@@ -33,7 +34,7 @@ async def live_frame(
     try:
         data = await frame.read(MAX_FRAME_BYTES + 1)
         answer = await run_in_threadpool(
-            live_turn, folder, settings, data, last_step, None, pending_step
+            live_turn, folder, settings, data, last_step, None, pending_step, stood
         )
     except LiveError as exc:
         status = 429 if "live limit" in str(exc) else 400

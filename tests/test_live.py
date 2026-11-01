@@ -3,10 +3,12 @@
 import io
 import json
 import types
+from dataclasses import replace
 
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
+from openai import OpenAIError
 from PIL import Image
 
 from app import artifacts, meta_client
@@ -17,11 +19,13 @@ from app.meta_client import MetaError
 from app.pipeline.live import (
     LIVE_JSON_SCHEMA,
     MAX_FRAME_BYTES,
-    MAX_LIVE_CALLS_PER_JOB,
     MAX_SPILL,
     LiveAnswer,
     LiveError,
     LivePart,
+    _coach_client,
+    _count_call,
+    _is_small,
     _spill,
     build_prompt,
     live_marks,
@@ -31,6 +35,7 @@ from app.pipeline.live import (
     marks_stages,
     object_region,
     read_calls,
+    save_frame,
     settle_step,
 )
 from app.routes.upload import settings_dep
@@ -116,10 +121,7 @@ def test_normal_answer_saves_frame_and_counts_call(tmp_path):
     assert "<<LAST_STEP>>" not in fake.respond_kwargs["input"][0]["content"][0]["text"]
     assert "1. Step 1" in fake.respond_kwargs["input"][0]["content"][0]["text"]
     assert len(fake.respond_kwargs["input"][0]["content"]) == 2  # prompt + the frame
-    frame_path = tmp_path / "live" / "frame.jpg"
-    assert frame_path.is_file()
-    with Image.open(frame_path) as saved:
-        assert max(saved.size) <= 1280
+    assert not list((tmp_path / "live").glob("now-*"))  # nothing of the camera stays on the server
     assert read_calls(tmp_path) == 1
 
 
@@ -128,7 +130,7 @@ def test_step_is_clamped_into_range(tmp_path):
     artifacts.save(tmp_path, _guide(steps=2))
 
     high = live_turn(tmp_path, settings, _frame_bytes(), client=FakeLiveClient(_answer(step=99)))
-    assert high.step == 2
+    assert high.seen == 2 and high.pending == 2  # clamped, and waiting for a second look
 
     low = live_turn(tmp_path, settings, _frame_bytes(), client=FakeLiveClient(_answer(step=-4)))
     assert low.step == 0
@@ -150,7 +152,7 @@ def test_professional_only_answers_without_spark(tmp_path):
     assert answer.object_box == []
     assert answer.confidence == 1
     assert fake.calls == 0
-    assert not (tmp_path / "live" / "frame.jpg").exists()
+    assert not list((tmp_path / "live").glob("now-*"))
 
 
 def test_too_big_and_bad_frames(tmp_path):
@@ -171,7 +173,7 @@ def test_limit_refuses_without_calling_spark(tmp_path):
     settings = Settings(model_api_key="", data_dir=tmp_path)
     artifacts.save(tmp_path, _guide())
     (tmp_path / "live").mkdir(parents=True, exist_ok=True)
-    (tmp_path / "live" / "calls.txt").write_text(f"{MAX_LIVE_CALLS_PER_JOB}\n")
+    (tmp_path / "live" / "calls.txt").write_text(f"{Settings().live_max_calls}\n")
     fake = FakeLiveClient(_answer())
 
     with pytest.raises(LiveError, match="live limit"):
@@ -192,8 +194,25 @@ def test_exif_rotated_jpeg_is_accepted(tmp_path):
     answer = live_turn(tmp_path, settings, buf.getvalue(), client=FakeLiveClient(_answer()))
 
     assert answer.step == 1
-    with Image.open(tmp_path / "live" / "frame.jpg") as saved:
+    with Image.open(save_frame(tmp_path, buf.getvalue())) as saved:
         assert saved.size == (40, 20)
+
+
+def test_a_big_frame_is_made_smaller(tmp_path):
+    buf = io.BytesIO()
+    Image.new("RGB", (2000, 1000)).save(buf, format="JPEG")
+    with Image.open(save_frame(tmp_path, buf.getvalue())) as saved:
+        assert max(saved.size) <= 1280
+
+
+def test_a_guide_that_is_not_the_sample_has_a_smaller_coach_limit(tmp_path):
+    settings = Settings(model_api_key="", data_dir=tmp_path, live_max_calls=2000)
+    (tmp_path / "live").mkdir()
+    (tmp_path / "live" / "calls.txt").write_text("300\n")
+    with pytest.raises(LiveError, match="300 calls"):
+        _count_call(tmp_path, settings)
+    sample = replace(settings, demo_job=tmp_path.name)
+    assert _count_call(tmp_path, sample) == 300
 
 
 def test_prompt_lists_steps_and_last_step(tmp_path):
@@ -251,7 +270,7 @@ def test_route_limit_is_429(jobs_tmp):
     job_id = _route_job(jobs_dir)
     live_dir = jobs_dir / job_id / "live"
     live_dir.mkdir(parents=True, exist_ok=True)
-    (live_dir / "calls.txt").write_text(f"{MAX_LIVE_CALLS_PER_JOB}\n")
+    (live_dir / "calls.txt").write_text(f"{Settings().live_max_calls}\n")
 
     response = TestClient(app).post(
         f"/api/live/{job_id}",
@@ -303,8 +322,10 @@ def test_one_odd_frame_never_moves_the_coach():
     assert settle_step(3, 8, 5, 0.9) == (3, 5)  # they disagree: start again
     assert settle_step(3, 0, 4, 0.9) == (4, 0)  # a sure next step
     assert settle_step(3, 0, 4, 0.5) == (3, 4)  # an unsure next step
-    assert settle_step(0, 0, 6, 0.1) == (6, 0)  # the first frame sets the start
-    assert settle_step(3, 8, 0, 0.0) == (3, 0)  # nothing visible keeps the step
+    assert settle_step(0, 0, 1, 0.1) == (1, 0)  # starting at the start needs no second look
+    assert settle_step(0, 0, 6, 0.9) == (0, 6)  # starting anywhere else does
+    assert settle_step(3, 8, 0, 0.0) == (3, 8)  # a look away keeps the step and what waits
+    assert settle_step(3, 0, 4, 0.9, 0) == (3, 4)  # just arrived: sure is not enough yet
     assert settle_step(3, 8, 3, 0.5) == (3, 0)
 
 
@@ -332,8 +353,8 @@ def test_guide_photos_follow_the_frame(tmp_path):
     live_turn(tmp_path, settings, _frame_bytes(), last_step=2, client=fake)
 
     content = fake.respond_kwargs["input"][0]["content"]
-    assert len(content) == 4  # prompt, the camera first, then the photos of steps 2 and 3
-    assert "step 2, step 3" in content[0]["text"]
+    assert len(content) == 5  # prompt, the camera first, then the photos of steps 1, 2 and 3
+    assert "step 1, step 2, step 3" in content[0]["text"]
     assert fake.respond_kwargs["max_output_tokens"] >= 12000
 
 
@@ -413,6 +434,21 @@ def test_a_cut_out_that_runs_outside_its_box_is_measured():
 
     assert _spill(mask, (400, 400, 600, 600)) == 0
     assert _spill(mask, (400, 400, 500, 500)) > MAX_SPILL
+
+
+def test_no_key_on_the_server_is_a_clear_message(tmp_path, monkeypatch):
+    def no_key(*_, **__):
+        raise OpenAIError("missing credentials")
+
+    monkeypatch.setattr("app.pipeline.live.make_client", no_key)
+
+    with pytest.raises(LiveError, match="not set up"):
+        _coach_client(tmp_path, Settings(model_api_key="", data_dir=tmp_path))
+
+
+def test_a_tiny_part_shows_only_if_the_step_works_on_it():
+    assert _is_small({"cut_box": [10, 10, 40, 40]})
+    assert not _is_small({"cut_box": [10, 10, 200, 40]})
 
 
 def test_marks_failure_loses_only_the_marks(tmp_path):

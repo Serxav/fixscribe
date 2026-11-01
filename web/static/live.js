@@ -16,6 +16,7 @@
 
   var current = 0;
   var pending = 0;
+  var stood = 0; // answers given on this step: alike steps must not carry the coach away
   var lastStatus = "";
   var voiceOn = true;
   var busy = false;
@@ -62,7 +63,7 @@
     var step = byIndex(n);
     if (!step) return;
     current = n;
-    if (byHand) { pending = 0; clearMarks(); }
+    if (byHand) { pending = 0; stood = 0; clearMarks(); }
     lastStatus = "";
     $("live-step").textContent = "Step " + n + " of " + steps.length;
     $("live-title").textContent = step.title;
@@ -97,7 +98,8 @@
     var w = video.videoWidth, h = video.videoHeight;
     svg.innerHTML = "";
     svg.setAttribute("viewBox", "0 0 " + w + " " + h);
-    var unit = Math.max(w, h) / 1000;
+    // Sizes in screen pixels, whatever the camera's resolution: names stay small, as on the landing.
+    var unit = 1 / Math.max(svg.clientWidth / w, svg.clientHeight / h);
     parts.forEach(function (part, i) {
       var points = part.outline.map(function (p) { return [p[0] * w / 1000, p[1] * h / 1000]; });
       var cx = points.reduce(function (a, p) { return a + p[0]; }, 0) / points.length;
@@ -107,12 +109,12 @@
       node("polygon", { points: points.map(function (p) { return p.join(","); }).join(" ") }, g);
       node("path", { d: "M" + cx + " " + cy + "L" + cx + " " + top, "class": "live-lead" }, g);
       node("circle", { cx: cx, cy: cy, r: 5 * unit }, g);
-      var size = 15 * unit, high = 28 * unit;
+      var size = 13 * unit, high = 24 * unit;
       var width = (part.label.length * 0.62 * size) + 24 * unit;
       var left = Math.max(0, Math.min(w - width, cx - width / 2));
       var y = Math.max(0, top - high);
       node("rect", { x: left, y: y, width: width, height: high, rx: 14 * unit }, g);
-      var text = node("text", { x: left + 12 * unit, y: y + 19 * unit, "font-size": size }, g);
+      var text = node("text", { x: left + 12 * unit, y: y + 16.5 * unit, "font-size": size }, g);
       text.textContent = part.label + (checked ? "" : "…");
     });
     marksSample = parts.length ? sample : null;
@@ -162,7 +164,7 @@
 
   function show(answer, sample, blob) {
     pending = answer.pending || 0;
-    if (answer.step && answer.step !== current) enterStep(answer.step, false);
+    if (answer.step && answer.step !== current) { stood = 0; enterStep(answer.step, false); } else { stood++; }
     var status = $("live-status");
     status.className = "live-status " + answer.status;
     status.textContent = STATUS[answer.status] || "";
@@ -211,6 +213,7 @@
       form.append("frame", blob, "frame.jpg");
       form.append("last_step", String(current));
       form.append("pending_step", String(pending));
+      form.append("stood", String(stood));
       fetch("/api/live/" + jobId, { method: "POST", body: form })
         .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
         .then(function (res) {
@@ -296,19 +299,35 @@
       micOn = false;
       ear.stop();
       $("live-mic").setAttribute("aria-pressed", "false");
-      $("live-mic").textContent = "🎙️ off";
+      $("live-mic").classList.remove("on");
       $("live-hint").textContent = "";
       return;
     }
-    ear.start().then(function () {
+    $("live-hint").textContent = "Opening the microphone…";
+    var late = new Promise(function (_, refuse) { setTimeout(refuse, 8000); });
+    Promise.race([ear.start(), late]).then(function () {
       micOn = true;
       $("live-mic").setAttribute("aria-pressed", "true");
-      $("live-mic").textContent = "🎙️ on";
+      $("live-mic").classList.add("on");
       $("live-hint").textContent = "Say “next”, “back”, “repeat”, or ask a question.";
     }).catch(function () {
       $("live-hint").textContent = "The microphone is not available: use the buttons.";
     });
   });
+
+  function begin() {
+    $("live-start").classList.add("gone");
+    $("live-panel").classList.remove("hidden");
+    $("live-dot").className = "live-dot on";
+    drawRail();
+    // The manual sits under the picture, never over the parts it marks.
+    var fit = function () {
+      root.style.setProperty("--panel", $("live-panel").getBoundingClientRect().height + 24 + "px");
+    };
+    fit();
+    if (window.ResizeObserver) new ResizeObserver(fit).observe($("live-panel"));
+    setInterval(tick, CHECK_MS);
+  }
 
   $("live-go").addEventListener("click", function () {
     voice.unlock();
@@ -320,14 +339,29 @@
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } }, audio: false })
       .then(function (stream) {
         $("live-camera").srcObject = stream;
-        $("live-start").classList.add("gone");
-        $("live-panel").classList.remove("hidden");
-        $("live-dot").className = "live-dot on";
-        drawRail();
-        setInterval(tick, CHECK_MS);
+        begin();
       })
       .catch(function () {
         $("live-start").querySelector(".film-card-text").textContent = "Camera permission was refused.";
       });
+  });
+
+  // No object at hand: the guide's own video stands in for the camera. Parts are only marked on a
+  // still view, so holding the video is how they show.
+  $("live-sample").addEventListener("click", function () {
+    voice.unlock();
+    var video = $("live-camera");
+    video.src = root.dataset.video;
+    video.loop = true;
+    video.play().catch(function () {});
+    $("live-hold").classList.remove("hidden");
+    $("live-hint").textContent = "This is the guide's own video, not your camera. Hold it to see the parts marked.";
+    begin();
+  });
+
+  $("live-hold").addEventListener("click", function () {
+    var video = $("live-camera");
+    if (video.paused) { video.play().catch(function () {}); } else { video.pause(); }
+    $("live-hold").textContent = video.paused ? "▶" : "⏸";
   });
 })();

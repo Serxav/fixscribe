@@ -20,10 +20,13 @@ class Settings:
     max_video_seconds: int = 600  # [MAX_VIDEO_SECONDS]
     enable_inspector: bool = True  # [ENABLE_INSPECTOR]
     daily_job_limit: int = 20  # [DAILY_JOB_LIMIT]
+    pipeline_workers: int = 4  # [PIPELINE_WORKERS] steps worked on at once in perception and motion
     budget_usd: float = 120.0  # [BUDGET_USD]
-    job_budget_usd: float = 1.0  # [JOB_BUDGET_USD]
+    job_budget_usd: float = 2.5  # [JOB_BUDGET_USD]
     agent_budget_usd: float = 1.0  # [AGENT_BUDGET_USD] extra per job for the Muse Wonder agent
     live_budget_usd: float = 2.0  # [LIVE_BUDGET_USD] per job for the live coach, on its own counter
+    live_max_calls: int = 300  # [LIVE_MAX_CALLS] per job: a public sample guide needs more
+    demo_job: str = ""  # [DEMO_JOB] folder under demo/: a read-only sample guide for visitors
     data_dir: Path = Path("data")  # [DATA_DIR]
     voice_model_dir: Path = Path("models/vits-mms-eng")  # [VOICE_MODEL_DIR]
 
@@ -60,10 +63,13 @@ def get_settings() -> Settings:
         max_video_seconds=int(env.get("MAX_VIDEO_SECONDS", "600")),
         enable_inspector=enable_inspector,
         daily_job_limit=int(env.get("DAILY_JOB_LIMIT", "20")),
+        pipeline_workers=int(env.get("PIPELINE_WORKERS", "4")),
         budget_usd=float(env.get("BUDGET_USD", "120.0")),
-        job_budget_usd=float(env.get("JOB_BUDGET_USD", "1.0")),
+        job_budget_usd=float(env.get("JOB_BUDGET_USD", "2.5")),
         agent_budget_usd=float(env.get("AGENT_BUDGET_USD", "1.0")),
         live_budget_usd=float(env.get("LIVE_BUDGET_USD", "2.0")),
+        live_max_calls=int(env.get("LIVE_MAX_CALLS", "300")),
+        demo_job=env.get("DEMO_JOB", "").strip(),
         data_dir=data_dir,
         voice_model_dir=Path(env.get("VOICE_MODEL_DIR", "models/vits-mms-eng")),
     )

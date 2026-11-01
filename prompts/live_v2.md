@@ -16,10 +16,11 @@ which parts are open or removed, not the background. Judge only the first image.
 1. Judge ONLY what is visible in the first image. Never invent parts, tools or actions.
 2. If hands or the object are not visible, or the image is too blurry to tell, answer
    `status` "unclear" and `step` 0.
-3. Steps can look alike (the same cover may be opened twice). When the image could match
-   several, choose the one closest after <<LAST_STEP>>: the user usually moves forward. As soon
-   as the action or the result of the next step can be seen, the user is on the next step, even
-   if the object still looks like the step before.
+3. Steps can look alike (the same cover may be opened twice), so decide from what the hands and
+   tools are doing right now, read against the instructions of step <<LAST_STEP>> and the next
+   one. If they are doing what the next step says, or its result is there, answer the next step.
+   If they do what <<LAST_STEP>> says, or nothing new, answer <<LAST_STEP>>. Answer an earlier
+   step only if the photos show the user has clearly not got as far as <<LAST_STEP>>.
 4. `step` is the guide step the user is on now (0 = not started / not visible).
 5. `status`: "on_track" (doing the step right), "wrong" (wrong part or tool, something
    looks off), "done_step" (the step looks finished, move on), "unclear" (cannot tell).

@@ -15,4 +15,5 @@ def block_network(monkeypatch):
     monkeypatch.setattr(httpx.Client, "send", _no_network)
     monkeypatch.setattr(httpx.AsyncClient, "send", _no_network)
     monkeypatch.setenv("MODEL_API_KEY", "")
+    monkeypatch.setenv("PIPELINE_WORKERS", "1")  # fake clients answer in order
     monkeypatch.setattr(meta_client, "_factory", None)  # each test starts with no fake leaked
