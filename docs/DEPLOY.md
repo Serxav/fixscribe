@@ -16,6 +16,9 @@ The camera and microphone only work over https, so judges need a hosted address.
 | `ENABLE_INSPECTOR` | `false` | the agent costs more per job |
 | `DEMO_JOB` | the folder in `demo/` | the sample guide on the landing |
 
+Before the first judge: open the address on a phone, try the camera and the microphone over https,
+and run one short video through.
+
 The spend counter on the server starts at zero, separate from local runs. Check Usage on
 dev.meta.ai every day, and turn the service off after judging.
 

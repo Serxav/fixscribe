@@ -4,8 +4,8 @@ python -m eval.coach_exam iphone --real          # spends credits, keeps Spark's
 python -m eval.coach_exam iphone --real --again  # reuses pointing and cutting: only the check runs
 python -m eval.coach_exam iphone --real --walk   # the whole video in order, as a user would
 
-A mark is right when its name is a part of the key and its cut-out fits that part. iphone is the
-video the coach is tuned on; ikea is never tuned on, so its number is the honest one.
+A mark is right when its name is a part of the key and its cut-out fits that part. The coach was
+tuned on the iphone video and on steps 9-17 of the ikea video, so only the other steps are held out.
 """
 
 import json

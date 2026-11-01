@@ -13,7 +13,7 @@ Made for the Meta Global AI Developer Hackathon (Indie track).
 
 1. **Film the repair** on a phone, narrated or silent, any category: electronics, appliances,
    furniture, bikes, cars, plumbing and more. Saying "step" / "paso" cuts the steps.
-2. **A guide in a few minutes**: each step has an instruction, safety warnings, the part
+2. **A guide in about 13 minutes** for an 8.5-minute video: each step has an instruction, safety warnings, the part
    highlighted, a numbered fastener map, a 6-second loop clip and a "watch in video" jump.
 3. **Putting it back**: the reverse guide, plus a check that every fastener taken out goes back.
 4. **Proof on every claim**: each step boundary, instruction, fastener count and part is graded
@@ -35,7 +35,7 @@ Made for the Meta Global AI Developer Hackathon (Indie track).
 | `muse-voice-transcribe-1.0` | timestamped words; the spoken "step" / "paso" become the step cuts |
 | `sam-3.1` (images) | highlights the part; finds fastener candidates on the full frame and on zoomed tiles |
 | `sam-3.1` (video) | follows each fastener through the step, so a fastener counts only if it appears or disappears where the step says; follows a point the user taps |
-| `muse-wonder-1.0` | the agent: it looks at frames, points at parts, adds steps and asks the person when unsure, then files the guide for sign-off |
+| `muse-wonder-1.0` | the optional agent (`ENABLE_INSPECTOR`): it looks at frames, points at parts, adds steps and asks the person when unsure. On one real video it stopped at its budget after 18 turns, so it is not yet proven end to end |
 | MMS-TTS (Meta open weights, CC-BY-NC 4.0, run locally) | reads the film and the live coach aloud in English; install it with `python -m scripts.get_voice`, otherwise the device voice is used |
 
 Unexpected uses:
@@ -51,13 +51,33 @@ budget, and a spend log per stage.
 
 ## Evaluation (`eval/`)
 
-Hand-labelled answer keys, no Meta calls when scoring:
+Answer keys written by eye. The first three exams score saved answers with no Meta calls; the
+coach exam spends credits.
 
 | Exam | Command | Result |
 |---|---|---|
 | Part and fastener finding on 20 photos | `python -m eval.detect_score` | recall 0.89, precision 1.00, 16 of 20 perfect |
 | Fasteners in a real 16-step furniture video (720p) | `python -m eval.video_score` | recall 0.75, precision 1.00: no invented fastener; steps with no visible fastener left empty |
 | Whole pipeline on labelled videos | `python -m eval.run_eval --reuse` | step F1, boundaries within ±2 s, fastener counts, seconds and dollars per stage |
+| Live coach on two videos, a frame every 4 s | `python -m eval.coach_exam <video> --real --walk` | see below |
+
+Live coach, measured on 2026-11-01 (one phone repair, one furniture assembly):
+
+| Measure | Phone | Furniture |
+|---|---|---|
+| Right step, up to 8 s late | 88 % | 95 % |
+| Right step at that exact moment | 76 % | 80 % |
+| Right step at that moment, steps not used for tuning | 69 % | 65 % |
+| Marks on the right part | 93 % (14 of 15) | 74 % (14 of 19) |
+| The step's own part marked correctly | 9 of 11 | 5 of 8 |
+
+An answer takes 8-9 s and marks 21-27 s. The two videos are few, the key's author also tuned the
+coach, and the furniture marks ranged from 74 % to 84 % between runs.
+
+The score on a guide page is the guide's own proof score, not an independent test. The 8.5-minute
+phone repair scores 98 %. Checked by eye, 8 of its 10 shown parts are surely right, one spills
+past the part and one is wrong. Of its 5 screws, 3 are placed from where the tool points and none
+is confirmed: the video is 720p.
 
 Honest limits: fasteners hidden inside the wood or under a hand cannot be seen; then the count
 comes from the analysis and the guide says so. Small fasteners need a 1080p or 4K video, and the
@@ -74,7 +94,7 @@ cp .env.example .env   # then add your key
 
 Open http://127.0.0.1:8000 on a computer or phone and upload a video.
 
-Tests and lint (about 700 tests, Meta always mocked):
+Tests and lint (about 800 tests, Meta always mocked):
 
 ```bash
 .venv/bin/pytest -q
@@ -96,9 +116,10 @@ All code in this repository was written during the hackathon, starting on Oct 26
 
 ## Built with Muse Code
 
-Muse Code (Meta's coding agent, running `muse-spark-1.3`) wrote much of the code that calls Meta
-models, the video stages and the web app, from small written tasks. Every task, review and report
-is kept in [`tasks/`](tasks/):
+Muse Code (Meta's coding agent, running `muse-spark-1.3`) wrote the first version of several stages
+from small written tasks: 16 of the repository's commits. From Oct 27 the code was written with
+another coding agent, and each commit says which. Every Muse Code task, review and report is kept
+in [`tasks/`](tasks/):
 
 1. A task file `tasks/<id>.md` names the files to touch, the function signatures, the exact Meta
    docs pages and fields, testable "done when" checks, and why the task matters for judging.

@@ -82,4 +82,5 @@ def job_page(
         status = check_stale(job_id, settings.jobs_dir)
     except (ValueError, FileNotFoundError):
         return HTMLResponse("<h1>job not found</h1>", status_code=404)
-    return templates.TemplateResponse(request, "job.html", {"job_id": job_id, "status": status})
+    context = {"job_id": job_id, "status": status, "agent_on": settings.enable_inspector}
+    return templates.TemplateResponse(request, "job.html", context)

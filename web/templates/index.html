@@ -87,7 +87,7 @@
     <figure class="tile" data-reveal style="--d:.16s"><figcaption><span class="tag">03</span>Muse Spark</figcaption>{% include "art/point.svg" %}<h3>Point</h3><p>Spark points at each drone motor on the frame — the motor bell, not the leg below it — because it knows what this step is about.</p></figure>
     <figure class="tile" data-reveal><figcaption><span class="tag">04</span>SAM 3.1</figcaption>{% include "art/cutout.svg" %}<h3>Cut out</h3><p>SAM cuts the roller brush out inside that box. A part enters the catalog only when the cut-out fills enough of it.</p></figure>
     <figure class="tile" data-reveal style="--d:.08s"><figcaption><span class="tag">05</span>Code, not a model</figcaption>{% include "art/check.svg" %}<h3>Check</h3><p>Every step is checked outside the model: parts proven, times, frame, quote. A refusal goes back to the agent.</p></figure>
-    <figure class="tile" data-reveal style="--d:.16s"><figcaption><span class="tag">06</span>Muse Wonder</figcaption>{% include "art/build.svg" %}<h3>Build</h3><p>The guide step: what to do, which part, and the seconds of video it comes from — and the reverse guide to close it up again.</p></figure>
+    <figure class="tile" data-reveal style="--d:.16s"><figcaption><span class="tag">06</span>Muse Spark</figcaption>{% include "art/build.svg" %}<h3>Build</h3><p>The guide step: what to do, which part, and the seconds of video it comes from — and the reverse guide to close it up again.</p></figure>
   </div>
 </section>
 
@@ -96,7 +96,7 @@
     <div data-reveal>
       <p class="eyebrow">The agent</p>
       <h2 class="title">You can watch it work.</h2>
-      <p class="lede">Each turn shows what the agent decided, the tool it used and what came back. Refusals are shown too: that is the system doing its job. When it is not sure, it stops and asks you one question on the exact frame.</p>
+      <p class="lede">Each turn shows what the agent decided, the tool it used and what came back. Refusals are shown too: that is the system doing its job. When it is not sure, it stops and asks you one question on the exact frame. It costs more per video, so a server can turn it off.</p>
     </div>
     <div class="trace-card" data-reveal style="--d:.1s">
       <div class="trace-bar"><span></span><span></span><span></span><b class="mono">agent · turns 07–09</b></div>
@@ -118,14 +118,14 @@
   <div class="block-head" data-reveal>
     <p class="eyebrow">Built on Meta AI</p>
     <h2 class="title">Every model has one job.</h2>
-    <p class="lede">All the AI inside FixScribe is Meta's, called through the Meta Model API. Code checks what the models say — no model grades its own work.</p>
+    <p class="lede">All the AI inside FixScribe is Meta's, called through the Meta Model API. Code checks what the models say, and a second look at the frames can correct the first.</p>
   </div>
   <div class="cards">
     <article class="card-x" data-reveal>
       <p class="meta"><span class="swatch" style="background:#0866ff"></span>Agent<span class="mono">muse-wonder-1.0</span></p>
       <h3>Muse Wonder</h3>
       <p class="desc">The investigator. It plans the work, uses the tools one turn at a time and asks you when it is not sure.</p>
-      <dl class="rows-x"><div><dt>Job</dt><dd>Investigate the video</dd></div><div><dt>Turns</dt><dd>about 30 per video</dd></div></dl>
+      <dl class="rows-x"><div><dt>Job</dt><dd>Investigate the video</dd></div><div><dt>Turns</dt><dd>up to 45 per video</dd></div></dl>
       <a class="btn btn-soft btn-block arrow" href="#agent">See the agent</a>
     </article>
     <article class="card-x" data-reveal style="--d:.08s">
@@ -177,7 +177,7 @@
         <li>Muse Spark identifies the object and the job. Professional-only jobs get no steps.</li>
         <li>Muse Voice transcribes what you say, to the second.</li>
         <li>SAM 3.1 finds the screws, follows each one through the video, and Spark confirms them one by one.</li>
-        <li>Muse Wonder writes the guide. If it is not sure, it asks you one question.</li>
+        <li>Muse Spark writes the guide. When the agent is on, Muse Wonder then investigates it and asks you if it is not sure.</li>
         <li>You can follow every stage on the progress page while it works.</li>
       </ul>
     </article>
