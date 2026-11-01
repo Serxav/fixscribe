@@ -71,7 +71,7 @@ part box is large and the hand boxes overlap it least.
 ## 5. Agent (Muse Wonder)
 Starts by itself when a guide is finished (`app/pipeline/runner.py` main, unless
 `ENABLE_INSPECTOR=false`), in its own background process, with `AGENT_BUDGET_USD` on top of the
-job's budget. One tool per turn, within `max_turns`: `look` (a frame), `point` (Spark grounding on
+job's budget. One tool per turn, at most 30 turns until the person resumes it: `look` (a frame), `point` (Spark grounding on
 that frame), `add_part` (SAM cuts the part out of the box; refused when the cut-out barely fills
 it), `add_step`, `ask_person` (one question on the exact frame) and `submit_guide`. Code checks
 every tool call; refusals go back to the agent. Every turn is saved (`agent/turns.jsonl`,

@@ -14,6 +14,12 @@ hides a wait without saying so.
 | 2:25-2:45 | The README's evaluation tables | "We measured it against answer keys. On two videos it follows the step 88 to 95 % of the time within 8 seconds. Some numbers are lower, and we publish those too." |
 | 2:45-3:00 | Model list and the guide | "Every model has one job: Spark, SAM 3.1 and Muse Voice run inside the product through the Meta Model API." Add Muse Wonder only if the agent ran in this demo. |
 
+## What to film by hand
+
+The live coach, on the deployed address, about 40 to 60 seconds in one take: the camera on the object,
+a step change, marks going from dashed to solid, "next" said aloud and one spoken question. The rest
+can be assembled from captures of the real pages.
+
 ## Before filming
 
 - Run the upload and the coach once that same day, on the deployed address, from a phone.
