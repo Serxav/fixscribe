@@ -83,6 +83,7 @@ window.FixVoice = (function () {
       },
       // Inside a tap: phones only let sound play later if it started from a tap.
       unlock: function () { if (useMeta) { audio.src = SILENCE; audio.play().catch(function () {}); } },
+      speaking: function () { return !!busy || queue.length > 0; },
       say: function (text, done) { queue.push({ text: text, done: done }); next(); },
       // Stops at once; with finished, whoever waits on these lines is told they are over.
       cancel: function (finished) {

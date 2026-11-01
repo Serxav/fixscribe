@@ -29,7 +29,7 @@
     <h1 class="film-card-title">Point the camera at your {{ guide.identity.object_name if guide.identity else guide.device }}</h1>
     <p class="film-card-text">FixScribe watches as you work, names and cuts out the parts it sees, tells you which step you are on and what to do next — out loud.</p>
     <button class="btn btn-primary btn-lg" type="button" id="live-go">Start the camera</button>
-    <p class="small film-note">Frames go to Muse Spark and SAM 3.1 when the view changes. Nothing is recorded.</p>
+    <p class="small film-note">Frames go to Muse Spark and SAM 3.1 when the view changes. If you turn the microphone on, what you say goes to Muse Voice. Nothing is recorded.</p>
   </section>
 
   <div class="live-panel hidden" id="live-panel" aria-live="polite">
@@ -45,15 +45,19 @@
     <p class="live-warn hidden" id="live-warn"></p>
     <p class="live-say" id="live-say"></p>
     <p class="live-next" id="live-next"></p>
+    <p class="live-heard" id="live-heard"></p>
+    <p class="live-hint" id="live-hint"></p>
     <div class="live-controls">
       <button class="film-btn" type="button" id="live-prev" aria-label="Previous step">‹</button>
       <button class="film-btn" type="button" id="live-repeat" aria-label="Repeat this step">↻</button>
       <button class="film-btn" type="button" id="live-next-step" aria-label="Next step">›</button>
       <button class="film-btn" type="button" id="live-voice" aria-pressed="true" aria-label="Voice on">🔊</button>
+      <button class="film-btn" type="button" id="live-mic" aria-pressed="false" aria-label="Listen for voice commands">🎙️ off</button>
     </div>
   </div>
 </div>
 <script src="/static/voice.js"></script>
+<script src="/static/ear.js"></script>
 <script src="/static/live.js"></script>
 </body>
 </html>

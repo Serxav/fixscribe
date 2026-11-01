@@ -28,11 +28,15 @@
   var waiting = null; // the last answer, until the view holds still long enough to mark its parts
   var stillSample = null;
   var stillSince = Date.now();
+  var lastSaid = "";
+  var micOn = false;
+  var hearing = false;
   var voice = window.FixVoice.player(jobId, lang, root.dataset.metaVoice === "yes");
 
   function say(text, first) {
     if (!voiceOn || !text) return;
     if (first) voice.cancel();
+    lastSaid = plain(text);
     voice.say(text);
   }
 
@@ -188,17 +192,21 @@
     return sum / a.length;
   }
 
-  function send(video, sample) {
-    busy = true;
-    sentAt = Date.now();
-    sentSample = sample;
-    $("live-dot").className = "live-dot busy";
+  function snapshot(video, done) {
     var canvas = $("live-canvas");
     var scale = Math.min(1, 1280 / Math.max(video.videoWidth, video.videoHeight));
     canvas.width = Math.round(video.videoWidth * scale);
     canvas.height = Math.round(video.videoHeight * scale);
     canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
-    canvas.toBlob(function (blob) {
+    canvas.toBlob(done, "image/jpeg", 0.85);
+  }
+
+  function send(video, sample) {
+    busy = true;
+    sentAt = Date.now();
+    sentSample = sample;
+    $("live-dot").className = "live-dot busy";
+    snapshot(video, function (blob) {
       var form = new FormData();
       form.append("frame", blob, "frame.jpg");
       form.append("last_step", String(current));
@@ -210,7 +218,53 @@
         })
         .catch(function () { $("live-say").textContent = "No connection."; })
         .finally(function () { busy = false; $("live-dot").className = "live-dot on"; });
-    }, "image/jpeg", 0.85);
+    });
+  }
+
+  function plain(text) {
+    return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  }
+
+  function setVoice(on) {
+    voiceOn = on;
+    $("live-voice").setAttribute("aria-pressed", String(on));
+    $("live-voice").textContent = on ? "🔊" : "🔇";
+    if (!on) voice.cancel();
+  }
+
+  // Next, back and repeat move the manual; a question gets its answer on the screen and out loud.
+  function obey(res) {
+    if (res.command === "none" || !res.heard) return;
+    // The microphone can catch the coach itself: its own words are not an order.
+    if (voice.speaking() && (" " + lastSaid + " ").indexOf(" " + plain(res.heard) + " ") >= 0) return;
+    $("live-heard").textContent = "“" + res.heard + "”";
+    if (res.command === "next") enterStep(Math.min(steps.length, current + 1), true);
+    if (res.command === "back") enterStep(Math.max(1, current - 1), true);
+    if (res.command === "repeat" && current) enterStep(current, true);
+    if (res.command === "quiet") setVoice(false);
+    if (res.command === "question" && res.answer) {
+      $("live-say").textContent = res.answer;
+      say(res.answer, true);
+    }
+  }
+
+  function heardClip(wav) {
+    if (!micOn || hearing) return;
+    hearing = true;
+    $("live-mic").classList.add("busy");
+    var video = $("live-camera");
+    var post = function (picture) {
+      var form = new FormData();
+      form.append("audio", wav, "voice.wav");
+      if (picture) form.append("frame", picture, "frame.jpg");
+      form.append("step", String(current));
+      fetch("/api/live/" + jobId + "/hear", { method: "POST", body: form })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) { if (res.ok) obey(res.d); })
+        .catch(function () {})
+        .finally(function () { hearing = false; $("live-mic").classList.remove("busy"); });
+    };
+    if (video.videoWidth) { snapshot(video, post); } else { post(null); }
   }
 
   function tick() {
@@ -234,11 +288,26 @@
   $("live-prev").addEventListener("click", function () { enterStep(Math.max(1, current - 1), true); });
   $("live-next-step").addEventListener("click", function () { enterStep(Math.min(steps.length, current + 1), true); });
   $("live-repeat").addEventListener("click", function () { if (current) enterStep(current, true); });
-  $("live-voice").addEventListener("click", function () {
-    voiceOn = !voiceOn;
-    $("live-voice").setAttribute("aria-pressed", String(voiceOn));
-    $("live-voice").textContent = voiceOn ? "🔊" : "🔇";
-    if (!voiceOn) voice.cancel();
+  $("live-voice").addEventListener("click", function () { setVoice(!voiceOn); });
+
+  var ear = window.FixEar(heardClip);
+  $("live-mic").addEventListener("click", function () {
+    if (micOn) {
+      micOn = false;
+      ear.stop();
+      $("live-mic").setAttribute("aria-pressed", "false");
+      $("live-mic").textContent = "🎙️ off";
+      $("live-hint").textContent = "";
+      return;
+    }
+    ear.start().then(function () {
+      micOn = true;
+      $("live-mic").setAttribute("aria-pressed", "true");
+      $("live-mic").textContent = "🎙️ on";
+      $("live-hint").textContent = "Say “next”, “back”, “repeat”, or ask a question.";
+    }).catch(function () {
+      $("live-hint").textContent = "The microphone is not available: use the buttons.";
+    });
   });
 
   $("live-go").addEventListener("click", function () {

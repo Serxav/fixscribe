@@ -9,6 +9,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app import voice
 from app.config import Settings
+from app.pipeline.ask import MAX_CLIP_BYTES, live_voice
 from app.pipeline.live import MAX_FRAME_BYTES, LiveError, LivePart, live_turn, marks_stages
 from app.routes.common import load_guide
 from app.routes.upload import settings_dep
@@ -87,6 +88,33 @@ async def live_frame_marks(
         yield from _remaining_marks(stages)
 
     return StreamingResponse(lines(), media_type="application/x-ndjson")
+
+
+@router.post("/api/live/{job_id}/hear")
+async def live_hear(
+    job_id: str,
+    audio: UploadFile = File(...),  # noqa: B008
+    frame: UploadFile | None = File(None),  # noqa: B008
+    step: int = Form(0),  # noqa: B008
+    settings: Settings = Depends(settings_dep),  # noqa: B008
+):
+    folder, guide = load_guide(job_id, settings)
+    if folder is None:
+        return JSONResponse({"error": f"unknown job: {job_id}"}, status_code=404)
+    if guide is None:
+        return JSONResponse({"error": "guide not ready"}, status_code=404)
+    try:
+        clip = await audio.read(MAX_CLIP_BYTES + 1)
+        picture = await frame.read(MAX_FRAME_BYTES + 1) if frame else b""
+        heard = await run_in_threadpool(live_voice, folder, settings, clip, step, picture)
+    except LiveError as exc:
+        status = 429 if "live limit" in str(exc) else 400
+        return JSONResponse({"error": str(exc)}, status_code=status)
+    finally:
+        await audio.close()
+        if frame:
+            await frame.close()
+    return JSONResponse(heard.model_dump(mode="json"))
 
 
 @router.post("/api/voice/{job_id}")

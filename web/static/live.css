@@ -14,6 +14,9 @@
 .live-status.unclear { color: rgba(255, 255, 255, 0.6); }
 .live-say { margin: 8px 0 0; font-size: 16px; line-height: 1.3; }
 .live-say:empty, .live-next:empty, .live-instruction:empty { display: none; }
+.live-heard:empty, .live-hint:empty { display: none; }
+.live-heard, .live-hint { margin: 4px 0 0; color: rgba(255, 255, 255, 0.6); font-size: 13px; }
+#live-mic.busy { outline: 2px solid #ff5a1f; }
 .live-next { margin: 4px 0 0; color: rgba(255, 255, 255, 0.75); font-size: 14px; }
 .live-rail { margin-bottom: 10px; width: 100%; }
 .live-rail button.now i { width: 100%; background: #ff5a1f; }
