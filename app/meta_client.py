@@ -76,7 +76,7 @@ class BudgetExceeded(Exception):
     """Raised before a call when spend is already at or over budget."""
 
 
-JOB_RESERVE_USD = 0.05
+JOB_RESERVE_USD = 0.1  # steps run at once, so several calls can be under way at the cap
 
 
 class MetaError(Exception):

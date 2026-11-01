@@ -101,3 +101,9 @@ def test_api_key_not_in_repr(monkeypatch, tmp_path):
 def test_loads_dotenv_without_override(clean_env):
     get_settings()
     assert clean_env == [False]
+
+
+def test_pipeline_workers_from_env(monkeypatch, tmp_path):
+    monkeypatch.setenv("PIPELINE_WORKERS", "2")
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    assert get_settings().pipeline_workers == 2

@@ -506,10 +506,10 @@ def test_job_budget_stops_one_video_without_touching_the_global_one(tmp_path):
     job_dir = tmp_path / "job"
     job_dir.mkdir()
     settings = make_settings(tmp_path)
-    SpendCounter(job_dir / "spend.json", 1.0).add("muse-spark-1.3", 1.0)
+    SpendCounter(job_dir / "spend.json", 2.5).add("muse-spark-1.3", 2.5)
     fake = FakeClient([make_response()])
     client = MetaClient(settings, client=fake, sleep=lambda _: None, job_dir=job_dir)
-    with pytest.raises(BudgetExceeded, match=r"spend limit of \$1.00"):
+    with pytest.raises(BudgetExceeded, match=r"spend limit of \$2.50"):
         client.respond(model="muse-spark-1.3", input="hello")
     assert fake.responses.calls == 0
 

@@ -13,7 +13,7 @@ Made for the Meta Global AI Developer Hackathon (Indie track).
 
 1. **Film the repair** on a phone, narrated or silent, any category: electronics, appliances,
    furniture, bikes, cars, plumbing and more. Saying "step" / "paso" cuts the steps.
-2. **A guide in about 13 minutes** for an 8.5-minute video: each step has an instruction, safety warnings, the part
+2. **A guide in about 30 minutes** for an 8.5-minute video, measured working on one step at a time (a 6-step trial working on 4 at once points to about 17, not yet measured on a whole video): each step has an instruction, safety warnings, the part
    highlighted, a numbered fastener map, a 6-second loop clip and a "watch in video" jump.
 3. **Putting it back**: the reverse guide, plus a check that every fastener taken out goes back.
 4. **Proof on every claim**: each step boundary, instruction, fastener count and part is graded

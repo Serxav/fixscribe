@@ -12,6 +12,7 @@ tracks the motion stage draws its rings from).
 """
 
 import shutil
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +36,7 @@ from app.pipeline.ingest import IngestError, color_filter, find_original
 from app.pipeline.locate import Located, StepLook, cut_pointed, look_at_step
 from app.pipeline.media import extract_still
 from app.pipeline.overlay import draw_part, draw_screws, save_jpeg
+from app.pipeline.together import in_parallel
 from app.schemas import (
     Frames,
     Identity,
@@ -402,6 +404,13 @@ def _process_step(
     return next_number
 
 
+def number_fasteners(steps: list[StepPerception]) -> None:
+    """Number the fasteners across the guide, in step order, once every step has finished."""
+    records = (record for sp in steps for record in sp.removed)
+    for number, record in enumerate(records, start=1):
+        record.id = f"S{number}"
+
+
 def process_one(
     job_dir: Path,
     settings: Settings,
@@ -438,13 +447,15 @@ def run(job_dir: Path, settings: Settings, client: Any = None) -> Perception:
     prioritised = sorted(eligible, key=lambda step: (-_screw_count(step), step.index))
     selected_indexes = {step.index for step in prioritised[:MAX_STEPS]}
     selected = [step for step in plan.steps if step.index in selected_indexes]
-    results: list[StepPerception] = []
-    next_number = 1
-    for step in selected:
+    out_of_budget = threading.Event()
+
+    def one_step(step: Step) -> StepPerception | None:
+        if out_of_budget.is_set():
+            return None
         sp = StepPerception(index=step.index)
         counted = Counted(client)
         try:
-            next_number = _process_step(
+            _process_step(
                 job_dir,
                 settings,
                 counted,
@@ -453,23 +464,24 @@ def run(job_dir: Path, settings: Settings, client: Any = None) -> Perception:
                 ingest,
                 step,
                 sp,
-                next_number,
+                1,
                 fastener,
                 adding,
                 object_name,
             )
         except BudgetExceeded:
+            out_of_budget.set()
             sp.notes.append(_BUDGET_NOTE)
             sp.sam_calls = counted.sam_calls
-            results.append(sp)
-            break
         except Exception as exc:  # one bad step must not lose the others
             message = str(exc) or type(exc).__name__
             sp.notes.append(f"Perception failed for this step: {message}")
             sp.sam_calls = counted.sam_calls
-            results.append(sp)
-            continue
-        results.append(sp)
+        return sp
+
+    done = in_parallel(selected, one_step, settings.pipeline_workers)
+    results = [sp for sp in done if sp is not None]
+    number_fasteners(results)
     perception = Perception(
         steps=results,
         sam_calls=sum(item.sam_calls for item in results),
