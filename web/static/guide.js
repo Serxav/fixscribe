@@ -13,7 +13,7 @@
   // Tap the step photo: a missing fastener is added (SAM follows the point), a wrong one removed.
   // each photo and film sets the shape of its own frame, so no black bands around it
   document.querySelectorAll(".stage").forEach(function (stage) {
-    var media = stage.querySelector("img.fit, video.fit");
+    var media = stage.querySelector(".view.on img.fit, .view.on video.fit");
     if (!media) return;
     var fit = function () {
       var w = media.naturalWidth || media.videoWidth, h = media.naturalHeight || media.videoHeight;

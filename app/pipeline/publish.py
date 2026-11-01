@@ -4,6 +4,7 @@ This is the only stage that writes guide.json. It never invents data: every fiel
 earlier artifact, and what is not verified is said so in `guide.checks`.
 """
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +13,7 @@ from app.domains import profile_for
 from app.pipeline.analyze import guide_direction
 from app.pipeline.assembly import build_reassembly
 from app.pipeline.fasteners import step_fastener
+from app.pipeline.proof import review_times, rewritten_by_review
 from app.schemas import (
     Box,
     Frames,
@@ -31,6 +33,7 @@ from app.schemas import (
 from app.text import plural
 
 VERSION = "3"
+TITLE_WORDS = 6
 
 
 def unverified_note(kind: str) -> str:
@@ -64,6 +67,13 @@ def to_box(number: int, x: float, y: float, w: float, h: float) -> Box:
     return Box(number=number, x=min(max(x, 0.0), 1.0 - w), y=min(max(y, 0.0), 1.0 - h), w=w, h=h)
 
 
+def short_title(instruction: str) -> str:
+    """A title for a rewritten step, from its own sentence: never one that contradicts it."""
+    first = re.split(r"\s(?:to|and|without|before|after|while)\s|[.,;:]", instruction.strip())[0]
+    words = first.split()[:TITLE_WORDS]
+    return " ".join(words) or instruction.strip()
+
+
 def with_perception(
     steps: list[Step], perception: Perception | None
 ) -> tuple[list[Step], list[str]]:
@@ -82,9 +92,17 @@ def with_perception(
         if seen.overlay:
             update["overlay"] = seen.overlay
         review = seen.review
-        if review and not review.matches and review.confidence >= 0.7 and review.instruction:
+        moved = review_times(step, review)
+        if moved:  # the frames are stronger evidence than the first draft's cut
+            frame = step.keyframe_s if step.keyframe_s is not None else moved[0]
+            update["start_s"] = min(moved[0], frame)  # the step keeps the photo that shows it
+            update["end_s"] = max(moved[1], frame)
+        if rewritten_by_review(step, review):
             # the frames show something else: say what they show, and say that it changed
             update["instruction"] = review.instruction
+            update["title"] = short_title(review.instruction)
+            if not seen.part:  # the part of the old sentence is not what happens here
+                update["target_part"] = None
             notes.append(f"Step {step.index}: rewritten after the frame by frame review.")
         if seen.removed:
             boxes = [to_box(r.number, r.box.x, r.box.y, r.box.w, r.box.h) for r in seen.removed]

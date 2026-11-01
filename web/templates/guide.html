@@ -30,6 +30,7 @@
       {% if pro %}<span class="chip chip-bad">Professional only</span>{% elif level == "caution" %}<span class="chip chip-warn">Caution</span>{% endif %}
     </div>
     <h1 class="display">{{ guide.title }}</h1>
+    <p class="guide-line">{{ guide.steps|length }} steps{% if proof_percent is not none %} · {{ proof_percent }}% proven{% endif %}{% if guide.estimated_minutes %} · {{ guide.estimated_minutes }} min{% endif %}</p>
     {% if guide.identity %}<p class="muted" style="margin:12px 0 0">{{ guide.identity.object_name }}{% if guide.identity.brand %} · {{ guide.identity.brand }} {{ guide.identity.model }}{% endif %}</p>{% endif %}
   </div>
   <div class="col-r">
@@ -116,36 +117,24 @@
 
 <div class="sect" id="steps"><span class="num">IV</span><span>{% if guide.direction == "assemble" %}Build it{% else %}Take apart{% endif %}</span></div>
 <div class="grid12 guide-sect">
-  <div class="col-r"><p class="small muted">{{ guide.steps|length }} steps</p></div>
+  <div class="col-r">{% if guide.reassembly %}<nav class="flip" aria-label="Direction"><a class="on" href="#steps" aria-current="true">{% if guide.direction == "assemble" %}Build it{% else %}Take apart{% endif %}</a><a href="#put-back">{% if guide.direction == "assemble" %}Take it apart{% else %}Put back{% endif %}</a></nav>{% else %}<p class="small muted">{{ guide.steps|length }} steps</p>{% endif %}</div>
 </div>
 
 {% for v in steps %}{% set s = v.step %}
 <article class="step" id="step-{{ s.index }}" data-step="{{ s.index }}" data-start="{{ s.start_s }}">
-  <div class="step-head">
-    <span class="step-num">{{ s.index }}</span>
-    <div style="min-width:0">
-      <h3 class="h3">{{ s.title }}</h3>
-      <div class="chips" style="margin-top:6px">
-        <span class="chip tabular">{{ v.when }}</span>
-        {% if v.fasteners %}<span class="chip accent">{{ v.fasteners }}</span>{% endif %}
-        {% if s.action %}<span class="chip">{{ s.action|capitalize }}</span>{% endif %}
-      </div>
-    </div>
-  </div>
-
   {% if v.image or v.clip %}
   <div class="stage" data-stage>
-    {% set first = 'sam' if v.motion else ('photo' if v.image else 'clip') %}
+    {% set first = 'photo' if v.image else ('sam' if v.motion else 'clip') %}
     <div class="seg" role="group" aria-label="View">
       {% if v.motion %}<button type="button" data-view="sam" aria-pressed="true">SAM</button>{% endif %}
       {% if v.image %}<button type="button" data-view="photo" aria-pressed="{{ 'true' if first == 'photo' else 'false' }}">Photo</button>{% endif %}
       {% if v.clip %}<button type="button" data-view="clip" aria-pressed="{{ 'true' if first == 'clip' else 'false' }}">Clip</button>{% endif %}
     </div>
     {% if v.motion %}
-    <div class="view on" data-view-panel="sam"><video class="fit" src="{{ v.motion }}" muted loop playsinline autoplay preload="metadata"></video><span class="hint">SAM 3.1 is tracking the {{ v.part.label if v.part else 'part' }}</span></div>
+    <div class="view{% if first == 'sam' %} on{% endif %}" data-view-panel="sam"><video class="fit" src="{{ v.motion }}" muted loop playsinline preload="none"></video><span class="hint">SAM 3.1 is tracking the {{ v.part.label if v.part else 'part' }}</span></div>
     {% endif %}
     {% if v.image %}
-    <div class="view{% if first == 'photo' %} on{% endif %}" data-view-panel="photo"><img class="fit" src="{{ v.overlay or v.image }}" alt="Step {{ s.index }}: {{ s.title }}" loading="lazy"{% if s.screws and s.screws.count and v.overlay %} data-tap-step="{{ s.index }}" data-markers='{{ s.screws.model_dump()["boxes"] | tojson }}'{% endif %}>{% if v.part and v.part.label %}<span class="hint">Muse Spark pointed · SAM 3.1 cut out the {{ v.part.label }}</span>{% endif %}</div>
+    <div class="view{% if first == 'photo' %} on{% endif %}" data-view-panel="photo"><img class="fit" src="{{ v.overlay or v.image }}" alt="Step {{ s.index }}: {{ s.title }}" loading="lazy"{% if v.focus and v.overlay %} style="{{ v.focus }}"{% endif %}{% if s.screws and s.screws.count and v.overlay %} data-tap-step="{{ s.index }}" data-markers='{{ s.screws.model_dump()["boxes"] | tojson }}'{% endif %}>{% if v.part and v.part.label %}<span class="hint">Muse Spark pointed · SAM 3.1 cut out the {{ v.part.label }}</span>{% endif %}</div>
     {% endif %}
     {% if v.clip %}
     <div class="view{% if first == 'clip' %} on{% endif %}" data-view-panel="clip"><video class="fit" src="{{ v.clip }}" muted loop playsinline preload="none"></video></div>
@@ -153,8 +142,18 @@
   </div>
   {% endif %}
 
+  <div class="step-head">
+    <p class="step-num">STEP {{ s.index }}</p>
+    <h3 class="h3">{{ s.title }}</h3>
+    <div class="chips" style="margin-top:8px">
+      <span class="chip tabular">{{ v.when }}</span>
+      {% if v.fasteners %}<span class="chip accent">{{ v.fasteners }}</span>{% endif %}
+    </div>
+  </div>
+
   <div class="step-body">
     <p class="instruction">{{ s.instruction }}</p>
+    {% if v.quote %}<blockquote class="step-quote"><p>“{{ v.quote.text }}”</p><cite>you, at {{ v.quote.at }}</cite></blockquote>{% endif %}
     {% if s.review == "needs_review" %}<p class="review">Check this step: FixScribe is not sure about it.</p>{% endif %}
     {% for w in s.warnings %}<div class="warn">{{ w }}</div>{% endfor %}
   </div>
@@ -181,17 +180,20 @@
 {% endfor %}
 
 {% if guide.reassembly %}
-<div class="sect"><span class="num">V</span><span>{% if guide.direction == "assemble" %}Take it apart{% else %}Put back{% endif %}</span></div>
+<div class="sect" id="put-back"><span class="num">V</span><span>{% if guide.direction == "assemble" %}Take it apart{% else %}Put back{% endif %}</span></div>
 <div class="grid12 guide-sect">
   <div class="col-r">
-    <p class="small muted">reverse order</p>
-    <ol class="timeline">
+    <nav class="flip" aria-label="Direction"><a href="#steps">{% if guide.direction == "assemble" %}Build it{% else %}Take apart{% endif %}</a><a class="on" href="#put-back" aria-current="true">{% if guide.direction == "assemble" %}Take it apart{% else %}Put back{% endif %}</a></nav>
+    <ol class="back-list">
       {% for r in guide.reassembly %}
-      <li><span class="n">{{ r.index }}</span><div><p style="margin:10px 0 0">{{ r.instruction }}</p>
-        {% if r.screws and r.screws.count %}<div class="chips" style="margin-top:8px"><span class="chip accent">{{ r.screws.count }} {{ r.screws.kind }}{% if r.screws.count != 1 %}s{% endif %} from step {{ r.source_step }}</span></div>{% endif %}
+      <li><span class="n">{{ '%02d' % r.index }}</span><div><p class="back-title">{{ r.instruction }}</p>
+        {% if r.screws and r.screws.count %}<p class="back-note">{{ r.screws.count }} {{ r.screws.kind }}{% if r.screws.count != 1 %}s{% endif %} back · from step {{ r.source_step }}</p>{% elif r.parts %}<p class="back-note">{{ r.parts|join(', ') }}</p>{% endif %}
         {% for w in r.warnings %}<div class="warn">{{ w }}</div>{% endfor %}</div></li>
       {% endfor %}
     </ol>
+    {% if balance %}
+    <div class="balance{% if not balance.even %} off{% endif %}"><b>{{ balance.kind|capitalize }}: {{ balance.out }} out · {{ balance.back }} back</b><span>{% if not balance.even %}the counts do not match: check them{% elif balance.seen %}every fastener accounted for{% else %}counted from the video, not all seen on the images{% endif %}</span></div>
+    {% endif %}
   </div>
 </div>
 {% endif %}

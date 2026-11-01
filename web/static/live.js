@@ -97,7 +97,8 @@
     var w = video.videoWidth, h = video.videoHeight;
     svg.innerHTML = "";
     svg.setAttribute("viewBox", "0 0 " + w + " " + h);
-    var unit = Math.max(w, h) / 1000;
+    // Sizes in screen pixels, whatever the camera's resolution: names stay small, as on the landing.
+    var unit = 1 / Math.max(svg.clientWidth / w, svg.clientHeight / h);
     parts.forEach(function (part, i) {
       var points = part.outline.map(function (p) { return [p[0] * w / 1000, p[1] * h / 1000]; });
       var cx = points.reduce(function (a, p) { return a + p[0]; }, 0) / points.length;
@@ -107,12 +108,12 @@
       node("polygon", { points: points.map(function (p) { return p.join(","); }).join(" ") }, g);
       node("path", { d: "M" + cx + " " + cy + "L" + cx + " " + top, "class": "live-lead" }, g);
       node("circle", { cx: cx, cy: cy, r: 5 * unit }, g);
-      var size = 15 * unit, high = 28 * unit;
+      var size = 13 * unit, high = 24 * unit;
       var width = (part.label.length * 0.62 * size) + 24 * unit;
       var left = Math.max(0, Math.min(w - width, cx - width / 2));
       var y = Math.max(0, top - high);
       node("rect", { x: left, y: y, width: width, height: high, rx: 14 * unit }, g);
-      var text = node("text", { x: left + 12 * unit, y: y + 19 * unit, "font-size": size }, g);
+      var text = node("text", { x: left + 12 * unit, y: y + 16.5 * unit, "font-size": size }, g);
       text.textContent = part.label + (checked ? "" : "…");
     });
     marksSample = parts.length ? sample : null;
@@ -296,14 +297,16 @@
       micOn = false;
       ear.stop();
       $("live-mic").setAttribute("aria-pressed", "false");
-      $("live-mic").textContent = "🎙️ off";
+      $("live-mic").classList.remove("on");
       $("live-hint").textContent = "";
       return;
     }
-    ear.start().then(function () {
+    $("live-hint").textContent = "Opening the microphone…";
+    var late = new Promise(function (_, refuse) { setTimeout(refuse, 8000); });
+    Promise.race([ear.start(), late]).then(function () {
       micOn = true;
       $("live-mic").setAttribute("aria-pressed", "true");
-      $("live-mic").textContent = "🎙️ on";
+      $("live-mic").classList.add("on");
       $("live-hint").textContent = "Say “next”, “back”, “repeat”, or ask a question.";
     }).catch(function () {
       $("live-hint").textContent = "The microphone is not available: use the buttons.";
@@ -315,6 +318,12 @@
     $("live-panel").classList.remove("hidden");
     $("live-dot").className = "live-dot on";
     drawRail();
+    // The manual sits under the picture, never over the parts it marks.
+    var fit = function () {
+      root.style.setProperty("--panel", $("live-panel").getBoundingClientRect().height + 24 + "px");
+    };
+    fit();
+    if (window.ResizeObserver) new ResizeObserver(fit).observe($("live-panel"));
     setInterval(tick, CHECK_MS);
   }
 

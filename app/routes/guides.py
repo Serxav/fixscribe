@@ -11,9 +11,10 @@ from app.agent import loop as agent_loop
 from app.agent import record as agent_record
 from app.artifacts import ArtifactError
 from app.config import Settings
+from app.pipeline.publish import screws_verified
 from app.routes.common import job_folder, load_guide
 from app.routes.upload import settings_dep, templates
-from app.schemas import Guide, Perception, Transcript
+from app.schemas import Guide, Perception, Step, Transcript
 from app.text import plural
 
 router = APIRouter()
@@ -33,6 +34,9 @@ def _not_ready(request: Request, job_id: str, *, valid_id: bool):
     )
 
 
+MAX_PHOTO_ZOOM = 1.8  # a phone frame gets blurry past this
+FOCUS_SHARE = 0.7  # the marks fill this much of the photo
+MIN_QUOTE_WORDS = 3  # "Yeah." proves nothing and reads badly as a quote
 FIELD_LABELS = {
     "boundaries": "When it happens",
     "instruction": "What to do",
@@ -146,6 +150,50 @@ def _transcript(folder: Path) -> Transcript | None:
         return None
 
 
+def _focus(step: Step) -> str:
+    """The zoom that brings the numbered fasteners together, as on the landing's screens.
+
+    Only fasteners: a part's photo is already its close-up, and its box is on the whole frame.
+    """
+    boxes = [(b.x, b.y, b.x + b.w, b.y + b.h) for b in (step.screws.boxes if step.screws else [])]
+    if not boxes:
+        return ""
+    left, top = min(b[0] for b in boxes), min(b[1] for b in boxes)
+    right, bottom = max(b[2] for b in boxes), max(b[3] for b in boxes)
+    zoom = max(1.0, min(MAX_PHOTO_ZOOM, FOCUS_SHARE / max(right - left, bottom - top, 0.01)))
+    # never slide past the photo's edge
+    middle_x = max(0.5 / zoom, min(1 - 0.5 / zoom, (left + right) / 2))
+    middle_y = max(0.5 / zoom, min(1 - 0.5 / zoom, (top + bottom) / 2))
+    shift_x, shift_y = (0.5 - middle_x) * 100, (0.5 - middle_y) * 100
+    return f"transform:scale({zoom:.2f}) translate({shift_x:.1f}%,{shift_y:.1f}%)"
+
+
+def _quote(step: Step) -> dict | None:
+    """The person's own words behind this step: the longest thing really said, if it is a phrase."""
+    said = [item for item in step.evidence if item.source != "video"]
+    said = [item for item in said if len(item.text.split()) >= MIN_QUOTE_WORDS]
+    if not said:
+        return None
+    best = max(said, key=lambda item: len(item.text))
+    return {"text": best.text.strip(), "at": _mmss(best.t_s)}
+
+
+def _balance(guide: Guide) -> dict | None:
+    """Fasteners out against fasteners back; "seen" only if the images show every one out."""
+    out = sum(step.screws.count for step in guide.steps if step.screws)
+    back = sum(item.screws.count for item in guide.reassembly if item.screws)
+    if not out and not back:
+        return None
+    kinds = [step.screws.kind for step in guide.steps if step.screws and step.screws.count]
+    return {
+        "kind": plural(kinds[0] if kinds else "screw", 2),
+        "out": out,
+        "back": back,
+        "even": out == back,
+        "seen": screws_verified(guide.steps),
+    }
+
+
 def step_views(guide: Guide, job_id: str, parts: dict[int, dict]) -> list[dict]:
     """Everything the page shows for each step, computed here so the template stays simple."""
     proof = {item.index: item for item in guide.proof.steps} if guide.proof else {}
@@ -180,6 +228,8 @@ def step_views(guide: Guide, job_id: str, parts: dict[int, dict]) -> list[dict]:
                     for claim in claims
                 ],
                 "checkable": count > 0,
+                "quote": _quote(step),
+                "focus": _focus(step),
             }
         )
     return views
@@ -229,6 +279,7 @@ def guide_page(
             "steps": step_views(guide, job_id, _part_boxes(folder)),
             "found": found_parts(folder, guide, f"/media/{job_id}/"),
             "fasteners_total": f"{total} {plural(kind, total)}" if total else "",
+            "balance": _balance(guide),
             "proof_percent": round(guide.proof.score * 100) if guide.proof else None,
             "level": guide.safety.level if guide.safety else "normal",
             "agent": agent_view(folder),

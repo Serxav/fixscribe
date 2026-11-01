@@ -19,6 +19,7 @@ from typing import Any, Literal
 
 import cv2
 import numpy as np
+from openai import OpenAIError
 from PIL import Image, ImageOps
 from pydantic import Field, ValidationError
 
@@ -215,7 +216,10 @@ def _padded(box: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
 def _coach_client(job_dir: Path, settings: Settings) -> Any:
     """A client that counts the coach's spend apart from the guide's."""
     coach = replace(settings, job_budget_usd=settings.live_budget_usd)
-    return make_client(coach, job_dir=job_dir / "live")
+    try:
+        return make_client(coach, job_dir=job_dir / "live")
+    except OpenAIError as exc:  # no key on this server: a clear message, never a crash
+        raise LiveError("the coach is not set up on this server") from exc
 
 
 def _count_call(job_dir: Path, settings: Settings) -> int:

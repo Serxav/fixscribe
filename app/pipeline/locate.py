@@ -610,7 +610,7 @@ class SlowLook:
     t_s: float
     frame: np.ndarray
     boxes: list[tuple[int, int, int, int]]  # 0..1000 grid of ``frame``
-    confidences: list[float]
+    confidences: list[float | None]  # None: only pointed at, nothing could be cut or checked
 
 
 def cut_pointed(
@@ -635,6 +635,8 @@ def cut_pointed(
         )
         detections, size = client.segment_boxes(path, [box])
         if not detections or (detections[0].confidence or 0.0) < MIN_CONFIDENCE:
+            boxes.append(box)  # too small to cut: the spot is still what the review saw
+            confidences.append(None)
             continue
         cut = detections[0].box
         tight = (
@@ -649,4 +651,7 @@ def cut_pointed(
         if verdict.get("real") is True:
             boxes.append(tight)
             confidences.append(float(detections[0].confidence))
+        else:
+            boxes.append(box)
+            confidences.append(None)
     return SlowLook(t_s, frame, boxes, confidences) if boxes else None

@@ -7,6 +7,7 @@ import types
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
+from openai import OpenAIError
 from PIL import Image
 
 from app import artifacts, meta_client
@@ -21,6 +22,7 @@ from app.pipeline.live import (
     LiveAnswer,
     LiveError,
     LivePart,
+    _coach_client,
     _spill,
     build_prompt,
     live_marks,
@@ -412,6 +414,16 @@ def test_a_cut_out_that_runs_outside_its_box_is_measured():
 
     assert _spill(mask, (400, 400, 600, 600)) == 0
     assert _spill(mask, (400, 400, 500, 500)) > MAX_SPILL
+
+
+def test_no_key_on_the_server_is_a_clear_message(tmp_path, monkeypatch):
+    def no_key(*_, **__):
+        raise OpenAIError("missing credentials")
+
+    monkeypatch.setattr("app.pipeline.live.make_client", no_key)
+
+    with pytest.raises(LiveError, match="not set up"):
+        _coach_client(tmp_path, Settings(model_api_key="", data_dir=tmp_path))
 
 
 def test_marks_failure_loses_only_the_marks(tmp_path):

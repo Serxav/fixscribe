@@ -1,5 +1,5 @@
 from app import artifacts
-from app.pipeline import proof
+from app.pipeline import proof, publish
 from app.pipeline.proof import (
     boundaries_claim,
     build_proof,
@@ -16,6 +16,7 @@ from app.schemas import (
     FusionStep,
     NormBox,
     PartHighlight,
+    Perception,
     Plan,
     Proof,
     Refine,
@@ -309,9 +310,74 @@ def test_a_confident_frame_by_frame_review_proves_a_silent_step():
 
 def test_a_review_that_disagrees_or_doubts_proves_nothing():
     step = Step(index=1, title="t", instruction="i", start_s=10, end_s=20)
-    instruction, _ = _reviewed(step, matches=False, instruction="they pry the cover")
+    instruction, _ = _reviewed(step, matches=False, instruction="")
     assert instruction.status == "unverified" and "disagrees" in instruction.sources[-1]
     instruction, boundaries = _reviewed(step, confidence=0.4)
     assert instruction.status == "unverified" and boundaries.status == "unverified"
-    _, boundaries = _reviewed(step, start_s=2.0)  # its times are far from the step's
+    _, boundaries = _reviewed(step, start_s=2.0, end_s=9.0)  # it is about another moment
     assert boundaries.status == "unverified"
+
+
+def test_a_sentence_rewritten_from_the_frames_counts_as_what_they_show():
+    step = Step(index=1, title="t", instruction="i", start_s=10, end_s=20)
+    instruction, _ = _reviewed(step, matches=False, instruction="they pry the cover")
+    assert instruction.status == "verified" and "rewritten" in instruction.sources[0]
+
+
+def test_times_of_a_confident_review_move_the_step():
+    step = Step(index=1, title="t", instruction="i", start_s=10, end_s=30)
+    _, boundaries = _reviewed(step, start_s=15.0, end_s=25.0)
+    assert boundaries.status == "verified"
+
+
+def test_publish_moves_a_step_to_the_reviewed_times_and_keeps_its_photo():
+    step = Step(index=1, title="Old", instruction="i", start_s=10, end_s=40, keyframe_s=38)
+    review = StepReview(matches=True, start_s=15, end_s=30, confidence=0.9)
+    perception = Perception(steps=[StepPerception(index=1, review=review)])
+
+    (moved,), _ = publish.with_perception([step], perception)
+
+    assert (moved.start_s, moved.end_s) == (15, 38)
+
+
+def test_a_rewritten_step_gets_a_title_that_agrees_and_loses_the_part_nobody_found():
+    step = Step(
+        index=1, title="Refit cover", instruction="i", start_s=1, end_s=9, target_part="cover"
+    )
+    review = StepReview(
+        matches=False,
+        instruction="Power on the phone without refitting the cover.",
+        start_s=1,
+        end_s=9,
+        confidence=0.9,
+    )
+    perception = Perception(steps=[StepPerception(index=1, review=review)])
+
+    (moved,), notes = publish.with_perception([step], perception)
+
+    assert moved.title == "Power on the phone"
+    assert moved.target_part is None
+    assert "rewritten" in notes[0]
+
+
+def test_a_part_with_another_name_only_supports_the_claim():
+    step = Step(index=1, title="t", instruction="i", start_s=1, end_s=9, target_part="battery")
+    box = NormBox(x=0.1, y=0.1, w=0.1, h=0.1)
+    found = PartHighlight(concept="camera shield plate", box=box, confidence=0.9)
+
+    claim = proof.part_claim(step, StepPerception(index=1, part=found))
+
+    assert claim.status == "supported"
+
+
+def test_screws_only_pointed_at_support_the_count_but_never_verify_it():
+    step = Step(
+        index=1, title="t", instruction="i", start_s=1, end_s=9, screws=ScrewMap(count=2, boxes=[])
+    )
+    box = NormBox(x=0.1, y=0.1, w=0.02, h=0.02)
+    pointed = [ScrewRecord(id=f"S{n}", number=n, box=box, pointed=True) for n in (1, 2)]
+
+    claim = proof.fastener_claim(step, StepPerception(index=1, removed=pointed), None)
+
+    assert claim.status == "supported"
+    assert "too small" in claim.sources[-1]

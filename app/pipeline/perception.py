@@ -383,13 +383,14 @@ def _process_step(
                                 id=f"S{next_number}",
                                 number=len(sp.removed) + 1,
                                 box=_grid_box(box),
-                                confidence=round(confidence, 3),
+                                confidence=None if confidence is None else round(confidence, 3),
+                                pointed=confidence is None,
                             )
                         )
                         next_number += 1
         finally:
             shutil.rmtree(work, ignore_errors=True)
-        seen = len(sp.removed)
+        seen = sum(not record.pointed for record in sp.removed)
         if seen < count:
             verb = "put in" if adding else "taken out"
             sp.notes.append(
