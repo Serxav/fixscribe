@@ -286,3 +286,30 @@ def test_guide_page_says_what_the_agent_does(jobs_tmp):
     page = TestClient(app).get(f"/guides/{job_id}").text
     assert "Muse Wonder has a question for you" in page
     assert f'href="/jobs/{job_id}/console"' in page
+
+
+def test_the_agents_parts_catalog_shows_once_filed(jobs_tmp):
+    from app.agent import record as agent_record
+    from app.agent.record import AgentRecord, Part
+
+    job_id = _write_guide(jobs_tmp, _guide())
+    folder = jobs_tmp / job_id
+    (folder / "agent" / "crops").mkdir(parents=True)
+    (folder / "agent" / "crops" / "A.png").write_bytes(b"png")
+    part = Part(id="A", name="back cover", crop="crops/A.png", verified=True)
+    record = AgentRecord(objective="x", status="awaiting_signoff", parts=[part])
+    agent_record.save_record(folder, record)
+    app.dependency_overrides[settings_dep] = lambda: Settings(
+        model_api_key="", data_dir=jobs_tmp.parent, enable_inspector=True
+    )
+    try:
+        text = TestClient(app).get(f"/guides/{job_id}").text
+        assert f"/jobs/{job_id}/agent/media/crops/A.png" in text
+        assert "waiting for your sign-off" in text
+        record.status = "done"
+        agent_record.save_record(folder, record)
+        assert "signed off by a person" in TestClient(app).get(f"/guides/{job_id}").text
+    finally:
+        app.dependency_overrides[settings_dep] = lambda: Settings(
+            model_api_key="", data_dir=jobs_tmp.parent
+        )

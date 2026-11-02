@@ -110,6 +110,9 @@
     <div class="col-r">
       {% if guide.tools %}<p class="kicker">Tools</p><div class="chips" style="margin-top:8px">{% for t in guide.tools %}<span class="chip">{{ t }}</span>{% endfor %}</div>{% endif %}
       {% if guide.parts %}<p class="kicker" style="margin-top:20px">Parts</p><div class="chips" style="margin-top:8px">{% for p in guide.parts %}<span class="chip">{{ p }}</span>{% endfor %}</div>{% endif %}
+      {% if catalog %}<p class="kicker" style="margin-top:24px">Parts catalog</p>
+      <ul class="catalog">{% for p in catalog.parts %}<li><img src="{{ p.image }}" alt="Part {{ p.id }}: {{ p.name }}" loading="lazy"><b>{{ p.id }}</b><span>{{ p.name }}{% if p.count > 1 %} ×{{ p.count }}{% endif %}</span></li>{% endfor %}</ul>
+      <p class="small muted catalog-note">Named by Muse Wonder, each one cut out by SAM 3.1 on a frame of the video · {{ catalog.steps }} steps · {% if catalog.signed %}signed off by a person{% else %}<a href="/jobs/{{ job_id }}/console">waiting for your sign-off</a>{% endif %}</p>{% endif %}
     </div>
   </div>
 </section>
