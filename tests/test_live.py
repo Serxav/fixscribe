@@ -206,13 +206,13 @@ def test_a_big_frame_is_made_smaller(tmp_path):
 
 
 def test_a_guide_that_is_not_the_sample_has_a_smaller_coach_limit(tmp_path):
-    settings = Settings(model_api_key="", data_dir=tmp_path, live_max_calls=2000)
+    settings = Settings(model_api_key="", data_dir=tmp_path, live_max_calls=10000)
     (tmp_path / "live").mkdir()
-    (tmp_path / "live" / "calls.txt").write_text("300\n")
-    with pytest.raises(LiveError, match="300 calls"):
+    (tmp_path / "live" / "calls.txt").write_text("1000\n")
+    with pytest.raises(LiveError, match="1000 calls"):
         _count_call(tmp_path, settings)
     sample = replace(settings, demo_job=tmp_path.name)
-    assert _count_call(tmp_path, sample) == 300
+    assert _count_call(tmp_path, sample) == 1000
 
 
 def test_prompt_lists_steps_and_last_step(tmp_path):

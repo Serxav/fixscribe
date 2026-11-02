@@ -9,23 +9,23 @@ The camera and microphone only work over https, so judges need a hosted address.
 | Variable | Value | Why |
 |---|---|---|
 | `MODEL_API_KEY` | your key | Meta calls |
-| `BUDGET_USD` | `35` | total this server may spend |
+| `BUDGET_USD` | what is left of the credit, minus a margin (for example `80`) | the one hard ceiling: past it no call is sent |
 | `JOB_BUDGET_USD` | `2.5` | one 8.5-minute video cost $1.47; a lower cap cuts the guide short |
-| `DAILY_JOB_LIMIT` | `3` | at most 3 new videos a day |
-| `LIVE_BUDGET_USD` | `10` | the coach on the sample guide; any other guide stops at $2 |
-| `LIVE_MAX_CALLS` | `2000` | coach calls on the sample guide; any other guide stops at 300 |
-| `ENABLE_INSPECTOR` | `false` | the agent costs more per job |
+| `DAILY_JOB_LIMIT` | `50` | judges may film as many repairs as they like |
+| `LIVE_BUDGET_USD` | `30` | the coach on the sample guide, shared by every judge; a judge's own guide stops at $5 |
+| `LIVE_MAX_CALLS` | `10000` | coach calls on the sample guide; a judge's own guide stops at 1000 (about an hour) |
+| `ENABLE_INSPECTOR` | `true` | judges can try the Muse Wonder agent (about $0.70 a run) |
 | `DEMO_JOB` | the folder in `demo/` | the sample guide on the landing |
 | `TRUST_PROXY` | `true` | the host's proxy adds the visitor's address; without it every visitor counts as one |
-| `VISITOR_VIDEOS_PER_DAY` | `2` | videos one visitor can turn into guides a day |
-| `VISITOR_COACH_MINUTES_PER_DAY` | `20` | minutes of live coach one visitor gets a day |
-| `VISITOR_QUESTIONS_PER_HOUR` | `30` | voice and typed questions one visitor can ask an hour |
-| `VISITOR_ACTIONS_PER_HOUR` | `60` | step checks, fastener taps and agent runs one visitor can start an hour |
+| `VISITOR_VIDEOS_PER_DAY` | `0` | 0 = no per-visitor limit, so judges can try everything; a number turns it on |
+| `VISITOR_COACH_MINUTES_PER_DAY` | `0` | same, for minutes of live coach a day |
+| `VISITOR_QUESTIONS_PER_HOUR` | `0` | same, for voice and typed questions an hour |
+| `VISITOR_ACTIONS_PER_HOUR` | `0` | same, for step checks, fastener taps and agent runs an hour |
 
-Visitors are counted by address, in memory: a restart clears the counts, and the spend caps above
-stay the ceiling behind them. A visitor over a limit gets a 429 with one sentence saying which
-limit and when it comes back; the coach stops sending frames when it gets one. `0` turns a
-per-visitor limit off.
+For judging the per-visitor limits stay off and only `BUDGET_USD` stops spending. If someone abuses
+the server, set a number on any of them in the panel: visitors are counted by address, in memory,
+and one over a limit gets a 429 with one sentence; the coach stops sending frames when it gets one.
+More than 40 coach frames a minute from one address is always refused: only a script sends that.
 
 Before the first judge: open the address on a phone, try the camera and the microphone over https,
 and run one short video through. Then, inside the running image, check that ffmpeg refuses a playlist

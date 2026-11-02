@@ -145,3 +145,16 @@ def test_an_upload_over_the_limit_shows_a_page(strict, monkeypatch):
     again = strict.post("/upload", files=files, follow_redirects=False)
     assert again.status_code == 429
     assert "1 videos into guides a day" in again.text
+
+
+def test_by_default_judges_can_try_everything(tmp_path):
+    settings = Settings(data_dir=tmp_path)
+    clock = Clock()
+    limiter = Limiter(clock)
+    for _ in range(200):
+        for kind in ("video", "question", "action"):
+            limiter.claim("judge", kind, settings)
+    for _ in range(120):  # two hours of coach, one frame every 2.5 s... at a person's pace
+        for _ in range(24):
+            limiter.claim("judge", "coach", settings)
+            clock.now += 2.5

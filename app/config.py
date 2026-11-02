@@ -26,10 +26,10 @@ class Settings:
     agent_budget_usd: float = 1.0  # [AGENT_BUDGET_USD] extra per job for the Muse Wonder agent
     live_budget_usd: float = 2.0  # [LIVE_BUDGET_USD] per job for the live coach, on its own counter
     live_max_calls: int = 300  # [LIVE_MAX_CALLS] per job: a public sample guide needs more
-    visitor_videos_per_day: int = 2  # [VISITOR_VIDEOS_PER_DAY] 0 turns a per-visitor limit off
-    visitor_coach_minutes_per_day: int = 20  # [VISITOR_COACH_MINUTES_PER_DAY]
-    visitor_questions_per_hour: int = 30  # [VISITOR_QUESTIONS_PER_HOUR] voice and typed
-    visitor_actions_per_hour: int = 60  # [VISITOR_ACTIONS_PER_HOUR] step checks, taps, the agent
+    visitor_videos_per_day: int = 0  # [VISITOR_VIDEOS_PER_DAY] 0 = off: judges may try everything
+    visitor_coach_minutes_per_day: int = 0  # [VISITOR_COACH_MINUTES_PER_DAY]
+    visitor_questions_per_hour: int = 0  # [VISITOR_QUESTIONS_PER_HOUR] voice and typed
+    visitor_actions_per_hour: int = 0  # [VISITOR_ACTIONS_PER_HOUR] step checks, taps, the agent
     trust_proxy: bool = (
         False  # [TRUST_PROXY] true behind the host's proxy: visitors by X-Forwarded-For
     )
@@ -76,10 +76,10 @@ def get_settings() -> Settings:
         agent_budget_usd=float(env.get("AGENT_BUDGET_USD", "1.0")),
         live_budget_usd=float(env.get("LIVE_BUDGET_USD", "2.0")),
         live_max_calls=int(env.get("LIVE_MAX_CALLS", "300")),
-        visitor_videos_per_day=int(env.get("VISITOR_VIDEOS_PER_DAY", "2")),
-        visitor_coach_minutes_per_day=int(env.get("VISITOR_COACH_MINUTES_PER_DAY", "20")),
-        visitor_questions_per_hour=int(env.get("VISITOR_QUESTIONS_PER_HOUR", "30")),
-        visitor_actions_per_hour=int(env.get("VISITOR_ACTIONS_PER_HOUR", "60")),
+        visitor_videos_per_day=int(env.get("VISITOR_VIDEOS_PER_DAY", "0")),
+        visitor_coach_minutes_per_day=int(env.get("VISITOR_COACH_MINUTES_PER_DAY", "0")),
+        visitor_questions_per_hour=int(env.get("VISITOR_QUESTIONS_PER_HOUR", "0")),
+        visitor_actions_per_hour=int(env.get("VISITOR_ACTIONS_PER_HOUR", "0")),
         trust_proxy=_parse_bool(env.get("TRUST_PROXY", "false")),
         demo_job=env.get("DEMO_JOB", "").strip(),
         data_dir=data_dir,
