@@ -6,7 +6,7 @@ import pytest
 
 from app import artifacts
 from app.pipeline import fasteners, perception, tap
-from app.schemas import Guide, Perception
+from app.schemas import Guide, NormBox, Perception, ScrewRecord
 from tests.test_perception import FakeMeta, _job, _step
 
 
@@ -79,6 +79,49 @@ def test_removing_a_wrong_marker_needs_no_meta_call(job):
     assert artifacts.load(job_dir, Perception) == result
     with pytest.raises(tap.TapError):
         tap.remove_fastener(job_dir, settings, 1, 9)
+
+
+def _with_pointed(job_dir):
+    """Add one marker Spark only pointed at, the way perception keeps one SAM could not track."""
+    data = artifacts.load(job_dir, Perception)
+    step = data.steps[0]
+    box = NormBox(x=0.8, y=0.8, w=0.05, h=0.05)
+    step.removed.append(
+        ScrewRecord(
+            id=f"S{len(step.removed) + 1}", number=len(step.removed) + 1, box=box, pointed=True
+        )
+    )
+    artifacts.save(job_dir, data)
+    return len(step.removed)
+
+
+def test_removing_a_tracked_marker_keeps_the_pointed_ones(job):
+    job_dir, settings = job
+    total = _with_pointed(job_dir)
+    result = tap.remove_fastener(job_dir, settings, 1, 1)
+    removed = result.steps[0].removed
+    assert len(removed) == total - 1
+    assert [r.number for r in removed] == list(range(1, total))
+    assert removed[-1].pointed
+
+
+def test_removing_a_pointed_marker_keeps_the_tracked_ones(job):
+    job_dir, settings = job
+    total = _with_pointed(job_dir)
+    result = tap.remove_fastener(job_dir, settings, 1, total)
+    removed = result.steps[0].removed
+    assert len(removed) == total - 1 and not any(r.pointed for r in removed)
+    guide = artifacts.load(job_dir, Guide)
+    assert len(guide.steps[0].screws.boxes) == total - 1
+
+
+def test_adding_keeps_the_pointed_ones(job):
+    job_dir, settings = job
+    total = _with_pointed(job_dir)
+    result = tap.add_fastener(job_dir, settings, 1, 0.5, 0.75, client=PointSam())
+    removed = result.steps[0].removed
+    assert len(removed) == total + 1
+    assert sum(r.pointed for r in removed) == 1
 
 
 def test_steps_without_fasteners_cannot_be_tapped(tmp_path):

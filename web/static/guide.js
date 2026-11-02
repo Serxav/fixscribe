@@ -170,7 +170,7 @@
         .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
         .then(function (result) {
           if (!result.ok) { showToast("error", "Could not check this photo", result.data.error || "Please try again.", "!"); return; }
-          var titles = { done: "Step done", not_yet: "Not yet", unclear: "Not sure" };
+          var titles = { done: "Looks done", not_yet: "Not yet", unclear: "Not sure" };
           var badges = { done: "✓", not_yet: "!", unclear: "?" };
           showToast(result.data.verdict, titles[result.data.verdict] || "Result", result.data.message, badges[result.data.verdict] || "?");
         })

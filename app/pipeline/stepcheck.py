@@ -240,7 +240,11 @@ def check_step(
             )
     elif count <= expected:
         result.verdict = "done"
-        result.message = f"No {plural(kind)} left where the guide removes them."
+        # SAM seeing none is not proof: a hand, a tool or a far camera hides small fasteners
+        result.message = (
+            f"SAM 3.1 sees no {plural(kind)} left where the guide removes them."
+            " Look once more: a hand or a tool can hide a small one."
+        )
     else:
         result.verdict = "not_yet"
         remaining = count - expected
