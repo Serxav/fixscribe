@@ -562,3 +562,33 @@ def test_coach_has_its_own_budget(tmp_path, monkeypatch):
     live_turn(tmp_path, settings, _frame_bytes(), last_step=1)
 
     assert seen == {"budget": 0.7, "folder": tmp_path / "live"}
+
+
+class MissesTheTarget(FakeMarksClient):
+    """Points only at the back cover first; asked for the battery alone, finds it."""
+
+    def __init__(self):
+        super().__init__()
+        self.queries = []
+
+    def ground(self, path, query, *, context="", max_boxes=8, effort="medium"):
+        self.queries.append(query)
+        if query == "the battery":
+            return [types.SimpleNamespace(label="battery", box=(100, 100, 500, 500))]
+        return [types.SimpleNamespace(label="back cover", box=(600, 600, 900, 900))]
+
+
+def test_a_step_part_nobody_pointed_at_is_looked_for_again(tmp_path):
+    guide = _guide()
+    guide.steps[0].target_part = "back cover"
+    guide.steps[1].target_part = "battery"
+    artifacts.save(tmp_path, guide)
+    settings = Settings(model_api_key="", data_dir=tmp_path)
+    fake = MissesTheTarget()
+
+    stages = list(marks_stages(tmp_path, settings, _frame_bytes(), 2, [], fake))
+
+    assert fake.queries[-1] == "the battery"  # looked for again, once
+    assert len(fake.queries) == 2
+    final = stages[-1][1]
+    assert any(p.label == "battery" and p.target for p in final)

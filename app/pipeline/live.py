@@ -11,9 +11,12 @@ still gets a coach and a forgotten camera page cannot eat the budget.
 """
 
 import io
+import logging
 import shutil
+import time
 import uuid
 from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
@@ -56,6 +59,15 @@ SMOOTH = 0.012  # outline clean-up, as a share of the image's long side
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "live_v2.md"
 
 PROFESSIONAL_LINE = "A qualified professional must do this repair."
+
+logger = logging.getLogger(__name__)
+
+
+def _lap(stage: str, started: float, last: float) -> float:
+    """Log how long a stage of the marks took, so slow stages show up in the server log."""
+    now = time.monotonic()
+    logger.info("marks %s: %.1f s (%.1f s in all)", stage, now - last, now - started)
+    return now
 
 
 class LiveError(Exception):
@@ -448,6 +460,7 @@ def _marks_stages(
             for mark in marks
         ]
 
+    started = lap = time.monotonic()
     try:
         grounded = client.ground(
             crop_path, query, context=context, max_boxes=MAX_PARTS, effort=GROUND_EFFORT
@@ -459,13 +472,27 @@ def _marks_stages(
                 if manual_name(g.label, names)
             ]
         marks = cut_marks(client, crop_path, crop, grounded) if grounded else []
+        lap = _lap("ground and cut", started, lap)
         # only the step's own small part is worth the risk: a tiny neighbour is usually misnamed
         marks = [m for m in marks if is_target(m["label"], target) or not _is_small(m)]
         if marks:
             yield False, to_parts(marks)
-        checked = confirm(client, settings.spark_model, crop, marks, context)
-        if target and not any(m.get("checked") and is_target(m["label"], target) for m in checked):
-            checked += _look_again(client, settings, crop_path, crop, target, context)
+        # the step's own part was not even pointed at: look for it while the others are checked
+        missing = bool(target) and not any(is_target(m["label"], target) for m in marks)
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            again = (
+                pool.submit(_look_again, client, settings, crop_path, crop, target, context)
+                if missing
+                else None
+            )
+            checked = confirm(client, settings.spark_model, crop, marks, context)
+            if again is not None:
+                checked += again.result()
+            elif target and not any(
+                m.get("checked") and is_target(m["label"], target) for m in checked
+            ):
+                checked += _look_again(client, settings, crop_path, crop, target, context)
+        _lap("check", started, lap)
     except BudgetExceeded as exc:
         raise LiveError(f"could not mark the parts: {exc}") from exc
     except MetaError:  # the coach keeps coaching: only the marks are lost, never an unchecked one
