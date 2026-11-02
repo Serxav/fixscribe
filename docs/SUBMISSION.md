@@ -16,8 +16,10 @@ takes hours.
 **What it does:** Upload one video of a repair or assembly, narrated or silent. FixScribe identifies
 the object and the hazards, refuses professional-only jobs with fixed rules, and writes the steps.
 Each step has the part cut out on the frame, numbered screws when the video shows them, a short clip
-and a proof grade. It also writes the way back and counts the screws. While you work, a live coach
-follows your camera, marks the parts and takes voice commands.
+and a proof grade. The way back follows each part through the video, so only what is still off at
+the end goes back, with a screw tally you tick as you go. While you work, a live coach follows your
+camera, marks the parts and takes voice commands or typed questions; each answer names its step and
+plays that moment of the video.
 
 **How it uses Meta models:**
 
@@ -29,14 +31,16 @@ follows your camera, marks the parts and takes voice commands.
 - MMS-TTS, Meta's open weights, runs locally for the voice.
 
 **Technical depth:** Stages that resume after a failure, atomic job files, retries and 429 backoff,
-a per-job and global spend counter, about 800 tests with Meta mocked, and exams against answer keys.
+a per-job and global spend counter, 835 tests with Meta mocked, and exams against answer keys.
 
 **Results (2026-11-01, two videos):** the coach is on the right step 88 % and 95 % of the time within
 8 s, and 76 % and 80 % at the exact moment. Marks are right 93 % and 74 % of the time. On one
 8.5-minute repair, 8 of 10 shown parts were surely right by eye, and no screw was confirmed in its
-720p footage. [Add the numbers from the demo video.]
+720p footage. Typed questions to the coach on that guide (2026-11-02): 3 of 3 right, two pointing to
+the right step and second, one off-topic question refused. [Add the numbers from the demo video.]
 
-**Limits:** The coach answers in about 8 s and marks take about 25 s. Small screws need 1080p or
+**Limits:** The coach reads a camera frame in about 8 s and marks take about 25 s; a typed question
+is answered in 2 to 4 s. Small screws need 1080p or
 better. Tried on few videos so far. [State whether real technicians have tried it. If none have, say
 so.]
 
