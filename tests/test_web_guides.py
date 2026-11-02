@@ -110,6 +110,15 @@ def test_put_back_has_a_fastener_tally(jobs_tmp):
     assert "screws: 4 out · 4 back" in text.lower()
 
 
+def test_a_numbered_photo_says_it_can_be_tapped(jobs_tmp):
+    guide = _guide()
+    guide.steps[0].overlay = "steps/01_overlay.jpg"
+    job_id = _write_guide(jobs_tmp, guide)
+    text = TestClient(app).get(f"/guides/{job_id}").text
+    assert 'data-tap-step="1"' in text
+    assert "Tap a missed screw to add it" in text
+
+
 def test_screw_check_amber_and_green(jobs_tmp):
     job_id = _write_guide(jobs_tmp, _guide(checks=["Screw check: 6 screws removed, 4 put back."]))
     response = TestClient(app).get(f"/guides/{job_id}")

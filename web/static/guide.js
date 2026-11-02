@@ -72,23 +72,51 @@
         return x >= m.x - 0.02 && x <= m.x + m.w + 0.02 && y >= m.y - 0.02 && y <= m.y + m.h + 0.02;
       })[0];
       var base = "/guides/" + jobId + "/steps/" + img.dataset.tapStep + "/fasteners";
-      var ask = hit ? "Remove marker " + hit.number + "?" : "Add a fastener here? SAM will follow it through the step.";
-      if (!window.confirm(ask)) return;
-      busy = true;
-      if (hint) hint.textContent = hit ? "Removing…" : "SAM is following it…";
-      fetch(hit ? base + "/" + hit.number + "/remove" : base, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: hit ? null : JSON.stringify({ x: x, y: y })
-      }).then(function (response) {
-        return response.json().then(function (data) { return { ok: response.ok, data: data }; });
-      }).then(function (answer) {
-        if (answer.ok) { window.location.reload(); return; }
-        busy = false;
-        if (hint) hint.textContent = answer.data.error || "Could not change the map — try again";
-      }).catch(function () {
-        busy = false;
-        if (hint) hint.textContent = "Could not change the map — try again";
+      var view = img.parentNode;
+      view.querySelectorAll(".tap-ring, .tap-ask").forEach(function (el) { el.remove(); });
+      var box = view.getBoundingClientRect();
+      var ring = document.createElement("span");
+      ring.className = "tap-ring" + (hit ? " remove" : "");
+      ring.style.left = (event.clientX - box.left) + "px";
+      ring.style.top = (event.clientY - box.top) + "px";
+      view.appendChild(ring);
+      var ask = document.createElement("div");
+      ask.className = "tap-ask";
+      var label = document.createElement("span");
+      label.textContent = hit ? "Remove number " + hit.number + "?" : "Add one here? SAM 3.1 follows it through the step.";
+      var yes = document.createElement("button");
+      yes.type = "button"; yes.className = "yes"; yes.textContent = hit ? "Remove" : "Add";
+      var no = document.createElement("button");
+      no.type = "button"; no.className = "no"; no.textContent = "Cancel";
+      ask.append(label, yes, no);
+      view.appendChild(ask);
+      if (hint) hint.classList.add("hidden");
+      var close = function () { ring.remove(); ask.remove(); if (hint) hint.classList.remove("hidden"); };
+      no.addEventListener("click", function (e) { e.stopPropagation(); close(); });
+      yes.addEventListener("click", function (e) {
+        e.stopPropagation();
+        busy = true;
+        ring.classList.add("busy");
+        label.textContent = hit ? "Removing…" : "SAM 3.1 is following it…";
+        yes.remove(); no.remove();
+        fetch(hit ? base + "/" + hit.number + "/remove" : base, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: hit ? null : JSON.stringify({ x: x, y: y })
+        }).then(function (response) {
+          return response.json().then(function (data) { return { ok: response.ok, data: data }; });
+        }).then(function (answer) {
+          if (answer.ok) { window.location.reload(); return; }
+          busy = false;
+          ring.classList.remove("busy");
+          label.textContent = answer.data.error || "Could not change the map — try again";
+          ask.appendChild(no); no.textContent = "Close";
+        }).catch(function () {
+          busy = false;
+          ring.classList.remove("busy");
+          label.textContent = "Could not change the map — try again";
+          ask.appendChild(no); no.textContent = "Close";
+        });
       });
     });
   });
