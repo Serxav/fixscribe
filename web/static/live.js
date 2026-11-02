@@ -237,10 +237,10 @@
   }
 
   // Next, back and repeat move the manual; a question gets its answer on the screen and out loud.
-  function obey(res) {
+  function obey(res, typed) {
     if (res.command === "none" || !res.heard) return;
-    // The microphone can catch the coach itself: its own words are not an order.
-    if (voice.speaking() && (" " + lastSaid + " ").indexOf(" " + plain(res.heard) + " ") >= 0) return;
+    // The microphone can catch the coach itself: its own words are not an order. Typing is.
+    if (!typed && voice.speaking() && (" " + lastSaid + " ").indexOf(" " + plain(res.heard) + " ") >= 0) return;
     $("live-heard").textContent = res.heard;
     if (res.command === "next") enterStep(Math.min(steps.length, current + 1), true);
     if (res.command === "back") enterStep(Math.max(1, current - 1), true);
@@ -308,7 +308,7 @@
         .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
         .then(function (res) {
           $("live-hint").textContent = res.ok ? "" : (res.d.error || "Could not answer — try again");
-          if (res.ok) { box.value = ""; obey(res.d); }
+          if (res.ok) { box.value = ""; obey(res.d, true); }
         })
         .catch(function () { $("live-hint").textContent = "Could not answer — try again"; })
         .finally(function () { hearing = false; box.disabled = false; });

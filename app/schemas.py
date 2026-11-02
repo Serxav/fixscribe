@@ -449,6 +449,7 @@ class ScrewRecord(Strict):
     box: NormBox  # on the step's keyframe still
     confidence: float | None = Field(default=None, ge=0, le=1)
     pointed: bool = False  # only where Spark saw the tool stop: too small for SAM to cut and check
+    tracked: bool = True  # SAM followed it through the step; False when cut on one frame only
 
 
 class PartHighlight(Strict):

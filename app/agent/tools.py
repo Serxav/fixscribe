@@ -345,8 +345,8 @@ def submit_guide(case: Case) -> Result:
         if not any(s.start_s < b + 2 and s.end_s > a - 2 for s in record.steps)
     ]
     # asked once: the draft can be wrong, and the agent may know better after looking
-    if missed and record.steps and not any(GAP_NOTE in note for note in record.notes):
-        record.notes = (record.notes + [f"{GAP_NOTE}: {'; '.join(missed)}"])[-20:]
+    if missed and record.steps and not record.gaps_asked:
+        record.gaps_asked = True
         problems.append(
             f"{GAP_NOTE} by any step: {'; '.join(missed)}. Look and add them, or submit again if"
             " the video does not show them"

@@ -201,6 +201,33 @@ def step(case: Case, settings: Settings, state: dict, pending_input: list) -> tu
         reminder = "Continue with tool calls. When the guide is complete, call submit_guide."
         return [{"role": "user", "content": reminder}], False
     outputs, images, logged, stopped = [], [], [], None
+    try:
+        stopped = _run_calls(case, record, calls, plan, tokens, usd, outputs, images, logged)
+    finally:
+        # one write, even when a call ran out of budget: the console never misses what changed
+        rec.append_turns(case.job_dir, logged)
+    rec.save_record(case.job_dir, record)
+    if stopped is not None:
+        # the other calls' answers and frames wait with it: the next request must answer every call
+        state["pending_call"] = stopped
+        state["pending_outputs"] = outputs + images
+        return [], True
+    return outputs + images, False
+
+
+def _run_calls(
+    case: Case,
+    record: AgentRecord,
+    calls: list,
+    plan: str,
+    tokens: int,
+    usd: float,
+    outputs: list,
+    images: list,
+    logged: list,
+) -> str | None:
+    """Run one turn's calls in order, filling outputs, images and logged; the stopping call's id."""
+    stopped = None
     for k, call in enumerate(calls):
         if stopped is not None:
             text = "SKIPPED: the run stopped for the person; call it again if still needed."
@@ -236,14 +263,7 @@ def step(case: Case, settings: Settings, state: dict, pending_input: list) -> tu
         )
         if result.image and case.path(result.image).exists():
             images.append(image_message(case, result))
-    rec.append_turns(case.job_dir, logged)  # one write: the console never sees half a turn
-    rec.save_record(case.job_dir, record)
-    if stopped is not None:
-        # the other calls' answers wait with it: the next request must answer every call
-        state["pending_call"] = stopped
-        state["pending_outputs"] = outputs
-        return [], True
-    return outputs + images, False
+    return stopped
 
 
 # --- run and resume --------------------------------------------------------------------------
@@ -282,7 +302,10 @@ def resume_input(job_dir: Path, record: AgentRecord, state: dict) -> list | None
     if not answer:  # signed off: nothing more to send
         return answer
     waiting = state.pop("pending_outputs", None) or []
-    return [*waiting, *answer]
+    # every call's answer first, then the frames those calls looked at
+    calls = [item for item in waiting if item.get("type") == "function_call_output"]
+    frames = [item for item in waiting if item.get("type") != "function_call_output"]
+    return [*calls, *answer, *frames]
 
 
 def _resume_answer(job_dir: Path, record: AgentRecord, state: dict) -> list | None:

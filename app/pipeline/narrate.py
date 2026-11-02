@@ -107,7 +107,13 @@ def build_prompt(
     return prompt.replace("<<SAFETY>>", safety_text)
 
 
-def apply_rules(plan: Plan, answer: dict, language: str, safety: Safety | None) -> Narration:
+def apply_rules(
+    plan: Plan,
+    answer: dict,
+    language: str,
+    safety: Safety | None,
+    direction: str = "disassemble",
+) -> Narration:
     """Clean Spark's answer into a Narration, or raise NarrateError.
 
     Keeps only step indexes that exist in the plan (one line per plan step),
@@ -128,7 +134,7 @@ def apply_rules(plan: Plan, answer: dict, language: str, safety: Safety | None) 
             if isinstance(index, bool) or not isinstance(index, int):
                 continue
             by_index.setdefault(index, entry)
-    reassembly = build_reassembly(plan.steps)
+    reassembly = build_reassembly(plan.steps, direction)
     reassembly_text = {item.source_step: item.instruction for item in reassembly.steps}
     lines: list[NarrationLine] = []
     for step in plan.steps:
@@ -203,6 +209,7 @@ def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> 
         )
     except spark.SparkAnswerError as exc:
         raise NarrateError("Spark returned an invalid narration") from exc
-    narration = apply_rules(plan, data, (identity.language if identity else "") or "en", safety)
+    language = (identity.language if identity else "") or "en"
+    narration = apply_rules(plan, data, language, safety, direction)
     artifacts.save(job_dir, narration)
     return narration

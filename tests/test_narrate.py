@@ -214,3 +214,20 @@ def test_run_non_dict_answer_raises(tmp_path):
 
     with pytest.raises(NarrateError, match="Spark returned an invalid narration"):
         run(job_dir, settings, client)
+
+
+def test_an_assembly_video_gets_its_take_apart_lines():
+    from app.schemas import Plan, Step
+
+    plan = Plan(
+        title="Build",
+        device="Shelf",
+        mode="silent",
+        duration_s=20,
+        steps=[
+            Step(index=1, title="Place", instruction="Place the shelf.", start_s=0, end_s=9,
+                 action="place", removes=["shelf"]),
+        ],
+    )  # fmt: skip
+    narration = apply_rules(plan, {"steps": []}, "en", None, "assemble")
+    assert narration.steps[0].assemble == "Remove the shelf."

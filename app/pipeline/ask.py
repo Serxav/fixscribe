@@ -221,8 +221,8 @@ def live_typed(
     frame: bytes = b"",
     client: Any = None,
 ) -> LiveHeard:
-    """A typed line: the same as speaking it, with no transcription. Any typed line is a question
-    unless it is a short command, since nobody types by accident."""
+    """A typed line: the same as speaking it, with no transcription. Any typed line of two words or
+    more is a question unless the whole line is a command, since nobody types by accident."""
     text = " ".join(text.split())[:MAX_TYPED_CHARS]
     if not text:
         raise LiveError("the question is empty")
@@ -230,9 +230,11 @@ def live_typed(
         guide = artifacts.load(job_dir, Guide)
     except ArtifactError as exc:
         raise LiveError(f"no guide for this job: {exc}") from exc
-    command = parse_command(text)
-    if command == "none":
-        command = "question" if len(_plain(text).split()) >= 2 else "none"
+    # typed on purpose: a command only when the whole line is one ("back", not "back cover stuck?")
+    plain = _plain(text)
+    command = next((name for name, phrases in COMMANDS.items() if plain in phrases), None)
+    if command is None:
+        command = "question" if len(plain.split()) >= 2 else "none"
     if command == "question":
         client = client or _coach_client(job_dir, settings)
     return obey_words(job_dir, settings, guide, text, command, step, frame, client)

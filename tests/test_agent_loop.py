@@ -485,3 +485,47 @@ def test_a_quote_refusal_says_what_was_said(tmp_path):
         case, 1, "insert", "Mete el tornillo.", [], 1.0, 4.0, "frames/t4.0.jpg", [1, 1, 50, 50], ""
     )
     assert "they said: Ahora metemos el tornillo en la pata." in result.text
+
+
+def test_frames_looked_at_before_a_question_reach_the_model_after_the_answer(tmp_path, settings):
+    job = make_job(tmp_path)
+    ask = {"text": "Which bolt?", "frame": "", "box": [1, 1, 500, 500], "options": []}
+    meta = FakeMeta([("many", [("look", {"t_s": 2.0}), ("ask_person", ask)]), ("ask_person", ask)])
+    loop.run(job, settings, client=meta)
+    rec.write_answer(job, "the long one")
+    loop.run(job, settings, resume=True, client=meta)
+    sent = meta.calls[1]["input"]
+    kinds = [item.get("type") or item.get("role") for item in sent]
+    assert kinds[:2] == ["function_call_output", "function_call_output"]
+    assert "user" in kinds[2:]  # the frame from look comes after the answers
+
+
+def test_a_budget_stop_in_the_middle_of_a_turn_still_logs_what_ran(tmp_path, settings, monkeypatch):
+    job = make_job(tmp_path)
+    many = [("look", {"t_s": 2.0}), ("look", {"t_s": 4.0})]
+    meta = FakeMeta([("many", many)])
+    real = loop.run_tool
+    seen = []
+
+    def run_tool(case, name, arguments):
+        seen.append(name)
+        if len(seen) == 2:
+            raise BudgetExceeded("job budget")
+        return real(case, name, arguments)
+
+    monkeypatch.setattr(loop, "run_tool", run_tool)
+    record = loop.run(job, settings, client=meta)
+    assert record.status == "paused"
+    assert [t.act.tool for t in rec.load_turns(job)] == ["look"]
+
+
+def test_the_gap_question_is_asked_once_even_after_many_notes(tmp_path):
+    case = case_for(tmp_path, FakeMeta([]), narrated=False)
+    case.draft = [(6.0, 9.0, "Fit the leg")]
+    add_part(case, "A", "bolt", 1, "frames/t2.0.jpg", [100, 400, 300, 600])
+    args = ("insert", "Put it in.", ["A"], 1.0, 3.0, "frames/t2.0.jpg", [1, 1, 50, 50], "")
+    add_step(case, 1, *args)
+    assert not submit_guide(case).ok
+    case.record.notes += [f"turn {n} refused" for n in range(30)]
+    case.record.notes = case.record.notes[-20:]
+    assert submit_guide(case).ok

@@ -257,3 +257,14 @@ def test_route_answers_a_typed_question(tmp_path, monkeypatch):
         assert client.post("/api/live/nope/ask", data={"text": "hi there"}).status_code == 404
     finally:
         app.dependency_overrides.pop(settings_dep, None)
+
+
+def test_a_short_typed_question_with_a_command_word_is_still_a_question(tmp_path, monkeypatch):
+    artifacts.save(tmp_path, _guide())
+    (tmp_path / "live").mkdir()
+    monkeypatch.setattr(spark, "ask_json", lambda *a, **k: {"answer": "Heat it.", "step": 1})
+    settings = Settings(model_api_key="", data_dir=tmp_path)
+
+    heard = live_typed(tmp_path, settings, "back cover stuck?", 1, b"", Ears())
+    assert (heard.command, heard.answer) == ("question", "Heat it.")
+    assert live_typed(tmp_path, settings, "Go back", 1).command == "back"
