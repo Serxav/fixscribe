@@ -288,6 +288,7 @@ def guide_page(
             "proof_percent": round(guide.proof.score * 100) if guide.proof else None,
             "level": guide.safety.level if guide.safety else "normal",
             "agent": agent_view(folder),
+            "catalog": agent_catalog(folder, job_id) if settings.enable_inspector else None,
         },
     )
 
@@ -314,6 +315,29 @@ def agent_view(folder: Path) -> dict | None:
     if note is None:
         return None
     return {"status": status, "text": note[0], "link": note[1]}
+
+
+def agent_catalog(folder: Path, job_id: str) -> dict | None:
+    """The agent's parts catalog (A, B, C... each cut out by SAM), once it filed its guide."""
+    try:
+        record = agent_record.load_record(folder)
+    except (ArtifactError, ValueError, OSError):
+        return None
+    if record.status not in ("awaiting_signoff", "done"):
+        return None
+    parts = [
+        {
+            "id": part.id,
+            "name": part.name,
+            "count": part.count,
+            "image": f"/jobs/{job_id}/agent/media/{part.crop}",
+        }
+        for part in record.parts
+        if part.verified and part.crop and (folder / "agent" / part.crop).is_file()
+    ]
+    if not parts:
+        return None
+    return {"parts": parts, "signed": record.status == "done", "steps": len(record.steps)}
 
 
 @router.get("/guides/{job_id}/film", response_class=HTMLResponse)
