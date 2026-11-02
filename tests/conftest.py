@@ -4,6 +4,7 @@ import httpx
 import pytest
 
 from app import meta_client
+from app.limits import LIMITER
 
 
 def _no_network(*args, **kwargs):
@@ -17,3 +18,4 @@ def block_network(monkeypatch):
     monkeypatch.setenv("MODEL_API_KEY", "")
     monkeypatch.setenv("PIPELINE_WORKERS", "1")  # fake clients answer in order
     monkeypatch.setattr(meta_client, "_factory", None)  # each test starts with no fake leaked
+    LIMITER.reset()  # per-visitor counts never leak from one test to the next

@@ -90,7 +90,8 @@ guide warns when the video is smaller.
 
 No login: a job's unguessable link is its key, and no route lists jobs. The original video and raw
 model answers are never served, uploads open only as real phone video files, the location is
-dropped from working copies, and every path to Meta has a budget. See
+dropped from working copies, every path to Meta has a budget, and each visitor has limits (videos a
+day, coach minutes a day, questions an hour). See
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#limits-on-a-public-server).
 
 ## Run locally

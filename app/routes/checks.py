@@ -6,6 +6,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app.artifacts import ArtifactError
 from app.config import Settings
+from app.limits import limit
 from app.pipeline.stepcheck import MAX_PHOTO_BYTES, CheckLimitReached, StepCheckError, check_step
 from app.routes.common import job_folder
 from app.routes.upload import settings_dep
@@ -13,7 +14,7 @@ from app.routes.upload import settings_dep
 router = APIRouter()
 
 
-@router.post("/guides/{job_id}/steps/{index}/check")
+@router.post("/guides/{job_id}/steps/{index}/check", dependencies=[Depends(limit("action"))])
 async def check_photo(
     job_id: str,
     index: int,

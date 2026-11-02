@@ -16,6 +16,16 @@ The camera and microphone only work over https, so judges need a hosted address.
 | `LIVE_MAX_CALLS` | `2000` | coach calls on the sample guide; any other guide stops at 300 |
 | `ENABLE_INSPECTOR` | `false` | the agent costs more per job |
 | `DEMO_JOB` | the folder in `demo/` | the sample guide on the landing |
+| `TRUST_PROXY` | `true` | the host's proxy adds the visitor's address; without it every visitor counts as one |
+| `VISITOR_VIDEOS_PER_DAY` | `2` | videos one visitor can turn into guides a day |
+| `VISITOR_COACH_MINUTES_PER_DAY` | `20` | minutes of live coach one visitor gets a day |
+| `VISITOR_QUESTIONS_PER_HOUR` | `30` | voice and typed questions one visitor can ask an hour |
+| `VISITOR_ACTIONS_PER_HOUR` | `60` | step checks, fastener taps and agent runs one visitor can start an hour |
+
+Visitors are counted by address, in memory: a restart clears the counts, and the spend caps above
+stay the ceiling behind them. A visitor over a limit gets a 429 with one sentence saying which
+limit and when it comes back; the coach stops sending frames when it gets one. `0` turns a
+per-visitor limit off.
 
 Before the first judge: open the address on a phone, try the camera and the microphone over https,
 and run one short video through. Then, inside the running image, check that ffmpeg refuses a playlist

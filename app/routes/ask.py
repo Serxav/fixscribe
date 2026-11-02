@@ -9,6 +9,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app import voice
 from app.config import Settings
+from app.limits import limit
 from app.pipeline.ask import MAX_CLIP_BYTES, live_typed, live_voice
 from app.pipeline.live import MAX_FRAME_BYTES, LiveError, LivePart, live_turn, marks_stages
 from app.routes.common import load_guide
@@ -17,7 +18,7 @@ from app.routes.upload import settings_dep
 router = APIRouter()
 
 
-@router.post("/api/live/{job_id}")
+@router.post("/api/live/{job_id}", dependencies=[Depends(limit("coach"))])
 async def live_frame(
     job_id: str,
     frame: UploadFile = File(...),  # noqa: B008
@@ -56,7 +57,7 @@ def _remaining_marks(stages: Iterator) -> Iterator[str]:
         yield json.dumps({"checked": True, "parts": [], "error": str(exc)}) + "\n"
 
 
-@router.post("/api/live/{job_id}/marks")
+@router.post("/api/live/{job_id}/marks", dependencies=[Depends(limit("coach"))])
 async def live_frame_marks(
     job_id: str,
     frame: UploadFile = File(...),  # noqa: B008
@@ -91,7 +92,7 @@ async def live_frame_marks(
     return StreamingResponse(lines(), media_type="application/x-ndjson")
 
 
-@router.post("/api/live/{job_id}/hear")
+@router.post("/api/live/{job_id}/hear", dependencies=[Depends(limit("question"))])
 async def live_hear(
     job_id: str,
     audio: UploadFile = File(...),  # noqa: B008
@@ -118,7 +119,7 @@ async def live_hear(
     return JSONResponse(heard.model_dump(mode="json"))
 
 
-@router.post("/api/live/{job_id}/ask")
+@router.post("/api/live/{job_id}/ask", dependencies=[Depends(limit("question"))])
 async def live_ask(
     job_id: str,
     text: str = Form(..., max_length=2000),  # noqa: B008
@@ -143,7 +144,7 @@ async def live_ask(
     return JSONResponse(heard.model_dump(mode="json"))
 
 
-@router.post("/api/voice/{job_id}")
+@router.post("/api/voice/{job_id}", dependencies=[Depends(limit("coach"))])
 async def spoken_line(
     job_id: str,
     text: str = Form(...),  # noqa: B008

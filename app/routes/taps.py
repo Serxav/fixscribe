@@ -9,6 +9,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app.artifacts import ArtifactError
 from app.config import Settings
+from app.limits import limit
 from app.meta_client import BudgetExceeded
 from app.pipeline.runner import is_running
 from app.pipeline.tap import TapError, add_fastener, remove_fastener
@@ -40,7 +41,7 @@ def _answer(perception: Perception, index: int) -> dict:
     return {"step": index, "fasteners": len(step.removed), "overlay": step.overlay}
 
 
-@router.post("/guides/{job_id}/steps/{index}/fasteners")
+@router.post("/guides/{job_id}/steps/{index}/fasteners", dependencies=[Depends(limit("action"))])
 async def tap_add(
     job_id: str,
     index: int,
@@ -59,7 +60,10 @@ async def tap_add(
     return _answer(result, index)
 
 
-@router.post("/guides/{job_id}/steps/{index}/fasteners/{number}/remove")
+@router.post(
+    "/guides/{job_id}/steps/{index}/fasteners/{number}/remove",
+    dependencies=[Depends(limit("action"))],
+)
 async def tap_remove(
     job_id: str,
     index: int,

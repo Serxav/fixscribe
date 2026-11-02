@@ -4,11 +4,12 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import demo
 from app.config import get_settings
+from app.limits import LimitReached
 from app.routes import ask as ask_routes
 from app.routes import checks as checks_routes
 from app.routes import console as console_routes
@@ -36,6 +37,13 @@ async def sample_guide_is_read_only(request: Request, call_next):
     if demo.is_write_to_sample(request.method, request.scope["path"], get_settings().demo_job):
         return JSONResponse({"error": "The sample guide cannot be changed."}, status_code=403)
     return await call_next(request)
+
+
+@app.exception_handler(LimitReached)
+async def limit_reached(request: Request, exc: LimitReached):
+    if request.scope["path"] == "/upload":  # a form post: the visitor sees a page
+        return HTMLResponse(f"<h1>Limit reached</h1><p>{exc}</p>", status_code=429)
+    return JSONResponse({"error": str(exc)}, status_code=429)
 
 
 app.mount("/static", StaticFiles(directory=str(ROOT / "web" / "static")), name="static")
