@@ -73,7 +73,9 @@ Live coach, measured on 2026-11-01 (one phone repair, one furniture assembly):
 An answer takes 8-9 s and marks 21-27 s. The two videos are few, the key's author also tuned the
 coach, and the furniture marks ranged from 74 % to 84 % between runs. A rerun on the phone video on
 2026-11-02 gave marks right 11 of 12 (92 %) and the step's own part 7 of 11, with a median of 28.5 s
-for the marks on a day the Meta API was slow. Typed questions on that guide: 3 of 3 right, 2-4 s.
+for the marks on a day the Meta API was slow. Pointing at the step's part again while the check runs
+then gave, on the same video the same evening, marks right 17 of 19 (89 %), the step's own part 10 of
+11 and a median of 20.0 s, for the same $0.48. Typed questions on that guide: 3 of 3 right, 2-4 s.
 
 The score on a guide page is the guide's own proof score, not an independent test. The 8.5-minute
 phone repair scores 98 %. Checked by eye, 8 of its 10 shown parts are surely right, one spills

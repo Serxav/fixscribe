@@ -65,6 +65,12 @@ class Step(Strict):
     removes: list[str] = Field(default_factory=list)
     depends_on: list[int] = Field(default_factory=list)
     screws: ScrewMap | None = None
+
+    @field_validator("title", "instruction", mode="before")
+    @classmethod
+    def not_too_long(cls, value: Any, info: Any) -> Any:
+        return clip_text(value, MAX_TEXT[info.field_name])  # defined below, used at run time
+
     clip: str | None = None
     image: str | None = None
     overlay: str | None = None
@@ -149,6 +155,18 @@ class Guide(Strict):
         return self
 
 
+# A page cannot hold a model's runaway answer: longer texts are cut at a word, with an ellipsis.
+MAX_TEXT = {"title": 120, "device": 120, "summary": 600, "instruction": 1500}
+
+
+def clip_text(value: Any, limit: int) -> Any:
+    """``value`` cut to at most ``limit`` characters at a word boundary; non-text unchanged."""
+    if not isinstance(value, str) or len(value) <= limit:
+        return value
+    cut = value[: limit - 1].rsplit(" ", 1)[0].rstrip(" ,;:.")
+    return cut + "…"
+
+
 class DraftStep(BaseModel):
     """One step as Muse Spark returns it. Lenient: the guide builder cleans it up."""
 
@@ -199,6 +217,11 @@ class DraftStep(BaseModel):
             for item in value
         ]
 
+    @field_validator("title", "instruction", mode="before")
+    @classmethod
+    def not_too_long(cls, value: Any, info: Any) -> Any:
+        return clip_text(value, MAX_TEXT[info.field_name])
+
     @field_validator("start_s", "end_s", "fastener_s", mode="before")
     @classmethod
     def no_negative_times(cls, value: Any) -> Any:
@@ -226,6 +249,11 @@ class Analysis(BaseModel):
     parts: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     steps: list[DraftStep] = Field(default_factory=list)
+
+    @field_validator("title", "device", "summary", mode="before")
+    @classmethod
+    def not_too_long(cls, value: Any, info: Any) -> Any:
+        return clip_text(value, MAX_TEXT[info.field_name])
 
     @field_validator("estimated_minutes", mode="before")
     @classmethod

@@ -140,3 +140,22 @@ def test_a_draft_step_with_swapped_or_negative_times_is_kept():
         {"title": "Open", "start_s": -5.0, "end_s": 2.0, "fastener_s": -1}
     )
     assert (negative.start_s, negative.end_s, negative.fastener_s) == (0.0, 2.0, 0.0)
+
+
+def test_runaway_texts_are_cut_at_a_word():
+    from app.schemas import MAX_TEXT, Analysis
+
+    long = "Remove the cover carefully. " * 400
+    analysis = Analysis.model_validate(
+        {
+            "summary": long,
+            "title": long,
+            "steps": [{"title": long, "instruction": long, "start_s": 0, "end_s": 2}],
+        }  # fmt: skip
+    )
+    assert len(analysis.summary) <= MAX_TEXT["summary"] and analysis.summary.endswith("…")
+    assert len(analysis.title) <= MAX_TEXT["title"]
+    assert len(analysis.steps[0].instruction) <= MAX_TEXT["instruction"]
+    assert not analysis.steps[0].title.endswith(" …")
+    short = Analysis.model_validate({"summary": "Open it.", "steps": []})
+    assert short.summary == "Open it."
