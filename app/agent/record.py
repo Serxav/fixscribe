@@ -121,6 +121,16 @@ def append_turn(job_dir: Path, turn: Turn) -> None:
         fh.write(turn.model_dump_json() + "\n")
 
 
+def append_turns(job_dir: Path, turns: list[Turn]) -> None:
+    """Add the lines of one turn in a single write."""
+    if not turns:
+        return
+    path = agent_dir(job_dir) / "turns.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write("".join(turn.model_dump_json() + "\n" for turn in turns))
+
+
 def load_turns(job_dir: Path, after: int = 0) -> list[Turn]:
     """Turns with a number above ``after``; a half-written last line is skipped."""
     path = agent_dir(job_dir) / "turns.jsonl"

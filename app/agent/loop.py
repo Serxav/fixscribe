@@ -29,9 +29,11 @@ from app.schemas import Analysis, Identity, IngestInfo, Perception, Transcript
 
 logger = logging.getLogger(__name__)
 
-PROMPT = Path(__file__).resolve().parents[2] / "prompts" / "agent_v1.md"
+PROMPT = Path(__file__).resolve().parents[2] / "prompts" / "agent_v2.md"
 MAX_TURNS = 30
 MORE_TURNS = 15
+MAX_CALLS_PER_TURN = 6  # tools Wonder may call in one answer: look at three seconds at once
+WRAP_UP_TURNS = 5  # this many turns before the end it is told to finish and submit
 MAX_OUTPUT_TOKENS = 16000  # reasoning counts here too
 EFFORT = "high"
 
@@ -131,11 +133,12 @@ def tool_output(call_id: str, text: str) -> dict:
     return {"type": "function_call_output", "call_id": call_id, "output": text}
 
 
-def first_call(response: Any) -> Any | None:
-    for item in getattr(response, "output", None) or []:
-        if getattr(item, "type", "") == "function_call":
-            return item
-    return None
+def tool_calls(response: Any) -> list:
+    return [
+        item
+        for item in getattr(response, "output", None) or []
+        if getattr(item, "type", "") == "function_call"
+    ]
 
 
 def turn_cost(model: str, response: Any) -> tuple[int, float]:
@@ -148,16 +151,25 @@ def turn_cost(model: str, response: Any) -> tuple[int, float]:
 
 
 def step(case: Case, settings: Settings, state: dict, pending_input: list) -> tuple[list, bool]:
-    """Ask the model once, run its tool, save the turn. Returns (next input, stop)."""
+    """Ask the model once, run its tools in order, save the turn. Returns (next input, stop)."""
     record = case.record
     nudge = []
-    if record.turn + 1 >= record.max_turns:
+    left = record.max_turns - record.turn
+    if left <= 1:
         nudge = [{"role": "user", "content": "This is your last turn: call submit_guide now."}]
+    elif left == WRAP_UP_TURNS:
+        nudge = [
+            {
+                "role": "user",
+                "content": f"{left} turns left: add the remaining steps (every part must be used "
+                "in a step, or the guide is refused), then call submit_guide.",
+            }
+        ]
     follow_up = {"previous_response_id": state["response_id"]} if state.get("response_id") else {}
     request = {
         "model": settings.wonder_model,
         "tools": DEFINITIONS,
-        "parallel_tool_calls": False,
+        "parallel_tool_calls": True,
         "reasoning": {"effort": EFFORT},
         "max_output_tokens": MAX_OUTPUT_TOKENS,
     }
@@ -175,36 +187,56 @@ def step(case: Case, settings: Settings, state: dict, pending_input: list) -> tu
     tokens, usd = turn_cost(settings.wonder_model, response)
     record.usd = round(record.usd + usd, 4)
     plan = (getattr(response, "output_text", "") or "").strip()[:600]
-    call = first_call(response)
-    if call is None:
-        rec.append_turn(case.job_dir, Turn(turn=record.turn, plan=plan, tokens=tokens, usd=usd))
+    calls = tool_calls(response)
+    if not calls:
+        rec.append_turns(case.job_dir, [Turn(turn=record.turn, plan=plan, tokens=tokens, usd=usd)])
         rec.save_record(case.job_dir, record)
-        reminder = "Continue with one tool call. When the guide is complete, call submit_guide."
+        reminder = "Continue with tool calls. When the guide is complete, call submit_guide."
         return [{"role": "user", "content": reminder}], False
-    result = run_tool(case, call.name, call.arguments)
-    if not result.ok:
-        record.notes = (record.notes + [f"turn {record.turn} {call.name}: {result.text}"])[-20:]
-    args = json.loads(call.arguments) if call.arguments else {}
-    rec.append_turn(
-        case.job_dir,
-        Turn(
-            turn=record.turn,
-            plan=plan,
-            tokens=tokens,
-            usd=usd,
-            act=Act(tool=call.name, args=args if isinstance(args, dict) else {}),
-            observe=Observe(ok=result.ok, text=result.text, image=result.image),
-        ),
-    )
-    if result.stop:
-        state["pending_call"] = call.call_id
-        rec.save_record(case.job_dir, record)
-        return [], True
+    outputs, images, logged, stopped = [], [], [], None
+    for k, call in enumerate(calls):
+        if stopped is not None:
+            text = "SKIPPED: the run stopped for the person; call it again if still needed."
+            outputs.append(tool_output(call.call_id, text))
+            continue
+        if k >= MAX_CALLS_PER_TURN:
+            text = f"SKIPPED: at most {MAX_CALLS_PER_TURN} tool calls per turn."
+            outputs.append(tool_output(call.call_id, text))
+            continue
+        result = run_tool(case, call.name, call.arguments)
+        if not result.ok:
+            record.notes = (record.notes + [f"turn {record.turn} {call.name}: {result.text}"])[-20:]
+        try:
+            args = json.loads(call.arguments) if call.arguments else {}
+        except ValueError:
+            args = {}
+        first = not logged  # the turn's cost and reason go on its first action
+        logged.append(
+            Turn(
+                turn=record.turn,
+                plan=plan if first else "",
+                tokens=tokens if first else 0,
+                usd=usd if first else 0.0,
+                act=Act(tool=call.name, args=args if isinstance(args, dict) else {}),
+                observe=Observe(ok=result.ok, text=result.text, image=result.image),
+            )
+        )
+        if result.stop:
+            stopped = call.call_id
+            continue
+        outputs.append(
+            tool_output(call.call_id, ("OK: " if result.ok else "REFUSED: ") + result.text)
+        )
+        if result.image and case.path(result.image).exists():
+            images.append(image_message(case, result))
+    rec.append_turns(case.job_dir, logged)  # one write: the console never sees half a turn
     rec.save_record(case.job_dir, record)
-    next_input = [tool_output(call.call_id, ("OK: " if result.ok else "REFUSED: ") + result.text)]
-    if result.image and case.path(result.image).exists():
-        next_input.append(image_message(case, result))
-    return next_input, False
+    if stopped is not None:
+        # the other calls' answers wait with it: the next request must answer every call
+        state["pending_call"] = stopped
+        state["pending_outputs"] = outputs
+        return [], True
+    return outputs + images, False
 
 
 # --- run and resume --------------------------------------------------------------------------
@@ -237,6 +269,16 @@ def restart_input(case: Case, state: dict, pending_input: list) -> list:
 
 def resume_input(job_dir: Path, record: AgentRecord, state: dict) -> list | None:
     """What to tell the model when a stopped run continues; None when there is nothing to do."""
+    answer = _resume_answer(job_dir, record, state)
+    if answer is None:
+        return None
+    if not answer:  # signed off: nothing more to send
+        return answer
+    waiting = state.pop("pending_outputs", None) or []
+    return [*waiting, *answer]
+
+
+def _resume_answer(job_dir: Path, record: AgentRecord, state: dict) -> list | None:
     call_id = state.get("pending_call")
     if record.status == "needs_input":
         answer = rec.take_answer(job_dir)
@@ -310,6 +352,8 @@ def run(
                 break
             pending, stop = step(case, settings, state, pending)
             save_state(job_dir, state)
+        if not stop and pending and state.get("response_id"):
+            state["pending_outputs"] = pending  # answers to its last calls, sent on resume
     except BudgetExceeded as exc:
         record.status = "paused"
         record.notes.append(f"budget reached: {exc}")

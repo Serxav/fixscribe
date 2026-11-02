@@ -265,7 +265,12 @@ def add_step(
         b >= start_s - QUOTE_WINDOW_S and a <= end_s + QUOTE_WINDOW_S for a, b, _ in case.turns
     )
     if spoken and not quote.strip():
-        problems.append("copy the person's own words for this step into quote")
+        said = " / ".join(
+            text
+            for a, b, text in case.turns
+            if b >= start_s - QUOTE_WINDOW_S and a <= end_s + QUOTE_WINDOW_S
+        )
+        problems.append(f"copy the person's own words for this step into quote; they said: {said}")
     elif quote.strip() and not quote_found(case, quote, start_s, end_s):
         problems.append("quote is not in the narration near this step: copy it exactly")
     if problems:

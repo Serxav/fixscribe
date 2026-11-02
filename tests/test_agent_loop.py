@@ -67,13 +67,16 @@ class FakeMeta:
             raise AssertionError("the script ran out")
         name, args = self.script.pop(0)
         n = len(self.calls)
-        output = []
-        if name:
-            output = [
-                types.SimpleNamespace(
-                    type="function_call", name=name, arguments=json.dumps(args), call_id=f"c{n}"
-                )
-            ]
+        many = args if name == "many" else [(name, args)] if name else []
+        output = [
+            types.SimpleNamespace(
+                type="function_call",
+                name=tool,
+                arguments=json.dumps(tool_args),
+                call_id=f"c{n}" if len(many) == 1 else f"c{n}.{k}",
+            )
+            for k, (tool, tool_args) in enumerate(many)
+        ]
         usage = types.SimpleNamespace(
             input_tokens=1000,
             output_tokens=200,
@@ -152,7 +155,7 @@ def test_rehearsal_good_run_end_to_end(tmp_path, settings):
     assert record.question.text == "Is this the long bolt?"
     assert record.parts[0].verified and (job / "agent" / record.parts[0].crop).exists()
     assert meta.calls[0]["model"] == settings.wonder_model
-    assert meta.calls[0]["parallel_tool_calls"] is False
+    assert meta.calls[0]["parallel_tool_calls"] is True
     assert "previous_response_id" not in meta.calls[0]
     assert meta.calls[1]["previous_response_id"] == "r1"
     # look -> the next input carries the frame as an image in a user message
@@ -407,3 +410,48 @@ def test_fresh_start_never_discards_a_run_waiting_for_the_person(tmp_path, monke
     monkeypatch.setattr(loop.subprocess, "Popen", lambda *a, **k: started.append(a))
     assert loop.launch(job) is False
     assert started == []
+
+
+def test_several_tools_in_one_turn(tmp_path, settings):
+    job = make_job(tmp_path)
+    many = [("look", {"t_s": 2.0}), ("look", {"t_s": 4.0})]
+    stop = {"text": "Which bolt?", "frame": "", "box": [1, 1, 500, 500], "options": []}
+    meta = FakeMeta([("many", many), ("ask_person", stop)])
+    loop.run(job, settings, client=meta)
+
+    second = meta.calls[1]["input"]
+    outputs = [item for item in second if item.get("type") == "function_call_output"]
+    assert [o["call_id"] for o in outputs] == ["c1.0", "c1.1"]
+    assert sum(1 for item in second if item.get("role") == "user") == 2  # both frames
+    turns = rec.load_turns(job)
+    assert [t.turn for t in turns[:2]] == [1, 1]
+    assert turns[0].usd > 0 and turns[1].usd == 0  # the cost is counted once
+
+
+def test_a_question_among_other_calls_keeps_their_answers_for_the_resume(tmp_path, settings):
+    job = make_job(tmp_path)
+    ask = {"text": "Which bolt?", "frame": "", "box": [1, 1, 500, 500], "options": []}
+    many = [("look", {"t_s": 2.0}), ("ask_person", ask), ("look", {"t_s": 4.0})]
+    meta = FakeMeta([("many", many), ("ask_person", ask)])
+    record = loop.run(job, settings, client=meta)
+    assert record.status == "needs_input"
+
+    rec.write_answer(job, "the long one")
+    loop.run(job, settings, resume=True, client=meta)
+    sent = meta.calls[1]["input"]
+    ids = [item["call_id"] for item in sent if item.get("type") == "function_call_output"]
+    assert sorted(ids) == ["c1.0", "c1.1", "c1.2"]  # every call of that turn is answered
+    assert any("SKIPPED" in item["output"] for item in sent if item.get("call_id") == "c1.2")
+
+
+def test_a_quote_refusal_says_what_was_said(tmp_path):
+    job = make_job(tmp_path)
+    case = loop.load_case(job, FakeMeta([]), rec.load_record(job))
+    case.turns = [(1.0, 4.0, "Ahora metemos el tornillo en la pata.")]
+    (job / "agent" / "frames").mkdir(parents=True)
+    (job / "agent" / "frames" / "t4.0.jpg").write_bytes(b"x")
+    case.record.parts = []
+    result = add_step(
+        case, 1, "insert", "Mete el tornillo.", [], 1.0, 4.0, "frames/t4.0.jpg", [1, 1, 50, 50], ""
+    )
+    assert "they said: Ahora metemos el tornillo en la pata." in result.text
