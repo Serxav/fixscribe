@@ -220,6 +220,12 @@
 <div class="sect"><span class="num">VII</span><span>Full video</span></div>
 <div class="grid12 guide-sect">
   <div class="col-r">
+    <form class="ask-guide" id="ask-guide" autocomplete="off">
+      <label class="kicker" for="ask-guide-text">Ask about this repair</label>
+      <div class="ask-guide-row"><input type="text" id="ask-guide-text" maxlength="200" placeholder="How many screws hold the bracket?"><button class="btn btn-primary" type="submit">Ask</button></div>
+      <p class="ask-guide-answer" id="ask-guide-answer" aria-live="polite"></p>
+      <button class="btn btn-glass hidden" type="button" id="ask-guide-see"></button>
+    </form>
     <video id="main-video" src="/media/{{ job_id }}/video.mp4" controls playsinline preload="metadata" style="width:100%;background:#000"></video>
   </div>
 </div>
