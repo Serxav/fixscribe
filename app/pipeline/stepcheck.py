@@ -238,6 +238,12 @@ def check_step(
                 f"SAM found {count} {plural(kind, count)};"
                 " the photo could not be matched to the guide."
             )
+    elif count <= expected and step_perception.screws_before <= expected:
+        # SAM never saw these fasteners in the guide's own video: their absence proves nothing
+        result.message = (
+            f"SAM 3.1 sees no {plural(kind)} here, but it could not see them in the guide's video"
+            " either, so it cannot tell. Compare your photo with the guide photo."
+        )
     elif count <= expected:
         result.verdict = "done"
         # SAM seeing none is not proof: a hand, a tool or a far camera hides small fasteners

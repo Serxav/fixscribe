@@ -35,7 +35,10 @@ tool is broken.
 ## Rules
 - Describe only what the video shows or the person says. Never add steps from general knowledge.
 - Times are seconds of this video. Boxes are on a 0-1000 grid of the frame: [x_min, y_min, x_max, y_max].
-- Be economical: about 30 turns in total. Do not `look` at the same second twice.
+- Be economical: about 30 turns in total. You may call several tools in one turn (up to 6):
+  look at three seconds at once, or add the parts you already have boxes for together. Do not
+  `look` at the same second twice. Leave turns for the steps: a guide with parts and no steps is
+  refused.
 - Before each tool call, write one short sentence saying why (the person watches you work).
 - Write for the person: common words ("side panel", not "panel C-12"), same language as the narration
   for the step text, English part names.

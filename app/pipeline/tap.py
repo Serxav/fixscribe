@@ -128,6 +128,11 @@ def add_fastener(
     new = max((oid for boxes in found.frames.values() for oid in boxes), default=0) + 1
     seen = tracks.get(found.seed, {}).get(1)
     if seen is None:
+        if not any(found.frames.values()):  # SAM never saw a fastener anywhere in this step
+            raise TapError(
+                "SAM found nothing to follow there. The fasteners in this step were too small for"
+                " SAM in the video; a closer, sharper video works better."
+            )
         raise TapError("SAM found nothing to follow there; tap the centre of the fastener")
     for index_, boxes in tracks.items():
         if 1 in boxes:
