@@ -9,6 +9,7 @@ from fastapi.templating import Jinja2Templates
 from app import demo
 from app.config import Settings, get_settings
 from app.jobs import claim_daily_slot, create_job, update_status
+from app.limits import limit
 from app.pipeline.runner import start_job
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -44,7 +45,7 @@ def terms(request: Request):
     return templates.TemplateResponse(request, "terms.html", {})
 
 
-@router.post("/upload")
+@router.post("/upload", dependencies=[Depends(limit("video"))])
 async def upload_video(
     video: UploadFile,
     settings: Settings = Depends(settings_dep),  # noqa: B008

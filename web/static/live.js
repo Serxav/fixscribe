@@ -20,6 +20,7 @@
   var lastStatus = "";
   var voiceOn = true;
   var busy = false;
+  var limited = false; // the server said this visitor's coach time is used up
   var sentAt = 0;
   var sentSample = null;
   var marksSample = null;
@@ -216,9 +217,10 @@
       form.append("pending_step", String(pending));
       form.append("stood", String(stood));
       fetch("/api/live/" + jobId, { method: "POST", body: form })
-        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, status: r.status, d: d }; }); })
         .then(function (res) {
           if (res.ok) { show(res.d, sample, blob); } else { $("live-say").textContent = res.d.error || "Could not read the frame."; }
+          if (res.status === 429) limited = true; // stop sending frames: each would be refused
         })
         .catch(function () { $("live-say").textContent = "No connection."; })
         .finally(function () { busy = false; $("live-dot").className = "live-dot on"; });
@@ -348,7 +350,7 @@
       askMarks(waiting.answer, waiting.sample, waiting.blob);
       waiting = null;
     }
-    if (busy || now - sentAt < MIN_GAP_MS) return;
+    if (limited || busy || now - sentAt < MIN_GAP_MS) return;
     var isNew = apart(sample, sentSample) > MOVED;
     var refresh = now - sentAt >= STILL_REFRESH_MS && now - stillSince < STILL_PAUSE_MS;
     if (isNew || refresh) send(video, sample);

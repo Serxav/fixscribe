@@ -141,7 +141,9 @@ sends a frame only when the view changes. Two tiers run apart:
 - **Marks** (`marks_stages`, streamed as NDJSON): close-up, Spark names and points using only the
   manual's names up to this step, SAM cuts out (shown dashed), Spark checks them (shown solid), and
   a second look searches for the step's own part. When Spark did not point at that part at all, the
-  second look runs while the others are checked; each stage's time goes to the log.
+  second look runs while the others are checked. When Spark did point at it, a spare pointing runs
+  during the check, so a mark the check turns down is replaced without a second wait (median 27.1 s
+  to 20.0 s on the phone exam, same cost). Each stage's time goes to the log.
 
 Voice: `ear.js` cuts speech into 16 kHz WAV clips, Muse Voice transcribes them, and next / back /
 repeat / quiet run without AI in English and Spanish. Anything phrased as a question goes to Spark
@@ -163,6 +165,11 @@ There is no login: a job's link, 48 random bits, is its only key, and no route l
 - The coach stops at `LIVE_BUDGET_USD` and `LIVE_MAX_CALLS` on the sample guide, and at $2 and 300
   calls on any other. Camera frames and voice clips stay in a per-request folder deleted with the
   answer (`scratch_folder`).
+- Per visitor (`app/limits.py`, counted by address): 2 videos a day, 20 minutes of coach a day and
+  40 coach calls a minute, 30 questions an hour, 60 step checks, taps or agent runs an hour. Every
+  route that spends credits carries a `limit(...)` dependency, and a test lists them. Over a limit
+  the route answers 429 with one sentence. The counts live in memory; the spend caps stay behind
+  them.
 
 ## Failure and recovery
 

@@ -10,6 +10,7 @@ from app.agent import loop
 from app.agent import record as record_mod
 from app.agent.record import SignOff
 from app.config import Settings
+from app.limits import limit
 from app.routes.common import job_folder
 from app.routes.upload import settings_dep, templates
 from app.schemas import Guide
@@ -92,7 +93,7 @@ def api_agent_state(
     )
 
 
-@router.post("/api/jobs/{job_id}/agent/start")
+@router.post("/api/jobs/{job_id}/agent/start", dependencies=[Depends(limit("action"))])
 def api_agent_start(
     job_id: str,
     settings: Settings = Depends(settings_dep),  # noqa: B008
@@ -105,7 +106,7 @@ def api_agent_start(
     return _start_result(folder)
 
 
-@router.post("/api/jobs/{job_id}/agent/resume")
+@router.post("/api/jobs/{job_id}/agent/resume", dependencies=[Depends(limit("action"))])
 def api_agent_resume(
     job_id: str,
     settings: Settings = Depends(settings_dep),  # noqa: B008
@@ -118,7 +119,7 @@ def api_agent_resume(
     return _resume_result(folder)
 
 
-@router.post("/api/jobs/{job_id}/agent/answer")
+@router.post("/api/jobs/{job_id}/agent/answer", dependencies=[Depends(limit("action"))])
 async def api_agent_answer(
     request: Request,
     job_id: str,

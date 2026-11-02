@@ -367,7 +367,8 @@ class FakeMarksClient(FakeLiveClient):
         self.ground_query = ""
 
     def ground(self, path, query, *, context="", max_boxes=8, effort="medium"):
-        self.ground_query = query
+        self.ground_query = self.ground_query or query  # the first pointing, not the spare
+        self.ground_queries = [*getattr(self, "ground_queries", []), query]
         if self.error:
             raise self.error
         return [
@@ -592,3 +593,39 @@ def test_a_step_part_nobody_pointed_at_is_looked_for_again(tmp_path):
     assert len(fake.queries) == 2
     final = stages[-1][1]
     assert any(p.label == "battery" and p.target for p in final)
+
+
+class RejectsFirstCheck(FakeMarksClient):
+    """The first check turns every mark down; the check of the second look confirms it."""
+
+    def __init__(self):
+        super().__init__()
+        self.checks = 0
+
+    def respond(self, **kwargs):
+        self.checks += 1
+        real = self.checks > 1
+        tiles = [{"n": n, "real": real, "why": ""} for n in (1, 2)]
+        return types.SimpleNamespace(output_text=json.dumps({"tiles": tiles}))
+
+
+def test_a_marked_part_the_check_turns_down_uses_the_spare_second_look(tmp_path):
+    settings = _with_target(tmp_path)
+    fake = RejectsFirstCheck()
+
+    stages = list(marks_stages(tmp_path, settings, _frame_bytes(), 1, [], fake))
+
+    assert fake.ground_queries[1] == "the back cover"  # pointed at again while the check ran
+    assert fake.checks == 2
+    final = stages[-1][1]
+    assert [p.label for p in final] == ["back cover"] and final[0].target
+
+
+def test_a_confirmed_part_never_waits_for_the_spare(tmp_path):
+    settings = _with_target(tmp_path)
+    fake = FakeMarksClient()
+
+    stages = list(marks_stages(tmp_path, settings, _frame_bytes(), 1, [], fake))
+
+    assert fake.calls == 1  # one check; the spare's cut-out is never checked
+    assert [p.label for p in stages[-1][1]] == ["back cover"]

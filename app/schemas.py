@@ -65,6 +65,12 @@ class Step(Strict):
     removes: list[str] = Field(default_factory=list)
     depends_on: list[int] = Field(default_factory=list)
     screws: ScrewMap | None = None
+
+    @field_validator("title", "instruction", mode="before")
+    @classmethod
+    def not_too_long(cls, value: Any, info: Any) -> Any:
+        return clip_text(value, MAX_TEXT[info.field_name])  # defined below, used at run time
+
     clip: str | None = None
     image: str | None = None
     overlay: str | None = None
@@ -149,6 +155,18 @@ class Guide(Strict):
         return self
 
 
+# A page cannot hold a model's runaway answer: longer texts are cut at a word, with an ellipsis.
+MAX_TEXT = {"title": 120, "device": 120, "summary": 600, "instruction": 1500}
+
+
+def clip_text(value: Any, limit: int) -> Any:
+    """``value`` cut to at most ``limit`` characters at a word boundary; non-text unchanged."""
+    if not isinstance(value, str) or len(value) <= limit:
+        return value
+    cut = value[: limit - 1].rsplit(" ", 1)[0].rstrip(" ,;:.")
+    return cut + "…"
+
+
 class DraftStep(BaseModel):
     """One step as Muse Spark returns it. Lenient: the guide builder cleans it up."""
 
@@ -199,6 +217,22 @@ class DraftStep(BaseModel):
             for item in value
         ]
 
+    @field_validator("title", "instruction", mode="before")
+    @classmethod
+    def not_too_long(cls, value: Any, info: Any) -> Any:
+        return clip_text(value, MAX_TEXT[info.field_name])
+
+    @field_validator("start_s", "end_s", "fastener_s", mode="before")
+    @classmethod
+    def no_negative_times(cls, value: Any) -> Any:
+        return max(0.0, value) if isinstance(value, int | float) else value
+
+    @model_validator(mode="after")
+    def start_before_end(self) -> "DraftStep":
+        if self.end_s < self.start_s:  # Spark swapped them: the span is still right
+            self.start_s, self.end_s = self.end_s, self.start_s
+        return self
+
 
 class Analysis(BaseModel):
     """The JSON that the analyze stage asks Muse Spark for (saved as analysis.json)."""
@@ -215,6 +249,11 @@ class Analysis(BaseModel):
     parts: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     steps: list[DraftStep] = Field(default_factory=list)
+
+    @field_validator("title", "device", "summary", mode="before")
+    @classmethod
+    def not_too_long(cls, value: Any, info: Any) -> Any:
+        return clip_text(value, MAX_TEXT[info.field_name])
 
     @field_validator("estimated_minutes", mode="before")
     @classmethod
@@ -614,6 +653,62 @@ class Identity(Strict):
     @classmethod
     def confidence_0_to_1(cls, value: Any) -> Any:
         return DraftStep.confidence_0_to_1(value)
+
+    # One word off the list ("appliances", "fix") must not throw away everything else Spark saw.
+    @field_validator("category", mode="before")
+    @classmethod
+    def known_category(cls, value: Any) -> Any:
+        return _known(value, CATEGORIES, CATEGORY_WORDS, "other")
+
+    @field_validator("task", mode="before")
+    @classmethod
+    def known_task(cls, value: Any) -> Any:
+        return _known(value, TASKS, TASK_WORDS, "other")
+
+    @field_validator("skill", mode="before")
+    @classmethod
+    def known_skill(cls, value: Any) -> Any:
+        return _known(value, ["beginner", "intermediate", "expert"], {}, "intermediate")
+
+    @field_validator("hazards", mode="before")
+    @classmethod
+    def known_hazards(cls, value: Any) -> Any:
+        if not isinstance(value, list):
+            return []
+        found = [_known(item, HAZARDS, HAZARD_WORDS, "") for item in value]
+        return list(dict.fromkeys(h for h in found if h))  # safety.py still reads every word
+
+
+CATEGORY_WORDS = {
+    "appliances": "appliance", "home appliance": "appliance", "tool": "tools",
+    "car": "automotive", "vehicle": "automotive", "auto": "automotive", "bike": "other",
+    "electric": "electrical", "electricity": "electrical", "electronic": "electronics",
+    "plumbing fixture": "plumbing",
+}  # fmt: skip
+TASK_WORDS = {
+    "fix": "repair", "repairing": "repair", "replace": "repair", "replacement": "repair",
+    "build": "assemble", "assembly": "assemble", "install": "assemble",
+    "maintenance": "maintain", "clean": "maintain", "cleaning": "maintain",
+    "disassembly": "disassemble", "take apart": "disassemble", "teardown": "disassemble",
+    "diagnosis": "diagnose", "inspect": "diagnose",
+}  # fmt: skip
+HAZARD_WORDS = {
+    "mains": "mains_voltage", "electricity": "mains_voltage",
+    "gas line": "gas", "natural gas": "gas", "water pressure": "pressurized_water",
+    "lithium": "lithium_battery", "lithium ion battery": "lithium_battery", "sharp": "sharp_edges",
+    "hot": "hot_surface", "spring": "spring_tension", "heavy": "heavy_part",
+}  # fmt: skip
+
+
+def _known(value: Any, allowed: list[str], words: dict[str, str], fallback: str) -> str:
+    """The allowed word ``value`` means, or ``fallback`` when it means none of them."""
+    if not isinstance(value, str):
+        return fallback
+    text = value.strip().lower().replace("-", " ")
+    for candidate in (text, text.replace(" ", "_"), words.get(text, "")):
+        if candidate in allowed:
+            return candidate
+    return fallback
 
 
 IDENTITY_JSON_SCHEMA: dict[str, Any] = _object(

@@ -9,6 +9,7 @@ from pydantic import TypeAdapter
 from app.agent import loop as agent_loop
 from app.config import Settings
 from app.jobs import JobStatus, update_status
+from app.limits import limit
 from app.pipeline.runner import check_stale, is_running, stage_overview, start_job
 from app.progress import story
 from app.routes.common import job_folder
@@ -33,7 +34,7 @@ def api_job_status(
     return data
 
 
-@router.post("/api/jobs/{job_id}/resume")
+@router.post("/api/jobs/{job_id}/resume", dependencies=[Depends(limit("action"))])
 def api_job_resume(
     job_id: str,
     settings: Settings = Depends(settings_dep),  # noqa: B008

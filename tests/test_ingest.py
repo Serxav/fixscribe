@@ -249,3 +249,10 @@ def test_the_working_copy_never_keeps_where_it_was_filmed(tmp_path):
         text=True,
     ).stdout
     assert "41.3851" not in tags
+
+
+def test_too_short_video_is_rejected_before_any_model_call(tmp_path):
+    make_video(tmp_path / "original.mp4", size=(320, 240), seconds=1)
+    with pytest.raises(ingest.IngestError, match="video too short"):
+        ingest.run(tmp_path, Settings(model_api_key="", data_dir=tmp_path))
+    assert not (tmp_path / "video.mp4").exists()

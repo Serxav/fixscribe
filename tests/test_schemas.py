@@ -109,3 +109,53 @@ def test_magic_contracts_round_trip():
     assert StepCheck.model_validate_json(check.model_dump_json()) == check
     guide = Guide(title="t", device="d", mode="silent", proof=Proof(score=0.5))
     assert Guide.model_validate_json(guide.model_dump_json()).proof.score == 0.5
+
+
+def test_identity_keeps_what_it_can_from_words_off_the_list():
+    from app.schemas import Identity
+
+    identity = Identity.model_validate(
+        {
+            "object_name": "Oven",
+            "category": "Appliances",
+            "task": "fix",
+            "hazards": ["gas", "Hot", "warp core", "Sharp-Edges", "gas"],
+            "skill": "wizard",
+        }
+    )
+    assert identity.category == "appliance"
+    assert identity.task == "repair"
+    assert identity.hazards == ["gas", "hot_surface", "sharp_edges"]
+    assert identity.skill == "intermediate"
+    odd = Identity.model_validate({"object_name": "", "category": "spaceship", "task": None})
+    assert (odd.category, odd.task, odd.hazards) == ("other", "other", [])
+
+
+def test_a_draft_step_with_swapped_or_negative_times_is_kept():
+    from app.schemas import DraftStep
+
+    swapped = DraftStep.model_validate({"title": "Open", "start_s": 6.0, "end_s": 1.0})
+    assert (swapped.start_s, swapped.end_s) == (1.0, 6.0)
+    negative = DraftStep.model_validate(
+        {"title": "Open", "start_s": -5.0, "end_s": 2.0, "fastener_s": -1}
+    )
+    assert (negative.start_s, negative.end_s, negative.fastener_s) == (0.0, 2.0, 0.0)
+
+
+def test_runaway_texts_are_cut_at_a_word():
+    from app.schemas import MAX_TEXT, Analysis
+
+    long = "Remove the cover carefully. " * 400
+    analysis = Analysis.model_validate(
+        {
+            "summary": long,
+            "title": long,
+            "steps": [{"title": long, "instruction": long, "start_s": 0, "end_s": 2}],
+        }  # fmt: skip
+    )
+    assert len(analysis.summary) <= MAX_TEXT["summary"] and analysis.summary.endswith("…")
+    assert len(analysis.title) <= MAX_TEXT["title"]
+    assert len(analysis.steps[0].instruction) <= MAX_TEXT["instruction"]
+    assert not analysis.steps[0].title.endswith(" …")
+    short = Analysis.model_validate({"summary": "Open it.", "steps": []})
+    assert short.summary == "Open it."
