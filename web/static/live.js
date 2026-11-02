@@ -286,6 +286,34 @@
     };
   }
 
+  // A typed question works like a spoken one, for a noisy room or no microphone.
+  function askTyped(event) {
+    event.preventDefault();
+    var box = $("live-ask-text");
+    var text = box.value.trim();
+    if (!text || hearing) return;
+    hearing = true;
+    box.disabled = true;
+    $("live-hint").textContent = "Thinking…";
+    var video = $("live-camera");
+    var post = function (picture) {
+      var form = new FormData();
+      form.append("text", text);
+      if (picture) form.append("frame", picture, "frame.jpg");
+      form.append("step", String(current));
+      fetch("/api/live/" + jobId + "/ask", { method: "POST", body: form })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+          $("live-hint").textContent = res.ok ? "" : (res.d.error || "Could not answer — try again");
+          if (res.ok) { box.value = ""; obey(res.d); }
+        })
+        .catch(function () { $("live-hint").textContent = "Could not answer — try again"; })
+        .finally(function () { hearing = false; box.disabled = false; });
+    };
+    if (video.videoWidth) { snapshot(video, post); } else { post(null); }
+  }
+  $("live-ask").addEventListener("submit", askTyped);
+
   function heardClip(wav) {
     if (!micOn || hearing) return;
     hearing = true;

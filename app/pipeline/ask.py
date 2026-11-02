@@ -31,6 +31,7 @@ from app.spark import SparkAnswerError
 MAX_CLIP_S = 8
 MAX_CLIP_BYTES = 24000 * 2 * MAX_CLIP_S + 1024
 MAX_COMMAND_WORDS = 4
+MAX_TYPED_CHARS = 200
 LANGUAGES = ["Spanish", "English"]
 
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "ask_v2.md"
@@ -182,6 +183,20 @@ def live_voice(
     heard = data.get("transcript")
     heard = heard.strip() if isinstance(heard, str) else ""
     command = parse_command(heard)
+    return obey_words(job_dir, settings, guide, heard, command, step, frame, client)
+
+
+def obey_words(
+    job_dir: Path,
+    settings: Settings,
+    guide: Guide,
+    heard: str,
+    command: str,
+    step: int,
+    frame: bytes,
+    client: Any,
+) -> LiveHeard:
+    """A fixed command moves the coach; a question gets its answer from the guide and camera."""
     if command != "question":
         return LiveHeard(heard=heard, command=command)
     safety = guide.safety
@@ -196,3 +211,28 @@ def live_voice(
         see_step=answer.step,
         see_s=proof_second(guide, answer.step),
     )
+
+
+def live_typed(
+    job_dir: Path,
+    settings: Settings,
+    text: str,
+    step: int = 0,
+    frame: bytes = b"",
+    client: Any = None,
+) -> LiveHeard:
+    """A typed line: the same as speaking it, with no transcription. Any typed line is a question
+    unless it is a short command, since nobody types by accident."""
+    text = " ".join(text.split())[:MAX_TYPED_CHARS]
+    if not text:
+        raise LiveError("the question is empty")
+    try:
+        guide = artifacts.load(job_dir, Guide)
+    except ArtifactError as exc:
+        raise LiveError(f"no guide for this job: {exc}") from exc
+    command = parse_command(text)
+    if command == "none":
+        command = "question" if len(_plain(text).split()) >= 2 else "none"
+    if command == "question":
+        client = client or _coach_client(job_dir, settings)
+    return obey_words(job_dir, settings, guide, text, command, step, frame, client)
