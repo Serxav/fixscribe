@@ -28,7 +28,8 @@ REVERSE_ACTIONS = {
 
 
 # Actions that leave a part off in a repair video; every other action puts something on.
-TAKE_APART = frozenset({"remove", "disconnect", "unscrew", "unclip", "pry", "open", "peel"})
+# "flip" counts too: whatever was turned over is turned back.
+TAKE_APART = frozenset({"remove", "disconnect", "unscrew", "unclip", "pry", "open", "peel", "flip"})
 ARTICLES = ("the ", "a ", "an ", "both ", "all ", "each ")
 
 
@@ -71,39 +72,57 @@ def _key(part: str) -> str:
     return part.strip().lower()
 
 
-def steps_to_undo(steps: list[Step], direction: str = "disassemble") -> list[Step]:
-    """The steps the reverse guide undoes, in video order.
+def parts_still_off(steps: list[Step], direction: str = "disassemble") -> dict[int, list[str]]:
+    """Step index -> the parts that step took off and that are still off at the end of the video.
 
     A real repair video is not a clean teardown: a cover comes off, goes back for a test and comes
-    off again; a new battery goes in. Only what is still off at the end of the video goes back,
-    once, by undoing its last removal. A step that names no part is kept: nothing to follow.
-    The reverse of an assembly video takes apart everything it built.
+    off again; a new battery goes in. Every removal since a part was last put on is undone
+    ("unscrew the cover", then "remove the cover"), but the same action repeated on the same part
+    counts once, the last time: it was undone off camera. A taking-apart step that names no part
+    is kept with no parts: there is nothing to follow. The reverse of an assembly video takes
+    apart everything it built.
     """
     acting = [step for step in steps if step_action(step, direction)]
     if direction == "assemble":
-        return acting
-    last_off: dict[str, int] = {}
+        return {step.index: step_parts(step) for step in acting}
+    open_: dict[str, list[tuple[int, str]]] = {}  # part -> (step, action) since last put on
     for step in acting:
-        taking = step_action(step, direction) in TAKE_APART
+        action = step_action(step, direction)
         for part in step_parts(step):
-            if taking:
-                last_off[_key(part)] = step.index
-            else:
-                last_off.pop(_key(part), None)
-    keep = set(last_off.values())
-    return [
-        step
-        for step in acting
-        if step_action(step, direction) in TAKE_APART
-        and (step.index in keep or not step_parts(step))
-    ]
+            key = _key(part)
+            if action not in TAKE_APART:
+                open_.pop(key, None)
+                continue
+            earlier = [entry for entry in open_.get(key, []) if entry[1] != action]
+            open_[key] = [*earlier, (step.index, action)]
+    off: dict[int, set[str]] = {}
+    for key, entries in open_.items():
+        for index, _ in entries:
+            off.setdefault(index, set()).add(key)
+    result: dict[int, list[str]] = {}
+    for step in acting:
+        if step_action(step, direction) not in TAKE_APART:
+            continue
+        parts = step_parts(step)
+        if not parts:
+            result[step.index] = []
+        elif step.index in off:
+            result[step.index] = [part for part in parts if _key(part) in off[step.index]]
+    return result
+
+
+def steps_to_undo(steps: list[Step], direction: str = "disassemble") -> list[Step]:
+    """The steps the reverse guide undoes, in video order (see ``parts_still_off``)."""
+    still_off = parts_still_off(steps, direction)
+    return [step for step in steps if step.index in still_off]
 
 
 def removed_twice(steps: list[Step], direction: str = "disassemble") -> list[str]:
-    """A part taken off again with nothing putting it back in between: the analysis may be off."""
+    """The same action on the same part again, with nothing putting it back in between: the
+    analysis may be off, or the video skipped a step."""
     if direction == "assemble":
         return []
-    off: dict[str, int] = {}
+    off: dict[tuple[str, str], int] = {}
     warnings = []
     for step in steps:
         action = step_action(step, direction)
@@ -111,22 +130,25 @@ def removed_twice(steps: list[Step], direction: str = "disassemble") -> list[str
             continue
         for part in step_parts(step):
             if action not in TAKE_APART:
-                off.pop(_key(part), None)
-            elif _key(part) in off:
+                for key in [k for k in off if k[0] == _key(part)]:
+                    del off[key]
+            elif (_key(part), action) in off:
                 warnings.append(
-                    f"Step {step.index}: '{part}' was already removed in step {off[_key(part)]}."
+                    f"Step {step.index}: '{part}' was already removed in step "
+                    f"{off[(_key(part), action)]}."
                 )
             else:
-                off[_key(part)] = step.index
+                off[(_key(part), action)] = step.index
     return warnings
 
 
 def build_reassembly(steps: list[Step], direction: str = "disassemble") -> AssemblyResult:
     """The reverse guide: reassembly of a repair, or taking apart what an assembly built."""
     result = AssemblyResult(warnings=removed_twice(steps, direction))
+    still_off = parts_still_off(steps, direction)
     for step in reversed(steps_to_undo(steps, direction)):
         action = step_action(step, direction)
-        parts = step_parts(step)
+        parts = still_off[step.index]
         notes = []
         if not parts:
             result.warnings.append(
@@ -185,6 +207,7 @@ def check_reassembly(
 ) -> list[str]:
     """Compare a reassembly (built here or edited later) with the disassembly steps."""
     warnings = []
+    still_off = parts_still_off(steps, direction)
     taken_apart = steps_to_undo(steps, direction)
     by_index = {step.index: step for step in taken_apart}
     used: dict[int, ReassemblyStep] = {}
@@ -204,11 +227,11 @@ def check_reassembly(
             )
             continue
         used[item.source_step] = item
-        warnings.extend(compare_step(source, item))
+        warnings.extend(compare_step(source, item, still_off[source.index]))
 
     for step in taken_apart:
         if step.index not in used:
-            what = ", ".join(step_parts(step)) or "a part"
+            what = ", ".join(still_off[step.index]) or "a part"
             screws = screw_count(step.screws)
             extra = f" and {screws} screws" if screws else ""
             warnings.append(f"Step {step.index} removed {what}{extra}, but it is never put back.")
@@ -228,10 +251,11 @@ def check_reassembly(
     return warnings
 
 
-def compare_step(source: Step, item: ReassemblyStep) -> list[str]:
+def compare_step(source: Step, item: ReassemblyStep, parts: list[str] | None = None) -> list[str]:
     warnings = []
     label = f"Reassembly step {item.index} (undoes step {source.index})"
-    missing_parts = {p.lower() for p in step_parts(source)} - {p.lower() for p in item.parts}
+    wanted = step_parts(source) if parts is None else parts
+    missing_parts = {p.lower() for p in wanted} - {p.lower() for p in item.parts}
     for part in sorted(missing_parts):
         warnings.append(f"{label}: '{part}' is not put back.")
     removed, back = screw_count(source.screws), screw_count(item.screws)

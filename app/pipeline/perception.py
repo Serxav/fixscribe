@@ -371,6 +371,7 @@ def _process_step(
                                 box=_grid_box(box),
                                 confidence=None if confidence is None else round(confidence, 3),
                                 pointed=confidence is None,
+                                tracked=False,
                             )
                         )
                         next_number += 1

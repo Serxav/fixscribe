@@ -180,3 +180,38 @@ def test_an_assembly_video_takes_apart_everything_it_built():
     steps = [step(1, "place", ["shelf"]), step(2, "screw in", ["door"], screw_map=screws(1))]
     result = build_reassembly(steps, "assemble")
     assert [s.action for s in result.steps] == ["unscrew", "remove"]
+
+
+def test_unscrewing_then_removing_the_same_part_puts_both_back():
+    steps = [
+        step(1, "unscrew", ["bottom cover"], screw_map=screws(1, 2, 3)),
+        step(2, "remove", ["bottom cover"]),
+    ]
+    result = build_reassembly(steps)
+    assert [s.action for s in result.steps] == ["install", "screw in"]
+    assert result.steps[1].screws.count == 3
+    assert result.warnings == []
+
+
+def test_a_part_already_back_is_not_installed_again():
+    steps = [step(1, "remove", ["cover", "battery"]), step(2, "insert", ["battery"])]
+    result = build_reassembly(steps)
+    assert [s.parts for s in result.steps] == [["cover"]]
+    assert result.steps[0].instruction == "Install the cover."
+    assert result.warnings == []
+
+
+def test_a_flip_is_turned_back():
+    steps = [step(1, "flip", ["laptop"]), step(2, "unscrew", ["base"], screw_map=screws(1))]
+    result = build_reassembly(steps)
+    assert [s.action for s in result.steps] == ["screw in", "flip back"]
+
+
+def test_the_same_action_twice_counts_once():
+    steps = [
+        step(1, "unscrew", ["bracket"], screw_map=screws(1, 2)),
+        step(2, "unscrew", ["bracket"], screw_map=screws(1, 2, 3)),
+    ]
+    result = build_reassembly(steps)
+    assert [s.source_step for s in result.steps] == [2]
+    assert any("already removed" in w for w in result.warnings)

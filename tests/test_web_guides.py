@@ -99,6 +99,7 @@ def test_guide_page_renders(jobs_tmp):
     assert 'data-start="' in response.text
     assert f"/media/{job_id}/steps/01.mp4" in response.text
     assert "Keep the screws in order." in response.text
+    assert 'id="ask-guide"' in response.text  # typed questions, no camera needed
 
 
 def test_put_back_has_a_fastener_tally(jobs_tmp):

@@ -150,6 +150,51 @@
     });
   });
 
+  // Ask about this repair, typed: the answer names its step and jumps the full video there.
+  var askForm = document.getElementById("ask-guide");
+  if (askForm) {
+    var askText = document.getElementById("ask-guide-text");
+    var askAnswer = document.getElementById("ask-guide-answer");
+    var askSee = document.getElementById("ask-guide-see");
+    var askBusy = false;
+    var clock = function (s) {
+      var t = Math.max(0, Math.floor(s));
+      return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0");
+    };
+    askForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var text = askText.value.trim();
+      if (!text || askBusy) return;
+      askBusy = true;
+      askSee.classList.add("hidden");
+      askAnswer.className = "ask-guide-answer muted";
+      askAnswer.textContent = "Thinking…";
+      var form = new FormData();
+      form.append("text", text);
+      form.append("step", "0");
+      fetch("/api/live/" + jobId + "/ask", { method: "POST", body: form })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+          if (!res.ok) { askAnswer.textContent = res.d.error || "Could not answer — try again"; return; }
+          var d = res.d;
+          askAnswer.className = "ask-guide-answer";
+          askAnswer.textContent = d.answer || (d.command === "none" ? "Ask a full question, for example: which tool opens the cover?" : "Use the steps above to move through the guide.");
+          if (d.answer && d.see_step && d.see_s !== null && d.see_s !== undefined) {
+            askSee.textContent = "▶ See step " + d.see_step + " at " + clock(d.see_s);
+            askSee.classList.remove("hidden");
+            askSee.onclick = function () {
+              if (!mainVideo) return;
+              mainVideo.currentTime = Math.max(0, d.see_s - 1);
+              mainVideo.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+              mainVideo.play().catch(function () {});
+            };
+          }
+        })
+        .catch(function () { askAnswer.textContent = "Could not answer — try again"; })
+        .finally(function () { askBusy = false; });
+    });
+  }
+
   var toast = document.getElementById("toast");
   var hideTimer = null;
   function showToast(kind, title, text, badge) {

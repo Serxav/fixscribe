@@ -73,6 +73,7 @@ class AgentRecord(BaseModel):
     question: Question | None = None
     signoff: SignOff | None = None
     notes: list[str] = Field(default_factory=list)  # refusals and problems, newest last
+    gaps_asked: bool = False  # submit_guide already asked once about uncovered draft steps
 
 
 class Act(BaseModel):

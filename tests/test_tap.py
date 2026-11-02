@@ -181,3 +181,22 @@ def test_route_errors(client, monkeypatch):
     monkeypatch.setattr("app.routes.taps.is_running", lambda *args: True)
     response = http.post(f"/guides/{job_id}/steps/1/fasteners", json={"x": 0.5, "y": 0.5})
     assert response.status_code == 409
+
+
+def test_a_fastener_cut_on_one_frame_survives_other_edits_and_can_be_removed(job):
+    job_dir, settings = job
+    data = artifacts.load(job_dir, Perception)
+    step = data.steps[0]
+    box = NormBox(x=0.8, y=0.1, w=0.05, h=0.05)
+    n = len(step.removed) + 1
+    step.removed.append(ScrewRecord(id=f"S{n}", number=n, box=box, confidence=0.8, tracked=False))
+    artifacts.save(job_dir, data)
+
+    after_add = tap.add_fastener(job_dir, settings, 1, 0.5, 0.75, client=PointSam())
+    assert sum(not r.tracked for r in after_add.steps[0].removed) == 1  # still there
+
+    last = len(after_add.steps[0].removed)
+    one_frame = [r.number for r in after_add.steps[0].removed if not r.tracked][0]
+    result = tap.remove_fastener(job_dir, settings, 1, one_frame)
+    assert len(result.steps[0].removed) == last - 1
+    assert all(r.tracked for r in result.steps[0].removed)

@@ -140,11 +140,15 @@ sends a frame only when the view changes. Two tiers run apart:
   only with agreement, so one odd frame does not jump the guide.
 - **Marks** (`marks_stages`, streamed as NDJSON): close-up, Spark names and points using only the
   manual's names up to this step, SAM cuts out (shown dashed), Spark checks them (shown solid), and
-  a second look searches for the step's own part.
+  a second look searches for the step's own part. When Spark did not point at that part at all, the
+  second look runs while the others are checked; each stage's time goes to the log.
 
 Voice: `ear.js` cuts speech into 16 kHz WAV clips, Muse Voice transcribes them, and next / back /
 repeat / quiet run without AI in English and Spanish. Anything phrased as a question goes to Spark
-(`prompts/ask_v2.md`). Measured with `python -m eval.coach_exam` against `eval/coach_key.json`.
+(`prompts/ask_v2.md`, `POST /api/live/{id}/hear`). A typed line (`POST /api/live/{id}/ask`) skips the
+transcription and counts as a question unless it is a command. The answer names the step it comes
+from; the page turns that into "See step N at mm:ss" and plays six seconds of the guide's video.
+Measured with `python -m eval.coach_exam` against `eval/coach_key.json`.
 
 ## Limits on a public server
 
