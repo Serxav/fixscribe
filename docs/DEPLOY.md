@@ -33,3 +33,22 @@ after.
 
 To change the sample: `python -m scripts.pack_demo data/jobs/<id>`, commit `demo/<id>`. Only pack a
 video you have the right to publish.
+
+## Last day: from a new video to the submission
+
+The deadline is Nov 4, 2026, 9:00 PM ET (03:00 on Nov 5 in Spain). Leave at least three hours for
+these steps; the guide alone takes about 30 minutes on an 8.5-minute video.
+
+1. **Film.** A repair you have the right to publish, 2 s to 10 min, good light, the part filling
+   the frame, 1080p if screws matter. Say "step" (or "paso") before each step.
+2. **Guide.** Put it in `samples/` and run `.venv/bin/python scripts/run_video.py samples/<name>.mp4`.
+   It costs about $1.50 for 8.5 minutes and prints the job id. Start the server with
+   `.venv/bin/uvicorn app.main:app`, open `http://localhost:8000/guides/<id>` and read every step; regenerate a wrong one from the page.
+3. **Sample.** `python -m scripts.pack_demo data/jobs/<id>`. It leaves out the original upload,
+   visitors' photos, the agent's folder and backups, and shrinks a video GitHub would refuse.
+   Commit `demo/<id>`.
+4. **Host.** Push, then set `DEMO_JOB=<id>` and the other variables in the table above in the
+   host's panel. Open the address on a phone: the landing, the sample guide, the coach with the
+   camera and the microphone, one typed question.
+5. **Submit.** Fill the brackets in `docs/SUBMISSION.md`, add the deployed address, the repository
+   and the film, and send the form before the deadline.

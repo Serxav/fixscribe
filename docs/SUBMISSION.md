@@ -32,7 +32,8 @@ plays that moment of the video.
 - MMS-TTS, Meta's open weights, runs locally for the voice.
 
 **Technical depth:** Stages that resume after a failure, atomic job files, retries and 429 backoff,
-a per-job and global spend counter, 835 tests with Meta mocked, and exams against answer keys.
+a per-job and global spend counter, 942 tests with Meta mocked (strange model answers and odd videos
+included: a job ends with a guide or a clear sentence, never a crash), and exams against answer keys.
 
 **Results (2026-11-01, two videos):** the coach is on the right step 88 % and 95 % of the time within
 8 s, and 76 % and 80 % at the exact moment. Marks are right 93 % and 74 % of the time. On one

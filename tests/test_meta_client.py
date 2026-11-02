@@ -804,3 +804,30 @@ def test_generate_image_400_policy_error(tmp_path):
     with pytest.raises(ImagePolicyError, match="image generation"):
         client.generate_image("an engine")
     assert len(fake_http.posts) == 1
+
+
+def _add_many(path, times):
+    from app.meta_client import SpendCounter
+
+    counter = SpendCounter(path, 1000.0)
+    for _ in range(times):
+        counter.add("muse-spark-1.3", 0.01)
+
+
+def test_spend_counter_loses_nothing_when_many_processes_add_at_once(tmp_path):
+    import multiprocessing
+
+    from app.meta_client import SpendCounter
+
+    path = tmp_path / "spend.json"
+    workers = [
+        multiprocessing.get_context("spawn").Process(target=_add_many, args=(path, 25))
+        for _ in range(6)
+    ]
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join(60)
+        assert worker.exitcode == 0
+    assert SpendCounter(path, 1000.0).total() == pytest.approx(6 * 25 * 0.01)
+    assert len((tmp_path / "spend.log").read_text().splitlines()) == 150
