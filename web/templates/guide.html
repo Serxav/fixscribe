@@ -186,11 +186,14 @@
     <nav class="flip" aria-label="Direction"><a href="#steps">{% if guide.direction == "assemble" %}Build it{% else %}Take apart{% endif %}</a><a class="on" href="#put-back" aria-current="true">{% if guide.direction == "assemble" %}Take it apart{% else %}Put back{% endif %}</a></nav>
     <ol class="back-list">
       {% for r in guide.reassembly %}
-      <li><span class="n">{{ '%02d' % r.index }}</span><div><p class="back-title">{{ r.instruction }}</p>
-        {% if r.screws and r.screws.count %}<p class="back-note">{{ r.screws.count }} {{ r.screws.kind }}{% if r.screws.count != 1 %}s{% endif %} back · from step {{ r.source_step }}</p>{% elif r.parts %}<p class="back-note">{{ r.parts|join(', ') }}</p>{% endif %}
+      <li{% if r.screws and r.screws.count %} data-back="{{ r.index }}" data-back-count="{{ r.screws.count }}"{% endif %}><span class="n">{{ '%02d' % r.index }}</span><div><p class="back-title">{{ r.instruction }}</p>
+        {% if r.screws and r.screws.count %}<p class="back-note">{{ r.screws.count }} {{ r.screws.kind }}{% if r.screws.count != 1 %}s{% endif %} back · from step {{ r.source_step }}</p><button class="back-done" type="button" aria-pressed="false">Mark {{ r.screws.count }} back in</button>{% elif r.parts %}<p class="back-note">{{ r.parts|join(', ') }}</p>{% endif %}
         {% for w in r.warnings %}<div class="warn">{{ w }}</div>{% endfor %}</div></li>
       {% endfor %}
     </ol>
+    {% if balance and balance.back %}
+    <div class="tally" id="tally" data-total="{{ balance.back }}" aria-live="polite"><span class="tally-label">Tick each step as you put it back</span><b><span id="tally-n">0</span> <small>of {{ balance.back }} {{ balance.kind }} back</small></b><div class="tally-dots" aria-hidden="true">{% for _ in range(balance.back if balance.back <= 60 else 60) %}<i></i>{% endfor %}</div></div>
+    {% endif %}
     {% if balance %}
     <div class="balance{% if not balance.even %} off{% endif %}"><b>{{ balance.kind|capitalize }}: {{ balance.out }} out · {{ balance.back }} back</b><span>{% if not balance.even %}the counts do not match: check them{% elif balance.seen %}every fastener accounted for{% else %}counted from the video, not all seen on the images{% endif %}</span></div>
     {% endif %}

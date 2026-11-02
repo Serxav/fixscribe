@@ -101,6 +101,15 @@ def test_guide_page_renders(jobs_tmp):
     assert "Keep the screws in order." in response.text
 
 
+def test_put_back_has_a_fastener_tally(jobs_tmp):
+    job_id = _write_guide(jobs_tmp, _guide())
+    text = TestClient(app).get(f"/guides/{job_id}").text
+    assert 'id="tally" data-total="4"' in text
+    assert 'data-back="1" data-back-count="4"' in text
+    assert "Mark 4 back in" in text
+    assert "screws: 4 out · 4 back" in text.lower()
+
+
 def test_screw_check_amber_and_green(jobs_tmp):
     job_id = _write_guide(jobs_tmp, _guide(checks=["Screw check: 6 screws removed, 4 put back."]))
     response = TestClient(app).get(f"/guides/{job_id}")

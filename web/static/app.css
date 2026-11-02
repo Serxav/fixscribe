@@ -191,6 +191,17 @@ main.wrap { padding-top: 24px; padding-bottom: 120px; }
 .balance b { font-weight: 500; font-size: 15px; }
 .balance span { font-family: var(--mono); font-size: 12px; }
 .balance.off { background: #fff4e5; color: #a35a00; }
+.back-done { margin-top: 8px; padding: 5px 12px; border: 1px solid var(--rule); border-radius: 999px; background: transparent; color: var(--ink-2); font-size: 13px; cursor: pointer; }
+.back-done[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); color: #fff; }
+.tally { margin-top: 20px; padding: 18px 18px 16px; border-radius: 18px; background: var(--paper); display: grid; gap: 6px; transition: background .3s; }
+.tally-label { font-size: 13px; font-weight: 600; color: var(--ink-3); }
+.tally b { font-size: 44px; font-weight: 500; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.tally b small { font-size: 18px; letter-spacing: 0; }
+.tally-dots { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.tally-dots i { width: 14px; height: 14px; border-radius: 50%; background: #d6d4cc; transition: background .25s; }
+.tally-dots i.on { background: var(--ok); }
+.tally.full { background: #dcf5e4; }
+.tally.full .tally-label, .tally.full b { color: var(--ok); }
 .step-body { margin-top: 16px; }
 .instruction { font-size: 20px; line-height: 1.32; letter-spacing: -0.02em; margin: 0; }
 .warn { display: flex; gap: 10px; margin-top: 14px; padding: 10px 0 10px 14px; border-left: 2px solid var(--warn); color: var(--ink); font-size: 15px; }

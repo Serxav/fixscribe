@@ -5,6 +5,39 @@
   var jobId = root.dataset.jobId;
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  // Putting it back: each ticked step adds its fasteners to the count, kept in this browser only.
+  var tally = document.getElementById("tally");
+  if (tally) {
+    var key = "fixscribe-back-" + jobId;
+    var done = {};
+    try { done = JSON.parse(localStorage.getItem(key) || "{}") || {}; } catch (e) { done = {}; }
+    var total = parseInt(tally.dataset.total, 10) || 0;
+    var rows = document.querySelectorAll("[data-back]");
+    var drawTally = function () {
+      var n = 0;
+      rows.forEach(function (row) {
+        var on = !!done[row.dataset.back];
+        if (on) n += parseInt(row.dataset.backCount, 10) || 0;
+        var button = row.querySelector(".back-done");
+        button.setAttribute("aria-pressed", String(on));
+        button.textContent = (on ? "✓ " : "Mark ") + row.dataset.backCount + " back in";
+      });
+      n = Math.min(n, total);
+      document.getElementById("tally-n").textContent = String(n);
+      tally.querySelectorAll(".tally-dots i").forEach(function (dot, i) { dot.classList.toggle("on", i < n); });
+      tally.classList.toggle("full", total > 0 && n === total);
+      tally.querySelector(".tally-label").textContent = n === total ? "Every fastener is back in" : "Tick each step as you put it back";
+    };
+    rows.forEach(function (row) {
+      row.querySelector(".back-done").addEventListener("click", function () {
+        done[row.dataset.back] = !done[row.dataset.back];
+        try { localStorage.setItem(key, JSON.stringify(done)); } catch (e) { /* private mode: count for this visit only */ }
+        drawTally();
+      });
+    });
+    drawTally();
+  }
+
   var crumb = document.getElementById("crumb");
   window.addEventListener("scroll", function () {
     if (crumb) crumb.classList.toggle("show", window.scrollY > 260);
