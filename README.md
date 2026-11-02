@@ -34,7 +34,7 @@ Made for the Meta Global AI Developer Hackathon (Indie track).
 | `muse-voice-transcribe-1.0` | timestamped turns; the spoken "step" / "paso" become the step cuts |
 | `sam-3.1` (images) | highlights the part; finds fastener candidates on the full frame and on zoomed tiles |
 | `sam-3.1` (video) | follows each fastener through the step, so a fastener counts only if it appears or disappears where the step says; follows a point the user taps |
-| `muse-wonder-1.0` | the optional agent (`ENABLE_INSPECTOR`): it looks at frames, points at parts, adds steps and asks the person when unsure. On one real video it stopped at its budget after 18 turns, so it is not yet proven end to end |
+| `muse-wonder-1.0` | the optional agent (`ENABLE_INSPECTOR`): it looks at frames, points at parts, adds steps and asks the person when unsure. On one real 8.5-minute video it filed 15 steps covering the whole video with 5 SAM-proven parts in 13 turns, for $0.69 (2026-11-02) |
 | MMS-TTS (Meta open weights, CC-BY-NC 4.0, run locally) | reads the film and the live coach aloud in English; install it with `python -m scripts.get_voice`, otherwise the device voice is used |
 
 Unexpected uses:

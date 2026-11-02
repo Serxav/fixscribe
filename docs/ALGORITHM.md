@@ -71,15 +71,18 @@ part box is large and the hand boxes overlap it least.
 ## 5. Agent (Muse Wonder)
 Starts by itself when a guide is finished (`app/pipeline/runner.py` main, unless
 `ENABLE_INSPECTOR=false`), in its own background process, with `AGENT_BUDGET_USD` on top of the
-job's budget. One tool per turn, at most 30 turns until the person resumes it: `look` (a frame), `point` (Spark grounding on
+job's budget. Up to 6 tools per turn, at most 30 turns until the person resumes it: `look` (a frame), `point` (Spark grounding on
 that frame), `add_part` (SAM cuts the part out of the box; refused when the cut-out barely fills
 it), `add_step`, `ask_person` (one question on the exact frame) and `submit_guide`. Code checks
 every tool call; refusals go back to the agent. Every turn is saved (`agent/turns.jsonl`,
 `agent/record.json`) and shown live in the console (`/jobs/<id>/console`); the guide page says
 what the agent is doing and links to it. The person signs off or sends notes back.
 
-The agent is optional. On its one real video it spent its budget after 18 of 45 turns, so a whole
-guide by the agent is not yet proven.
+A step may last at most 90 s, and `submit_guide` asks once about draft steps no agent step covers.
+Five turns before the end the agent is told to finish. Measured on one real 8.5-minute video
+(2026-11-02, frames at about $0.02 a turn): 13 turns, $0.69, 15 steps covering 0:01 to 8:34 and 5
+parts cut out by SAM, filed for sign-off. Its quotes were mostly filler words, because that person
+barely explained what they did. The agent is optional: a server can turn it off.
 
 ## 6. Cost and latency control
 - Per-job budget (default 2.5 $) on top of the global budget; a job stops cleanly when it would pass it.
