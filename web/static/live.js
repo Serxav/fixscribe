@@ -281,7 +281,10 @@
         proof.currentTime = start;
         proof.play().catch(function () {});
       };
-      if (proof.readyState >= 1) play(); else proof.addEventListener("loadedmetadata", play, { once: true });
+      if (proof.readyState >= 1) { play(); } else {
+        proof.addEventListener("loadedmetadata", play, { once: true });
+        proof.load(); // preload="none": nothing loads until asked
+      }
       proof.ontimeupdate = function () { if (proof.currentTime > start + 6) proof.pause(); };
     };
   }
