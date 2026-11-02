@@ -357,13 +357,20 @@ def _is_small(mark: dict) -> bool:
     return max(x2 - x1, y2 - y1) < SMALL_MARK
 
 
+def _point_again(
+    client: Any, path: Path, crop: np.ndarray, target: str, context: str
+) -> list[dict]:
+    """Spark looks only for the step's own part, with more care, and SAM cuts it out."""
+    found = client.ground(path, f"the {target}", context=context, max_boxes=1, effort="medium")
+    named = [SimpleNamespace(label=target, box=g.box) for g in found[:1]]
+    return cut_marks(client, path, crop, named) if named else []
+
+
 def _look_again(
     client: Any, settings: Settings, path: Path, crop: np.ndarray, target: str, context: str
 ) -> list[dict]:
-    """The step's own part was not marked: Spark looks only for it, with more care."""
-    found = client.ground(path, f"the {target}", context=context, max_boxes=1, effort="medium")
-    named = [SimpleNamespace(label=target, box=g.box) for g in found[:1]]
-    marks = cut_marks(client, path, crop, named) if named else []
+    """The step's own part was not marked: look for it again, then check it."""
+    marks = _point_again(client, path, crop, target, context)
     return confirm(client, settings.spark_model, crop, marks, context, TARGET_PROMPT)
 
 
@@ -479,19 +486,30 @@ def _marks_stages(
             yield False, to_parts(marks)
         # the step's own part was not even pointed at: look for it while the others are checked
         missing = bool(target) and not any(is_target(m["label"], target) for m in marks)
-        with ThreadPoolExecutor(max_workers=1) as pool:
+        # The step's part was marked: point at it once more meanwhile, in case the check turns
+        # the mark down. That costs one pointing and one cut-out, and saves their wait.
+        pool = ThreadPoolExecutor(max_workers=1)
+        try:
             again = (
                 pool.submit(_look_again, client, settings, crop_path, crop, target, context)
                 if missing
                 else None
             )
+            spare = (
+                pool.submit(_point_again, client, crop_path, crop, target, context)
+                if target and not missing
+                else None
+            )
             checked = confirm(client, settings.spark_model, crop, marks, context)
             if again is not None:
                 checked += again.result()
-            elif target and not any(
+            elif spare is not None and not any(
                 m.get("checked") and is_target(m["label"], target) for m in checked
             ):
-                checked += _look_again(client, settings, crop_path, crop, target, context)
+                model = settings.spark_model
+                checked += confirm(client, model, crop, spare.result(), context, TARGET_PROMPT)
+        finally:
+            pool.shutdown(wait=False, cancel_futures=True)  # an unneeded spare is not waited for
         _lap("check", started, lap)
     except BudgetExceeded as exc:
         raise LiveError(f"could not mark the parts: {exc}") from exc

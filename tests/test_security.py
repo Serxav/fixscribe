@@ -85,6 +85,57 @@ def test_a_pack_leaves_out_every_original(tmp_path, monkeypatch):
     ]
 
 
+def test_a_pack_leaves_out_visitor_photos_agent_and_backups(tmp_path, monkeypatch):
+    job = tmp_path / "abc"
+    for sub in ("checks", "agent/frames", "steps"):
+        (job / sub).mkdir(parents=True)
+    for name in ("guide.json", "guide.before-nov2.json", "checks/step_03_photo_1.png",
+                 "agent/frames/t1.jpg", "steps/01.jpg"):  # fmt: skip
+        (job / name).write_text("x")
+    monkeypatch.chdir(tmp_path)
+    assert pack_demo.main([str(job)]) == 0
+    packed = sorted(
+        str(p.relative_to(tmp_path / "demo" / "abc"))
+        for p in (tmp_path / "demo" / "abc").rglob("*")
+    )
+    assert packed == ["guide.json", "steps", "steps/01.jpg"]
+
+
+def test_a_pack_shrinks_a_video_github_would_refuse(tmp_path, monkeypatch):
+    job = tmp_path / "abc"
+    job.mkdir()
+    (job / "guide.json").write_text("{}")
+    (job / "video.mp4").write_bytes(b"x" * 4096)
+    monkeypatch.setattr(pack_demo, "MAX_FILE_MB", 2 / 1024)
+    monkeypatch.setattr(pack_demo, "shrink", lambda video: video.write_bytes(b"x" * 10))
+    monkeypatch.chdir(tmp_path)
+    assert pack_demo.main([str(job)]) == 0
+    assert (tmp_path / "demo" / "abc" / "video.mp4").stat().st_size == 10
+    assert (job / "video.mp4").stat().st_size == 4096  # the job itself is untouched
+
+
+@needs_ffmpeg
+def test_shrinking_keeps_the_video_timing(tmp_path):
+    video = tmp_path / "video.mp4"
+    make_video(video, seconds=2)
+    before = ingest.probe_source(video)
+    pack_demo.shrink(video)
+    after = ingest.probe_source(video)
+    assert (after.width, after.height) == (before.width, before.height)
+    assert abs(after.duration_s - before.duration_s) < 0.1
+    assert not (tmp_path / "video.small.mp4").exists()
+
+
+def test_a_pack_stops_when_a_file_stays_too_big(tmp_path, monkeypatch):
+    job = tmp_path / "abc"
+    (job / "stills").mkdir(parents=True)
+    (job / "guide.json").write_text("{}")
+    (job / "stills" / "big.png").write_bytes(b"x" * 2048)
+    monkeypatch.setattr(pack_demo, "MAX_FILE_MB", 1 / 1024)
+    monkeypatch.chdir(tmp_path)
+    assert pack_demo.main([str(job)]) == 1
+
+
 def test_the_agent_can_only_ask_about_a_frame(tmp_path):
     assert tools.frame_time("frames/t1.5.jpg") == 1.5
     assert tools.frame_time("../../.env") is None

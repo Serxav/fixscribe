@@ -18,6 +18,7 @@ from app.schemas import IngestInfo, SourceVideo
 
 OUT_FPS = 30
 MIN_FPS = 15
+MIN_VIDEO_S = 2.0  # one real step takes longer than this
 SCALE_720P = "scale=w='if(gt(iw,ih),-2,min(720,iw))':h='if(gt(iw,ih),min(720,ih),-2)'"
 # Measured on this machine (see tasks/018-media-ladder.md report): with fast=1
 # the filter skips the primaries/gamma conversion and saturation stays -26 %
@@ -306,6 +307,8 @@ def run(job_dir: Path, settings: Settings) -> IngestInfo:
         raise IngestError(
             f"video too long: {source.duration_s:g} s (max {settings.max_video_seconds} s)"
         )
+    if source.duration_s < MIN_VIDEO_S:  # nothing to guide, and no Meta call is worth it
+        raise IngestError(f"video too short: {source.duration_s:g} s (min {MIN_VIDEO_S:g} s)")
     has_audio = _has_audio(_ffprobe_json(src))
     with artifacts.atomic_path(job_dir / "video.mp4") as tmp:
         normalize_video(src, tmp, source)

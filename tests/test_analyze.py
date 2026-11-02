@@ -229,12 +229,35 @@ def test_broken_json_raises_but_deletes_file(tmp_path):
     job_dir = tmp_path / "job"
     make_job(job_dir)
     bad = types.SimpleNamespace(output_text="not json {{{", usage=fake_usage())
-    client, fake = make_client(tmp_path, [bad])
+    client, fake = make_client(tmp_path, [bad, bad])
 
     with pytest.raises(AnalyzeError):
         run(job_dir, Settings(model_api_key="", data_dir=tmp_path), client)
 
-    assert fake.files.deleted == ["file-abc"]
+    assert fake.responses.calls == 2  # asked once more, then gave up
+    assert fake.files.deleted == ["file-abc", "file-abc"]
+
+
+def test_one_broken_answer_is_asked_again(tmp_path):
+    job_dir = tmp_path / "job"
+    make_job(job_dir)
+    cut_short = types.SimpleNamespace(output_text='{"title": "Repl', usage=fake_usage())
+    off_schema = types.SimpleNamespace(
+        output_text=json.dumps({"steps": [{"title": "x"}]}), usage=fake_usage()
+    )
+    for broken in (cut_short, off_schema):
+        client, fake = make_client(tmp_path, [broken, fake_answer()])
+        analysis = run(job_dir, Settings(model_api_key="", data_dir=tmp_path), client)
+        assert analysis.steps and fake.responses.calls == 2
+
+
+def test_an_api_error_is_not_asked_again(tmp_path):
+    job_dir = tmp_path / "job"
+    make_job(job_dir)
+    client, fake = make_client(tmp_path, [status_error(400), fake_answer()])
+    with pytest.raises(MetaError):
+        run(job_dir, Settings(model_api_key="", data_dir=tmp_path), client)
+    assert fake.responses.calls == 1
 
 
 def test_parse_analysis_rejects_empty_and_invalid():

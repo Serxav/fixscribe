@@ -529,3 +529,39 @@ def test_the_gap_question_is_asked_once_even_after_many_notes(tmp_path):
     case.record.notes += [f"turn {n} refused" for n in range(30)]
     case.record.notes = case.record.notes[-20:]
     assert submit_guide(case).ok
+
+
+ODD_CALLS = [
+    ("look", '{"t_s": -5}'),
+    ("look", '{"t_s": 1e300}'),
+    ("look", '{"t_s": "soon"}'),
+    ("look", '{"t_s": null}'),
+    ("look", "[1, 2]"),
+    ("look", "{broken"),
+    ("point", '{"frame": "../../.env", "query": "screw"}'),
+    ("point", '{"frame": "frames/t2.0.jpg", "query": ""}'),
+    ("add_part", '{"id": "A", "name": "bolt", "count": 1, "frame": "frames/t2.0.jpg", "box": [1]}'),
+    ("add_part", '{"id": "A", "name": "bolt", "count": -4, "frame": "frames/t2.0.jpg",'
+                 ' "box": [900, 900, 100, 100]}'),
+    ("add_part", '{"id": "", "name": "", "count": 1e9, "frame": "", "box": "everywhere"}'),
+    ("add_part", '{"id": "A", "name": "bolt", "count": 1, "frame": "frames/t2.0.jpg",'
+                 ' "box": [null, "a", 3, 4]}'),
+    ("add_step", '{"n": 0, "action": "", "text": "", "parts": ["Z"], "start_s": 9, "end_s": 1,'
+                 ' "frame": "frames/t2.0.jpg"}'),
+    ("add_step", '{"n": "one", "parts": "A"}'),
+    ("ask_person", '{"text": "", "frame": "nowhere.jpg", "box": [], "options": []}'),
+    ("ask_person", '{"text": "Which?", "frame": "frames/t2.0.jpg", "box": [1, 2],'
+                   ' "options": ["a", "b"]}'),
+    ("submit_guide", '{"extra": 1}'),
+]  # fmt: skip
+
+
+@pytest.mark.parametrize(("name", "arguments"), ODD_CALLS)
+def test_odd_arguments_are_refusals_never_crashes(tmp_path, name, arguments):
+    from app.agent.tools import run_tool
+
+    case = case_for(tmp_path, FakeMeta([]))
+    result = run_tool(case, name, arguments)
+    assert isinstance(result.text, str) and result.text
+    if ".env" in arguments or "{broken" in arguments or "soon" in arguments:
+        assert not result.ok

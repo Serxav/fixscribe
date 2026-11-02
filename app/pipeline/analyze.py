@@ -1,6 +1,7 @@
 """Analyze stage: video plus spoken turns to repair steps via Muse Spark."""
 
 import json
+import logging
 from pathlib import Path
 
 from app import artifacts, spark
@@ -28,6 +29,9 @@ TEXT_FORMAT = spark.json_format("repair_analysis", ANALYSIS_JSON_SCHEMA)
 
 MAX_OUTPUT_TOKENS = 16000
 ANALYZE_TIMEOUT_S = 600.0
+ANALYZE_ATTEMPTS = 2  # a second try only when the first answer is broken
+
+logger = logging.getLogger(__name__)
 
 
 def domain_context(identity: Identity | None, profile: DomainProfile) -> str:
@@ -143,23 +147,29 @@ def run(job_dir: Path, settings: Settings, client: MetaClient | None = None) -> 
     prompt = build_prompt(duration_s, mode, turns, segments, domain, task)
     if client is None:
         client = make_client(settings, job_dir=job_dir)
-    try:
-        data = spark.ask_json(
-            client,
-            settings,
-            name="repair_analysis",
-            schema=ANALYSIS_JSON_SCHEMA,
-            prompt=prompt,
-            video=video_path,
-            raw_path=job_dir / "analysis_raw.txt",
-            max_output_tokens=MAX_OUTPUT_TOKENS,
-            timeout_s=ANALYZE_TIMEOUT_S,
-            retry_timeouts=False,
-        )
-    except spark.SparkAnswerError as exc:
-        raise AnalyzeError("Spark returned an invalid analysis") from exc
-    # Keep Spark's raw answer: ask_json saved it to analysis_raw.txt, so a
-    # parsing failure can still be debugged from the prompt.
-    analysis = parse_analysis(json.dumps(data))
+    # One broken answer (cut short, or off the schema) is not worth losing the whole job over:
+    # ask once more. A timeout is not retried: the video call is already the longest wait.
+    for attempt in range(1, ANALYZE_ATTEMPTS + 1):
+        try:
+            data = spark.ask_json(
+                client,
+                settings,
+                name="repair_analysis",
+                schema=ANALYSIS_JSON_SCHEMA,
+                prompt=prompt,
+                video=video_path,
+                raw_path=job_dir / "analysis_raw.txt",
+                max_output_tokens=MAX_OUTPUT_TOKENS,
+                timeout_s=ANALYZE_TIMEOUT_S,
+                retry_timeouts=False,
+            )
+            # Keep Spark's raw answer: ask_json saved it to analysis_raw.txt, so a
+            # parsing failure can still be debugged from the prompt.
+            analysis = parse_analysis(json.dumps(data))
+            break
+        except (spark.SparkAnswerError, AnalyzeError) as exc:
+            if attempt == ANALYZE_ATTEMPTS:
+                raise AnalyzeError("Spark returned an invalid analysis") from exc
+            logger.warning("analyze: invalid answer on attempt %d, asking again", attempt)
     artifacts.save(job_dir, analysis)
     return analysis
