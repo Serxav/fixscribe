@@ -9,6 +9,7 @@ tuned on the iphone video and on steps 9-17 of the ikea video, so only the other
 """
 
 import json
+import logging
 import pickle
 import shutil
 import subprocess
@@ -149,6 +150,8 @@ def walk(source: Path, work: Path, settings, client, start: int = 1, end: int = 
 
 
 def main(argv: list[str]) -> int:
+    logging.basicConfig(level=logging.WARNING, format="   %(message)s")
+    logging.getLogger("app.pipeline.live").setLevel(logging.INFO)  # how long each marks stage took
     real, again = "--real" in argv, "--again" in argv
     names = [a for a in argv if not a.startswith("--")]
     if not names or not real:
