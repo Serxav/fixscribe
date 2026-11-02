@@ -143,6 +143,17 @@ def test_done_when_nothing_left(tmp_path, monkeypatch):
     assert again.step == 1
 
 
+def test_unclear_when_the_guide_never_saw_the_bolts(tmp_path, monkeypatch):
+    seen_nothing = [StepPerception(index=1, screws_before=0, screws_after=0)]
+    settings = _job(tmp_path, [_step(1)], perceived=seen_nothing)
+    _patch(monkeypatch, _ref(tmp_path))
+
+    result = check_step(tmp_path, settings, 1, _photo_bytes(), client=FakeClient(count=0))
+
+    assert result.verdict == "unclear"
+    assert "could not see them in the guide's video" in result.message
+
+
 def test_not_yet_names_remaining_bolts(tmp_path, monkeypatch):
     settings = _job(tmp_path, [_step(1)])
     _patch(monkeypatch, _ref(tmp_path))
