@@ -162,11 +162,12 @@ There is no login: a job's link, 48 random bits, is its only key, and no route l
   opens them with a format and protocol whitelist (`UPLOAD_INPUT`), so a playlist named `.mp4` is
   refused. Working copies drop metadata such as the place of filming.
 - The agent's routes answer 403 when `ENABLE_INSPECTOR` is off.
-- The coach stops at `LIVE_BUDGET_USD` and `LIVE_MAX_CALLS` on the sample guide, and at $2 and 300
+- The coach stops at `LIVE_BUDGET_USD` and `LIVE_MAX_CALLS` on the sample guide, and at $5 and 1000
   calls on any other. Camera frames and voice clips stay in a per-request folder deleted with the
   answer (`scratch_folder`).
-- Per visitor (`app/limits.py`, counted by address): 2 videos a day, 20 minutes of coach a day and
-  40 coach calls a minute, 30 questions an hour, 60 step checks, taps or agent runs an hour. Every
+- Per visitor (`app/limits.py`, counted by address): videos a day, minutes of coach a day, questions
+  an hour and step checks, taps or agent runs an hour. They are off for judging (0) and the host can
+  turn each on; more than 40 coach calls a minute is always refused. Every
   route that spends credits carries a `limit(...)` dependency, and a test lists them. Over a limit
   the route answers 429 with one sentence. The counts live in memory; the spend caps stay behind
   them.

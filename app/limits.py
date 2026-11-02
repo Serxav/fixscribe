@@ -1,5 +1,7 @@
 """Per-visitor limits, so one person cannot use up the Meta credits meant for every visitor.
 
+They are off by default (0), so judges can try everything; the host can turn each one on.
+
 There are no accounts, so a visitor is their IP address. The counters live in memory: a restart
 clears them, and the spend counters in meta_client.py stay the hard ceiling behind them.
 """
@@ -84,6 +86,9 @@ class Limiter:
 
     def _coach(self, who: str, now: float, settings: Settings) -> None:
         """The live coach is limited in minutes a day, and in calls a minute against scripts."""
+        # Always on: no person sends this many frames, only a script does.
+        if not self._claim(who, "coach-burst", _Window(COACH_CALLS_PER_MINUTE, 60), now):
+            raise LimitReached("Too many frames at once. Wait a moment.")
         allowed = settings.visitor_coach_minutes_per_day
         if allowed <= 0:
             return
@@ -95,8 +100,6 @@ class Limiter:
             raise LimitReached(
                 f"The live coach is limited to {allowed} minutes a day. Try again tomorrow."
             )
-        if not self._claim(who, "coach-burst", _Window(COACH_CALLS_PER_MINUTE, 60), now):
-            raise LimitReached("Too many frames at once. Wait a moment.")
         used[minute] = None
 
     def reset(self) -> None:
