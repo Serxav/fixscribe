@@ -270,6 +270,12 @@ details.proof[open] summary::after { content: "–"; }
 .stages { list-style: none; margin: 0; padding: 0; }
 .stages li { display: grid; grid-template-columns: 14px 1fr auto; gap: 14px; align-items: center; min-height: 44px; border-top: 1px solid var(--rule); font-size: 16px; }
 .stages li.waiting { color: var(--ink-3); }
+.stages li.waiting .stage-model { opacity: .55; }
+.stage-what { display: grid; gap: 2px; padding: 8px 0; min-width: 0; }
+.stage-found { font-size: 13px; color: var(--ink-3); overflow-wrap: anywhere; }
+.stages li.running .stage-found { color: var(--accent); }
+.stage-side { display: grid; justify-items: end; gap: 2px; }
+.stage-model { font-style: normal; font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); white-space: nowrap; }
 .stages .err { grid-column: 2 / -1; color: var(--bad); font-size: 13px; padding-bottom: 8px; }
 
 .hidden, [hidden] { display: none !important; }

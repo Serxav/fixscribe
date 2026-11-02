@@ -80,6 +80,59 @@ def _steps(folder: Path, media: str) -> tuple[list[dict], bool]:
     return steps, draft
 
 
+def _plural(count: int, word: str) -> str:
+    return f"{count} {word}{'' if count == 1 else 's'}"
+
+
+SAFETY_WORDS = {
+    "normal": "No special risk found",
+    "caution": "Caution: warnings added",
+    "professional_only": "Professional only: no instructions",
+}
+
+
+def stage_results(folder: Path) -> dict[str, str]:
+    """One short line per finished stage, from what it wrote: "212 words", "9 cut-outs"."""
+    out: dict[str, str] = {}
+    ingest = _load(folder, IngestInfo)
+    if ingest is not None:
+        minutes, seconds = divmod(round(ingest.duration_s), 60)
+        out["ingest"] = f"{minutes}:{seconds:02d} of video, {ingest.width}×{ingest.height}"
+    transcript = _load(folder, Transcript)
+    if transcript is not None:
+        if transcript.mode == "silent":
+            out["transcribe"] = "No narration: it watches only"
+        else:
+            words = sum(len(turn.text.split()) for turn in transcript.turns)
+            out["transcribe"] = (
+                f"{_plural(words, 'word')} in {_plural(len(transcript.turns), 'turn')}"
+            )
+    identity = _load(folder, Identity)
+    if identity is not None:
+        out["identify"] = f"{identity.object_name} · {identity.category}"
+    analysis = _load(folder, Analysis)
+    if analysis is not None:
+        out["analyze"] = f"{_plural(len(analysis.steps), 'step')} drafted"
+    plan = _load(folder, Plan)
+    if plan is not None:
+        out["plan"] = _plural(len(plan.steps), "step")
+    safety = _load(folder, Safety)
+    if safety is not None:
+        out["safety"] = SAFETY_WORDS.get(safety.level, safety.level)
+    perception = _load(folder, Perception)
+    if perception is not None:
+        parts = sum(1 for item in perception.steps if item.part)
+        fasteners = sum(len(item.removed) for item in perception.steps)
+        out["perception"] = (
+            f"{_plural(parts, 'part')} cut out, {_plural(fasteners, 'fastener')} found"
+        )
+    guide = _load(folder, Guide)
+    if guide is not None:
+        back = f", {_plural(len(guide.reassembly), 'step')} back" if guide.reassembly else ""
+        out["publish"] = f"{_plural(len(guide.steps), 'step')}{back}"
+    return out
+
+
 def story(folder: Path, job_id: str) -> dict[str, Any]:
     """Everything the job has found so far, in the order the page reveals it."""
     media = f"/media/{job_id}/"
@@ -119,4 +172,7 @@ def story(folder: Path, job_id: str) -> dict[str, Any]:
     perception = _load(folder, Perception)
     if perception is not None:
         out["fasteners"] = sum(len(item.removed) for item in perception.steps)
+    results = stage_results(folder)
+    if results:
+        out["results"] = results
     return out
