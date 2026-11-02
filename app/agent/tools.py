@@ -25,6 +25,8 @@ MAX_ASKS = 3
 MIN_MASK_FILL = 0.10  # SAM must fill at least this share of the box, or the box missed the part
 MIN_CONFIDENCE = 0.60  # on a real video a good cut-out scored 0.97, a wrong one 0.46
 QUOTE_WINDOW_S = 8.0  # the quote must be said near the step
+MAX_STEP_S = 90.0  # a longer step is two actions a beginner cannot follow without looking away
+GAP_NOTE = "draft steps not covered"
 
 
 @dataclass
@@ -44,6 +46,7 @@ class Case:
     record: AgentRecord
     duration_s: float
     turns: list[tuple[float, float, str]] = field(default_factory=list)  # narration
+    draft: list[tuple[float, float, str]] = field(default_factory=list)  # the faster model's steps
     asks: int = 0
 
     @property
@@ -253,6 +256,11 @@ def add_step(
         problems.append(f"parts must be catalog letters; unknown: {missing or 'none given'}")
     if not 0 <= start_s < end_s <= case.duration_s + 0.5:
         problems.append(f"need 0 <= start_s < end_s <= {case.duration_s:.1f}")
+    elif end_s - start_s > MAX_STEP_S:
+        problems.append(
+            f"the step lasts {end_s - start_s:.0f} s (max {MAX_STEP_S:.0f}): it is more than one"
+            " action, split it"
+        )
     t_s = frame_time(frame)
     if t_s is None or not case.path(frame).exists():
         problems.append(f"unknown frame {frame!r}: look at the end of the step first")
@@ -331,6 +339,18 @@ def submit_guide(case: Case) -> Result:
     times = [(s.start_s, s.n) for s in record.steps]
     if times != sorted(times):
         problems.append("steps must follow the video's time order")
+    missed = [
+        f"{title} ({a:.0f}-{b:.0f} s)"
+        for a, b, title in case.draft
+        if not any(s.start_s < b + 2 and s.end_s > a - 2 for s in record.steps)
+    ]
+    # asked once: the draft can be wrong, and the agent may know better after looking
+    if missed and record.steps and not any(GAP_NOTE in note for note in record.notes):
+        record.notes = (record.notes + [f"{GAP_NOTE}: {'; '.join(missed)}"])[-20:]
+        problems.append(
+            f"{GAP_NOTE} by any step: {'; '.join(missed)}. Look and add them, or submit again if"
+            " the video does not show them"
+        )
     if problems:
         return Result(False, "guide refused: " + "; ".join(problems))
     record.question = None

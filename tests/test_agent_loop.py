@@ -397,6 +397,36 @@ def test_submit_refuses_unused_parts_and_gaps(tmp_path):
     assert "never used" in text and "1..N" in text
 
 
+def test_a_step_of_several_minutes_is_refused(tmp_path):
+    case = case_for(tmp_path, FakeMeta([]), narrated=False)
+    case.duration_s = 300.0
+    add_part(case, "A", "bolt", 1, "frames/t2.0.jpg", [100, 400, 300, 600])
+    args = ("insert", "Put the bolt in.", ["A"], 1.0, 150.0, "frames/t2.0.jpg", [1, 1, 50, 50], "")
+    result = add_step(case, 1, *args)
+    assert not result.ok and "split it" in result.text
+
+
+def test_submit_asks_once_about_draft_steps_no_step_covers(tmp_path):
+    case = case_for(tmp_path, FakeMeta([]), narrated=False)
+    case.draft = [(0.0, 3.0, "Open the box"), (6.0, 9.0, "Fit the leg")]
+    add_part(case, "A", "bolt", 1, "frames/t2.0.jpg", [100, 400, 300, 600])
+    add_step(
+        case,
+        1,
+        "insert",
+        "Put the bolt in.",
+        ["A"],
+        1.0,
+        3.0,
+        "frames/t2.0.jpg",
+        [1, 1, 50, 50],
+        "",
+    )
+    first = submit_guide(case)
+    assert not first.ok and "Fit the leg (6-9 s)" in first.text and "Open the box" not in first.text
+    assert submit_guide(case).ok  # the draft can be wrong: the second submit is trusted
+
+
 def test_helpers():
     assert valid_box([-5, 10, 1200, 500]) == (0, 10, 1000, 500)
     assert valid_box([1, 2, 3]) is None

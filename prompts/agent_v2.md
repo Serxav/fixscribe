@@ -24,6 +24,7 @@ tool is broken.
      ended up;
    - `add_step` with the part letters, the times, that frame, the box where the parts end up, and
      the person's own words for this step copied exactly from the narration (or "" if silent).
+   Cover the whole video from its first action, not only the middle. A step lasts at most 90 s.
    One step = one action a beginner can do without looking away. Merge repeats ("4 bolts") into
    one step with a count; split a step that does two different things.
 3. When you are not sure (two parts look the same, the step is hidden, the narration contradicts

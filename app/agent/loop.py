@@ -89,8 +89,15 @@ def load_case(job_dir: Path, client: Any, record: AgentRecord) -> Case:
     info = artifacts.load(job_dir, IngestInfo)
     transcript = artifacts.load_optional(job_dir, Transcript)
     turns = [(t.start_s, t.end_s, t.text) for t in transcript.turns] if transcript else []
+    analysis = artifacts.load_optional(job_dir, Analysis)
+    draft = [(d.start_s, d.end_s, d.title) for d in analysis.steps] if analysis else []
     case = Case(
-        job_dir=job_dir, client=client, record=record, duration_s=info.duration_s, turns=turns
+        job_dir=job_dir,
+        client=client,
+        record=record,
+        duration_s=info.duration_s,
+        turns=turns,
+        draft=draft,
     )
     case.asks = sum(1 for t in rec.load_turns(job_dir) if t.act and t.act.tool == "ask_person")
     return case
