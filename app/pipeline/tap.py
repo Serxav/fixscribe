@@ -69,7 +69,13 @@ def _rebuild(job_dir: Path, settings: Settings, plan: Plan, perception: Percepti
     for sp in perception.steps:
         found = load_found(job_dir, sp.index)
         if found is not None and sp.index in steps:
+            # fasteners Spark only pointed at are not in SAM's tracks: keep them after the tracked
+            pointed = [record for record in sp.removed if record.pointed]
             next_number = fill_ledger(sp, found, next_number)
+            for record in pointed:
+                record.id, record.number = f"S{next_number}", len(sp.removed) + 1
+                sp.removed.append(record)
+                next_number += 1
         else:
             for record in sp.removed:
                 record.id = f"S{next_number}"
@@ -147,9 +153,16 @@ def remove_fastener(job_dir: Path, settings: Settings, index: int, number: int) 
     sp = next((item for item in perception.steps if item.index == index), None)
     if sp is None or not 1 <= number <= len(sp.removed):
         raise TapError(f"step {index} has no marker {number}")
-    visible = [oid for oid in found.kept if oid in found.frames.get(found.seed, {})]
-    found.kept = [oid for oid in found.kept if oid != visible[number - 1]]
-    save_found(job_dir, index, found)
+    record = sp.removed[number - 1]
+    if record.pointed:  # Spark pointed at it, SAM never tracked it: drop it from the map only
+        sp.removed.remove(record)
+    else:
+        tracked = [item for item in sp.removed if not item.pointed].index(record)
+        visible = [oid for oid in found.kept if oid in found.frames.get(found.seed, {})]
+        if tracked >= len(visible):
+            raise TapError(f"step {index} has no marker {number}")
+        found.kept = [oid for oid in found.kept if oid != visible[tracked]]
+        save_found(job_dir, index, found)
     sp.notes = [note for note in sp.notes if "clearly visible" not in note]
     sp.notes.append("Fastener map corrected by hand.")
     perception = _rebuild(job_dir, settings, plan, perception)

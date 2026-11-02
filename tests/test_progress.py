@@ -49,6 +49,26 @@ def test_findings_appear_stage_by_stage(tmp_path):
     assert "fasteners" not in story
 
 
+def test_each_finished_stage_says_what_it_found(tmp_path):
+    artifacts.save(tmp_path, IngestInfo(duration_s=95, width=1920, height=1080, has_audio=True))
+    artifacts.save(
+        tmp_path,
+        Transcript(
+            mode="narrated",
+            turns=[Turn(start_s=0, end_s=2, text="step one"), Turn(start_s=3, end_s=4, text="ok")],
+        ),
+    )
+    artifacts.save(tmp_path, Safety(level="caution", reasons=["Small parts."]))
+    results = progress.story(tmp_path, "abc")["results"]
+    assert results == {
+        "ingest": "1:35 of video, 1920×1080",
+        "transcribe": "3 words in 2 turns",
+        "safety": "Caution: warnings added",
+    }
+    artifacts.save(tmp_path, Transcript(mode="silent"))
+    assert progress.stage_results(tmp_path)["transcribe"] == "No narration: it watches only"
+
+
 def test_a_half_written_file_is_left_out(tmp_path):
     (tmp_path / Identity.FILENAME).write_text("{not json", encoding="utf-8")
     assert progress.story(tmp_path, "abc") == {}

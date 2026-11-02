@@ -129,7 +129,7 @@ def test_done_when_nothing_left(tmp_path, monkeypatch):
     result = check_step(tmp_path, settings, 1, _photo_bytes(), client=fake)
 
     assert result.verdict == "done"
-    assert result.message == "No bolts left where the guide removes them."
+    assert result.message.startswith("SAM 3.1 sees no bolts left where the guide removes them.")
     assert result.fastener_kind == "bolt"
     assert result.expected_left == 0
     assert result.found == 0
@@ -344,7 +344,7 @@ def test_route_returns_verdict_as_json(jobs_tmp, monkeypatch):
     body = response.json()
     assert body["verdict"] == "done"
     assert body["step"] == 1
-    assert body["message"] == "No bolts left where the guide removes them."
+    assert body["message"].startswith("SAM 3.1 sees no bolts left where the guide removes them.")
     assert fake.calls, "the route must really count fasteners through SAM"
 
 

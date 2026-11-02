@@ -333,3 +333,11 @@ def test_cli_starts_the_agent_after_a_finished_guide(tmp_path, monkeypatch):
     monkeypatch.setattr(runner, "run_job", finish)
     assert runner.main([job_id, str(tmp_path)]) == 0
     assert started == [tmp_path / job_id]
+
+
+def test_every_stage_names_who_does_the_work():
+    from app.pipeline.runner import STAGE_LABELS, STAGE_MODELS
+
+    assert set(STAGE_MODELS) == set(STAGE_LABELS)
+    assert STAGE_MODELS["perception"] == "Spark + SAM 3.1"
+    assert STAGE_MODELS["safety"] == "Rules"

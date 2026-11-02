@@ -148,6 +148,29 @@ STAGE_LABELS = {
 }
 
 
+# Who does the work in each stage: a Meta model, or plain code and rules.
+STAGE_MODELS = {
+    "ingest": "ffmpeg",
+    "transcribe": "Muse Voice",
+    "identify": "Muse Spark",
+    "signals": "Code",
+    "scenes": "Code",
+    "analyze": "Muse Spark",
+    "fusion": "Code",
+    "refine": "Muse Spark",
+    "plan": "Code",
+    "safety": "Rules",
+    "frames": "Code",
+    "perception": "Spark + SAM 3.1",
+    "motion": "SAM 3.1 video",
+    "proof": "Code",
+    "narrate": "Muse Spark",
+    "publish": "FixScribe",
+    "learn": "Code",
+    "attempt": "Muse Spark",
+}
+
+
 def stage_overview(status: JobStatus, folder: Path) -> list[dict[str, Any]]:
     """Every stage of this job with its state, for the progress page.
 
@@ -172,6 +195,7 @@ def stage_overview(status: JobStatus, folder: Path) -> list[dict[str, Any]]:
             {
                 "name": stage.name,
                 "label": STAGE_LABELS.get(stage.name, stage.name),
+                "model": STAGE_MODELS.get(stage.name, ""),
                 "optional": stage.optional,
                 "status": state,
                 "seconds": seconds,

@@ -241,7 +241,7 @@
     if (res.command === "none" || !res.heard) return;
     // The microphone can catch the coach itself: its own words are not an order.
     if (voice.speaking() && (" " + lastSaid + " ").indexOf(" " + plain(res.heard) + " ") >= 0) return;
-    $("live-heard").textContent = "“" + res.heard + "”";
+    $("live-heard").textContent = res.heard;
     if (res.command === "next") enterStep(Math.min(steps.length, current + 1), true);
     if (res.command === "back") enterStep(Math.max(1, current - 1), true);
     if (res.command === "repeat" && current) enterStep(current, true);
@@ -281,7 +281,10 @@
         proof.currentTime = start;
         proof.play().catch(function () {});
       };
-      if (proof.readyState >= 1) play(); else proof.addEventListener("loadedmetadata", play, { once: true });
+      if (proof.readyState >= 1) { play(); } else {
+        proof.addEventListener("loadedmetadata", play, { once: true });
+        proof.load(); // preload="none": nothing loads until asked
+      }
       proof.ontimeupdate = function () { if (proof.currentTime > start + 6) proof.pause(); };
     };
   }
@@ -356,13 +359,36 @@
   $("live-repeat").addEventListener("click", function () { if (current) enterStep(current, true); });
   $("live-voice").addEventListener("click", function () { setVoice(!voiceOn); });
 
-  var ear = window.FixEar(heardClip);
+  // The microphone's real loudness as moving bars, so the person sees the coach is listening.
+  var BARS = 22;
+  var levels = [];
+  var drawn = false;
+  (function () {
+    var wave = $("live-wave");
+    for (var i = 0; i < BARS; i++) wave.appendChild(document.createElement("i"));
+  })();
+  function drawWave() {
+    drawn = false;
+    var bars = $("live-wave").children;
+    for (var i = 0; i < BARS; i++) {
+      var v = levels[i] || 0;
+      bars[i].style.height = Math.round(4 + Math.min(1, v * 14) * 28) + "px";
+    }
+  }
+  function heardLevel(loud, speech) {
+    levels.push(speech ? loud : loud * 0.4);
+    if (levels.length > BARS) levels.shift();
+    if (!drawn) { drawn = true; requestAnimationFrame(drawWave); }
+  }
+
+  var ear = window.FixEar(heardClip, heardLevel);
   $("live-mic").addEventListener("click", function () {
     if (micOn) {
       micOn = false;
       ear.stop();
       $("live-mic").setAttribute("aria-pressed", "false");
       $("live-mic").classList.remove("on");
+      $("live-wave").classList.add("hidden");
       $("live-hint").textContent = "";
       return;
     }
@@ -372,7 +398,9 @@
       micOn = true;
       $("live-mic").setAttribute("aria-pressed", "true");
       $("live-mic").classList.add("on");
-      $("live-hint").textContent = "Say “next”, “back”, “repeat”, or ask a question.";
+      levels = [];
+      $("live-wave").classList.remove("hidden");
+      $("live-hint").textContent = "🎙 Listening · say “next”, “back”, “repeat”, or ask a question.";
     }).catch(function () {
       $("live-hint").textContent = "The microphone is not available: use the buttons.";
     });

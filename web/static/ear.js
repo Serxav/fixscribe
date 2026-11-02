@@ -1,5 +1,6 @@
 // Listens for one spoken sentence at a time and hands it over as a 16 kHz mono 16-bit WAV.
-window.FixEar = function (onClip) {
+// onLevel, if given, gets the loudness of every frame (0..1) and whether it sounds like speech.
+window.FixEar = function (onClip, onLevel) {
   "use strict";
   var RATE = 16000;
   var FRAME = 2048;
@@ -53,6 +54,7 @@ window.FixEar = function (onClip) {
     var seconds = chunk.length / context.sampleRate;
     var loud = level(chunk);
     var speech = loud > Math.max(MIN_LEVEL, noise * OVER_NOISE);
+    if (onLevel) onLevel(loud, speech);
     if (!talk) {
       noise = noise * 0.97 + loud * 0.03;
       lead.push(chunk);

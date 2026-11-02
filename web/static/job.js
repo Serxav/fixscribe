@@ -205,11 +205,15 @@
     $("resume-button").classList.toggle("hidden", data.state !== "failed");
     $("retry-link").classList.toggle("hidden", data.state !== "failed");
     if (stages.length) {
+      var results = (data.story || {}).results || {};
       $("stage-list").innerHTML = stages.map(function (s) {
         var time = s.seconds != null && s.status !== "waiting" ? s.seconds.toFixed(1) + " s" : "";
         var error = s.error ? '<span class="err">' + escapeHtml(s.error) + "</span>" : "";
-        return '<li class="' + s.status + '"><i class="dot ' + s.status + '"></i><span>' + escapeHtml(s.label) +
-          '</span><span class="muted small tabular">' + time + "</span>" + error + "</li>";
+        var found = s.status === "running" ? "working…" : s.status === "done" ? (results[s.name] || "") : "";
+        var model = s.model ? '<em class="stage-model">' + escapeHtml(s.model) + "</em>" : "";
+        return '<li class="' + s.status + '"><i class="dot ' + s.status + '"></i><span class="stage-what">' + escapeHtml(s.label) +
+          (found ? '<small class="stage-found">' + escapeHtml(found) + "</small>" : "") +
+          '</span><span class="stage-side">' + model + '<span class="muted small tabular">' + time + "</span></span>" + error + "</li>";
       }).join("");
     }
     var story = data.story || {};
@@ -285,6 +289,8 @@
       });
     }
     if (has.perception) out.fasteners = story.fasteners;
+    out.results = {};
+    done.forEach(function (name) { if (story.results && story.results[name]) out.results[name] = story.results[name]; });
     return out;
   }
 
@@ -298,7 +304,7 @@
         state: k >= stages.length ? "done" : "running",
         progress: k / stages.length,
         stages: stages.map(function (s, i) {
-          return i < k ? s : i === k ? { name: s.name, label: s.label, status: "running" } : { name: s.name, label: s.label, status: "waiting" };
+          return i < k ? s : i === k ? { name: s.name, label: s.label, model: s.model, status: "running" } : { name: s.name, label: s.label, model: s.model, status: "waiting" };
         }),
         story: partial(data.story || {}, done),
       };
