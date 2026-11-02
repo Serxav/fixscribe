@@ -75,6 +75,7 @@
     if (step.photo) $("live-photo").src = step.photo;
     $("live-say").textContent = "";
     $("live-next").textContent = "";
+    hideProof();
     drawRail();
     say(step.title + ". " + step.instruction + (warn ? " " + warn : ""), true);
   }
@@ -247,8 +248,42 @@
     if (res.command === "quiet") setVoice(false);
     if (res.command === "question" && res.answer) {
       $("live-say").textContent = res.answer;
+      showProof(res.see_step, res.see_s);
       say(res.answer, true);
     }
+  }
+
+  // The answer's step in the guide's own video: "▶ See step 3 at 01:42" plays six seconds of it.
+  function clock(s) {
+    var t = Math.max(0, Math.floor(s));
+    return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0");
+  }
+
+  function hideProof() {
+    var proof = $("live-proof");
+    proof.pause();
+    proof.classList.add("hidden");
+    $("live-see").classList.add("hidden");
+  }
+
+  function showProof(step, at) {
+    hideProof();
+    if (!step || at === null || at === undefined) return;
+    var see = $("live-see");
+    see.textContent = "▶ See step " + step + " at " + clock(at);
+    see.classList.remove("hidden");
+    see.onclick = function () {
+      var proof = $("live-proof");
+      if (!proof.src) proof.src = root.dataset.video;
+      proof.classList.remove("hidden");
+      var start = Math.max(0, at - 1);
+      var play = function () {
+        proof.currentTime = start;
+        proof.play().catch(function () {});
+      };
+      if (proof.readyState >= 1) play(); else proof.addEventListener("loadedmetadata", play, { once: true });
+      proof.ontimeupdate = function () { if (proof.currentTime > start + 6) proof.pause(); };
+    };
   }
 
   function heardClip(wav) {

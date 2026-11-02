@@ -134,7 +134,7 @@ sends a frame only when the view changes. Two tiers run apart:
 
 Voice: `ear.js` cuts speech into 16 kHz WAV clips, Muse Voice transcribes them, and next / back /
 repeat / quiet run without AI in English and Spanish. Anything phrased as a question goes to Spark
-(`prompts/ask_v1.md`). Measured with `python -m eval.coach_exam` against `eval/coach_key.json`.
+(`prompts/ask_v2.md`). Measured with `python -m eval.coach_exam` against `eval/coach_key.json`.
 
 ## Limits on a public server
 

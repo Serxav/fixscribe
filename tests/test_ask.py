@@ -11,7 +11,7 @@ from app.config import Settings
 from app.jobs import create_job
 from app.main import app
 from app.meta_client import MetaError
-from app.pipeline.ask import build_prompt, check_clip, live_voice, parse_command
+from app.pipeline.ask import build_prompt, check_clip, live_voice, parse_command, proof_second
 from app.pipeline.live import LiveError
 from app.routes.upload import settings_dep
 from app.schemas import Guide, Safety, Step
@@ -116,7 +116,7 @@ def test_a_question_is_answered_from_the_guide(tmp_path, monkeypatch):
 
     def fake_ask(client, settings, **kwargs):
         asked.update(kwargs)
-        return {"answer": "Step 1: open the cover."}
+        return {"answer": "Step 1: open the cover.", "step": 1}
 
     monkeypatch.setattr(spark, "ask_json", fake_ask)
     heard = live_voice(
@@ -125,9 +125,29 @@ def test_a_question_is_answered_from_the_guide(tmp_path, monkeypatch):
 
     assert heard.command == "question"
     assert heard.answer == "Step 1: open the cover."
+    assert (heard.see_step, heard.see_s) == (1, 0)
     assert "What do I open?" in asked["prompt"]
     assert "Battery can burn." in asked["prompt"]
     assert asked["images"] == []
+
+
+@pytest.mark.parametrize("step", [0, 7, "1", None])
+def test_an_answer_from_no_known_step_points_nowhere(tmp_path, monkeypatch, step):
+    artifacts.save(tmp_path, _guide())
+    (tmp_path / "live").mkdir()
+    monkeypatch.setattr(spark, "ask_json", lambda *a, **k: {"answer": "Cannot tell.", "step": step})
+
+    heard = live_voice(tmp_path, Settings(model_api_key=""), _clip(), 1, b"", Ears("Where is it?"))
+
+    assert (heard.answer, heard.see_step, heard.see_s) == ("Cannot tell.", 0, None)
+
+
+def test_proof_second_prefers_the_sharpest_frame():
+    guide = _guide()
+    assert proof_second(guide, 1) == 0
+    guide.steps[0].keyframe_s = 3.5
+    assert proof_second(guide, 1) == 3.5
+    assert proof_second(guide, 2) is None
 
 
 def test_a_professional_job_gets_no_instructions(tmp_path, monkeypatch):

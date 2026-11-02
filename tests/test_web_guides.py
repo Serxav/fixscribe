@@ -251,6 +251,7 @@ def test_live_page(jobs_tmp):
         page.status_code == 200
         and "/static/live.js" in page.text
         and "Start the camera" in page.text
+        and 'id="live-see"' in page.text
     )
     assert f"/guides/{job_id}/live" in TestClient(app).get(f"/guides/{job_id}").text
     assert TestClient(app).get("/guides/nothere/live").status_code == 404

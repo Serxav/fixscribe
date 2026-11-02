@@ -16,3 +16,5 @@ If an image is attached it is the user's camera, now.
 3. Never tell the user to skip or ignore a warning. Repeat the warning when the question touches it.
 4. `answer` speaks directly to the user in language <<LANGUAGE>>, at most 30 words, plain text.
    Name the step number when the answer comes from a step.
+5. `step` is the number of the step the answer comes from, so the user can watch it in the video.
+   Use 0 when the answer comes from no single step or you cannot tell.
