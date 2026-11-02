@@ -22,7 +22,7 @@ Made for the Meta Global AI Developer Hackathon (Indie track).
    panel, airbag, refrigerant, high-voltage battery, microwave). No model can lower that decision.
 6. **Fix it by hand**: tap a fastener the guide missed and SAM 3.1 follows it through the step;
    tap a wrong number to remove it.
-7. **While repairing**: "Ask FixScribe" by voice or text (answers point to the video second),
+7. **While repairing**: "Ask FixScribe" by voice or text (answers point to the step and play it from the video: "▶ See step 3 at 01:42"),
    a live camera mode that says which step you are on, a photo check ("is this step done?")
    and a printable fastener tray.
 
@@ -31,7 +31,7 @@ Made for the Meta Global AI Developer Hackathon (Indie track).
 | Model | What it does in FixScribe |
 |---|---|
 | `muse-spark-1.3` | identifies the object, category and hazards; reads the whole video and transcript to write the steps; re-reads unclear steps on timecoded clips; checks every fastener candidate on three zoomed views; answers questions |
-| `muse-voice-transcribe-1.0` | timestamped words; the spoken "step" / "paso" become the step cuts |
+| `muse-voice-transcribe-1.0` | timestamped turns; the spoken "step" / "paso" become the step cuts |
 | `sam-3.1` (images) | highlights the part; finds fastener candidates on the full frame and on zoomed tiles |
 | `sam-3.1` (video) | follows each fastener through the step, so a fastener counts only if it appears or disappears where the step says; follows a point the user taps |
 | `muse-wonder-1.0` | the optional agent (`ENABLE_INSPECTOR`): it looks at frames, points at parts, adds steps and asks the person when unsure. On one real video it stopped at its budget after 18 turns, so it is not yet proven end to end |

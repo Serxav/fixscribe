@@ -11,6 +11,7 @@ from app.agent import loop as agent_loop
 from app.agent import record as agent_record
 from app.artifacts import ArtifactError
 from app.config import Settings
+from app.pipeline.assembly import steps_to_undo
 from app.pipeline.publish import screws_verified
 from app.routes.common import job_folder, load_guide
 from app.routes.upload import settings_dep, templates
@@ -179,8 +180,11 @@ def _quote(step: Step) -> dict | None:
 
 
 def _balance(guide: Guide) -> dict | None:
-    """Fasteners out against fasteners back; "seen" only if the images show every one out."""
-    out = sum(step.screws.count for step in guide.steps if step.screws)
+    """Fasteners still out at the end of the video against fasteners back; "seen" only if the
+    images show every one out."""
+    out = sum(
+        step.screws.count for step in steps_to_undo(guide.steps, guide.direction) if step.screws
+    )
     back = sum(item.screws.count for item in guide.reassembly if item.screws)
     if not out and not back:
         return None

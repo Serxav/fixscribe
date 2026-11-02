@@ -31,9 +31,10 @@ from app.spark import SparkAnswerError
 MAX_CLIP_S = 8
 MAX_CLIP_BYTES = 24000 * 2 * MAX_CLIP_S + 1024
 MAX_COMMAND_WORDS = 4
+MAX_TYPED_CHARS = 200
 LANGUAGES = ["Spanish", "English"]
 
-PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "ask_v1.md"
+PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "ask_v2.md"
 
 COMMANDS = {
     "next": ("next", "next step", "continue", "go on", "siguiente", "sigue", "continua"),
@@ -46,7 +47,9 @@ QUESTION_WORDS = frozenset(
     "what whats where wheres which how why when can should do does is are "
     "que donde cual cuales como cuanto cuantos cuantas por puedo debo hay es".split()
 )
-ANSWER_SCHEMA: dict[str, Any] = _object({"answer": {"type": "string"}})
+ANSWER_SCHEMA: dict[str, Any] = _object(
+    {"answer": {"type": "string"}, "step": {"type": "integer"}}  # step 0: from no step
+)
 
 
 class LiveHeard(Strict):
@@ -55,6 +58,23 @@ class LiveHeard(Strict):
     heard: str
     command: Literal["next", "back", "repeat", "quiet", "question", "none"]
     answer: str = ""
+    see_step: int = 0  # the step the answer comes from, 0 for none
+    see_s: float | None = None  # where that step shows in the video: "see 01:42"
+
+
+class Answer(Strict):
+    """A spoken answer and the step it comes from."""
+
+    text: str
+    step: int = 0
+
+
+def proof_second(guide: Guide, step: int) -> float | None:
+    """Where the video shows a step: its sharpest frame, else its start; None for no such step."""
+    for s in guide.steps:
+        if s.index == step:
+            return s.keyframe_s if s.keyframe_s is not None else s.start_s
+    return None
 
 
 def _plain(text: str) -> str:
@@ -108,7 +128,7 @@ def build_prompt(guide: Guide, step: int, question: str) -> str:
 
 def answer_question(
     job_dir: Path, settings: Settings, guide: Guide, step: int, question: str, frame: bytes, client
-) -> str:
+) -> Answer:
     """One short spoken answer from the guide and the camera."""
     calls = _count_call(job_dir, settings)
     try:
@@ -133,7 +153,9 @@ def answer_question(
     answer = data.get("answer") if isinstance(data, dict) else None
     if not isinstance(answer, str) or not answer.strip():
         raise LiveError("could not answer the question: empty answer")
-    return answer.strip()
+    source = data.get("step")
+    known = isinstance(source, int) and proof_second(guide, source) is not None
+    return Answer(text=answer.strip(), step=source if known else 0)
 
 
 def live_voice(
@@ -161,6 +183,20 @@ def live_voice(
     heard = data.get("transcript")
     heard = heard.strip() if isinstance(heard, str) else ""
     command = parse_command(heard)
+    return obey_words(job_dir, settings, guide, heard, command, step, frame, client)
+
+
+def obey_words(
+    job_dir: Path,
+    settings: Settings,
+    guide: Guide,
+    heard: str,
+    command: str,
+    step: int,
+    frame: bytes,
+    client: Any,
+) -> LiveHeard:
+    """A fixed command moves the coach; a question gets its answer from the guide and camera."""
     if command != "question":
         return LiveHeard(heard=heard, command=command)
     safety = guide.safety
@@ -168,4 +204,35 @@ def live_voice(
         reason = safety.reasons[0] if safety.reasons else PROFESSIONAL_LINE
         return LiveHeard(heard=heard, command="question", answer=reason)
     answer = answer_question(job_dir, settings, guide, step, heard, frame, client)
-    return LiveHeard(heard=heard, command="question", answer=answer)
+    return LiveHeard(
+        heard=heard,
+        command="question",
+        answer=answer.text,
+        see_step=answer.step,
+        see_s=proof_second(guide, answer.step),
+    )
+
+
+def live_typed(
+    job_dir: Path,
+    settings: Settings,
+    text: str,
+    step: int = 0,
+    frame: bytes = b"",
+    client: Any = None,
+) -> LiveHeard:
+    """A typed line: the same as speaking it, with no transcription. Any typed line is a question
+    unless it is a short command, since nobody types by accident."""
+    text = " ".join(text.split())[:MAX_TYPED_CHARS]
+    if not text:
+        raise LiveError("the question is empty")
+    try:
+        guide = artifacts.load(job_dir, Guide)
+    except ArtifactError as exc:
+        raise LiveError(f"no guide for this job: {exc}") from exc
+    command = parse_command(text)
+    if command == "none":
+        command = "question" if len(_plain(text).split()) >= 2 else "none"
+    if command == "question":
+        client = client or _coach_client(job_dir, settings)
+    return obey_words(job_dir, settings, guide, text, command, step, frame, client)

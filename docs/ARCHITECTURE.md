@@ -87,6 +87,16 @@ the higher level and unions reasons, prechecks and blocked. No model decides the
 instruction with the pro-only sentence, empties the reassembly, and appends
 `Professional-only job: <reasons>` to `guide.checks`.
 
+## The way back
+
+`app/pipeline/assembly.py` follows every named part through the video: a taking-apart action
+(remove, disconnect, unscrew, unclip, pry, open, peel) leaves it off, any other action puts it on.
+Only parts still off at the end go back, once, undoing their last removal, last off first. A real
+repair video opens, closes for a test and opens again; reversing every step would put a cover on
+twice and pull the new battery out. A part removed twice with nothing putting it back in between is
+reported as a check. The guide page shows a tally that the person ticks per step ("3 of 5 back"),
+kept only in that browser. An assembly video's reverse takes apart everything it built.
+
 ## Proof mode
 
 Each step gets claims (`Claim.field`): `boundaries` and `instruction` always, `fastener_count`
@@ -134,7 +144,7 @@ sends a frame only when the view changes. Two tiers run apart:
 
 Voice: `ear.js` cuts speech into 16 kHz WAV clips, Muse Voice transcribes them, and next / back /
 repeat / quiet run without AI in English and Spanish. Anything phrased as a question goes to Spark
-(`prompts/ask_v1.md`). Measured with `python -m eval.coach_exam` against `eval/coach_key.json`.
+(`prompts/ask_v2.md`). Measured with `python -m eval.coach_exam` against `eval/coach_key.json`.
 
 ## Limits on a public server
 

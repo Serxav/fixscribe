@@ -27,6 +27,11 @@ REVERSE_ACTIONS = {
 }
 
 
+# Actions that leave a part off in a repair video; every other action puts something on.
+TAKE_APART = frozenset({"remove", "disconnect", "unscrew", "unclip", "pry", "open", "peel"})
+ARTICLES = ("the ", "a ", "an ", "both ", "all ", "each ")
+
+
 class AssemblyResult(BaseModel):
     steps: list[ReassemblyStep] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
@@ -62,14 +67,65 @@ def screw_places(screws: ScrewMap | None) -> dict[int, tuple[float, float]]:
     }
 
 
-def build_reassembly(steps: list[Step], direction: str = "disassemble") -> AssemblyResult:
-    """The reverse guide: reassembly of a repair, or taking apart what an assembly built."""
-    result = AssemblyResult()
-    seen_parts: dict[str, int] = {}
-    for step in reversed(steps):
+def _key(part: str) -> str:
+    return part.strip().lower()
+
+
+def steps_to_undo(steps: list[Step], direction: str = "disassemble") -> list[Step]:
+    """The steps the reverse guide undoes, in video order.
+
+    A real repair video is not a clean teardown: a cover comes off, goes back for a test and comes
+    off again; a new battery goes in. Only what is still off at the end of the video goes back,
+    once, by undoing its last removal. A step that names no part is kept: nothing to follow.
+    The reverse of an assembly video takes apart everything it built.
+    """
+    acting = [step for step in steps if step_action(step, direction)]
+    if direction == "assemble":
+        return acting
+    last_off: dict[str, int] = {}
+    for step in acting:
+        taking = step_action(step, direction) in TAKE_APART
+        for part in step_parts(step):
+            if taking:
+                last_off[_key(part)] = step.index
+            else:
+                last_off.pop(_key(part), None)
+    keep = set(last_off.values())
+    return [
+        step
+        for step in acting
+        if step_action(step, direction) in TAKE_APART
+        and (step.index in keep or not step_parts(step))
+    ]
+
+
+def removed_twice(steps: list[Step], direction: str = "disassemble") -> list[str]:
+    """A part taken off again with nothing putting it back in between: the analysis may be off."""
+    if direction == "assemble":
+        return []
+    off: dict[str, int] = {}
+    warnings = []
+    for step in steps:
         action = step_action(step, direction)
         if action is None:
             continue
+        for part in step_parts(step):
+            if action not in TAKE_APART:
+                off.pop(_key(part), None)
+            elif _key(part) in off:
+                warnings.append(
+                    f"Step {step.index}: '{part}' was already removed in step {off[_key(part)]}."
+                )
+            else:
+                off[_key(part)] = step.index
+    return warnings
+
+
+def build_reassembly(steps: list[Step], direction: str = "disassemble") -> AssemblyResult:
+    """The reverse guide: reassembly of a repair, or taking apart what an assembly built."""
+    result = AssemblyResult(warnings=removed_twice(steps, direction))
+    for step in reversed(steps_to_undo(steps, direction)):
+        action = step_action(step, direction)
         parts = step_parts(step)
         notes = []
         if not parts:
@@ -77,13 +133,6 @@ def build_reassembly(steps: list[Step], direction: str = "disassemble") -> Assem
                 f"Step {step.index}: nothing is named as removed. Name the part so it can be "
                 "put back."
             )
-        for part in parts:
-            key = part.strip().lower()
-            if key in seen_parts:
-                result.warnings.append(
-                    f"Step {step.index}: '{part}' was already removed in step {seen_parts[key]}."
-                )
-            seen_parts[key] = step.index
         if action == "unscrew" and screw_count(step.screws) == 0:
             notes.append("Screws were removed here but not counted. Check the video.")
         # No boxes yet means SAM has not looked for the screws: nothing to compare.
@@ -104,35 +153,48 @@ def build_reassembly(steps: list[Step], direction: str = "disassemble") -> Assem
                 warnings=notes,
             )
         )
-    result.warnings.extend(check_reassembly(steps, result.steps))
+    result.warnings.extend(check_reassembly(steps, result.steps, direction))
     return result
+
+
+def _the(part: str) -> str:
+    """ "back cover" -> "the back cover", so "press back" never reads "press back back cover"."""
+    return part if part.lower().startswith(ARTICLES) else f"the {part}"
 
 
 def draft_instruction(action: str, parts: list[str], screws: ScrewMap | None) -> str:
     """A plain first draft. Spark rewrites it later."""
-    what = ", ".join(parts) if parts else "the part"
+    what = ", ".join(_the(part) for part in parts) if parts else "the part"
     text = f"{action.capitalize()} {what}."
     count = screw_count(screws)
     if count:
-        numbers = ", ".join(str(box.number) for box in sorted(screws.boxes, key=lambda b: b.number))
+        numbers = [str(box.number) for box in sorted(screws.boxes, key=lambda b: b.number)]
         text += f" {count} screw{'s' if count != 1 else ''}"
-        text += f" (positions {numbers} on the screw map)." if numbers else "."
+        if not numbers:
+            text += "."
+        elif len(numbers) < count:
+            plural = "s" if len(numbers) > 1 else ""
+            text += f" ({len(numbers)} on the screw map: position{plural} {', '.join(numbers)})."
+        else:
+            text += f" (position{'s' if count > 1 else ''} {', '.join(numbers)} on the screw map)."
     return text
 
 
-def check_reassembly(steps: list[Step], reassembly: list[ReassemblyStep]) -> list[str]:
+def check_reassembly(
+    steps: list[Step], reassembly: list[ReassemblyStep], direction: str = "disassemble"
+) -> list[str]:
     """Compare a reassembly (built here or edited later) with the disassembly steps."""
     warnings = []
-    by_index = {step.index: step for step in steps}
-    taken_apart = [step for step in steps if step_action(step)]
+    taken_apart = steps_to_undo(steps, direction)
+    by_index = {step.index: step for step in taken_apart}
     used: dict[int, ReassemblyStep] = {}
 
     for item in reassembly:
         source = by_index.get(item.source_step)
-        if source is None or not step_action(source):
+        if source is None:
             warnings.append(
                 f"Reassembly step {item.index} points to step {item.source_step}, "
-                "which takes nothing apart."
+                "which leaves nothing off at the end of the video."
             )
             continue
         if item.source_step in used:

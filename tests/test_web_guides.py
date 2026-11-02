@@ -101,6 +101,24 @@ def test_guide_page_renders(jobs_tmp):
     assert "Keep the screws in order." in response.text
 
 
+def test_put_back_has_a_fastener_tally(jobs_tmp):
+    job_id = _write_guide(jobs_tmp, _guide())
+    text = TestClient(app).get(f"/guides/{job_id}").text
+    assert 'id="tally" data-total="4"' in text
+    assert 'data-back="1" data-back-count="4"' in text
+    assert "Mark 4 back in" in text
+    assert "screws: 4 out · 4 back" in text.lower()
+
+
+def test_a_numbered_photo_says_it_can_be_tapped(jobs_tmp):
+    guide = _guide()
+    guide.steps[0].overlay = "steps/01_overlay.jpg"
+    job_id = _write_guide(jobs_tmp, guide)
+    text = TestClient(app).get(f"/guides/{job_id}").text
+    assert 'data-tap-step="1"' in text
+    assert "Tap a missed screw to add it" in text
+
+
 def test_screw_check_amber_and_green(jobs_tmp):
     job_id = _write_guide(jobs_tmp, _guide(checks=["Screw check: 6 screws removed, 4 put back."]))
     response = TestClient(app).get(f"/guides/{job_id}")
@@ -251,6 +269,7 @@ def test_live_page(jobs_tmp):
         page.status_code == 200
         and "/static/live.js" in page.text
         and "Start the camera" in page.text
+        and 'id="live-see"' in page.text
     )
     assert f"/guides/{job_id}/live" in TestClient(app).get(f"/guides/{job_id}").text
     assert TestClient(app).get("/guides/nothere/live").status_code == 404

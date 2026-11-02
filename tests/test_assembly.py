@@ -50,7 +50,7 @@ def test_screws_go_back_to_the_same_places():
 def test_target_part_used_when_removes_is_empty():
     result = build_reassembly([step(1, "remove", target_part="SIM tray")])
     assert result.steps[0].parts == ["SIM tray"]
-    assert result.steps[0].instruction == "Install SIM tray."
+    assert result.steps[0].instruction == "Install the SIM tray."
 
 
 def test_screws_without_action_count_as_unscrew():
@@ -139,3 +139,44 @@ def test_the_reverse_of_an_assembly_takes_it_apart():
     ]  # fmt: skip
     result = build_reassembly(steps, "assemble")
     assert [item.action for item in result.steps] == ["pull out", "detach"]
+
+
+def test_only_what_is_still_off_at_the_end_goes_back():
+    # A real repair video: open, close for a test, open again, swap the battery.
+    steps = [
+        step(1, "pry", ["back cover"]),
+        step(2, "unscrew", ["bracket"], screw_map=screws(1, 2)),
+        step(3, "place", ["back cover"]),
+        step(4, "open", ["back cover"]),
+        step(5, "remove", ["battery"]),
+        step(6, "insert", ["battery"]),
+    ]
+    result = build_reassembly(steps)
+    assert [s.source_step for s in result.steps] == [4, 2]
+    assert [s.instruction for s in result.steps] == [
+        "Close the back cover.",
+        "Screw in the bracket. 2 screws (positions 1, 2 on the screw map).",
+    ]
+    assert result.warnings == []
+
+
+def test_putting_on_a_part_that_never_came_off_adds_nothing():
+    result = build_reassembly([step(1, "place", ["shelf"])])
+    assert result.steps == []
+
+
+def test_no_doubled_word_and_partial_screw_map():
+    bracket = ScrewMap(count=3, boxes=[Box(number=1, x=0.1, y=0.2, w=0.05, h=0.05)])
+    result = build_reassembly(
+        [step(1, "pry", ["back cover"]), step(2, "unscrew", ["bracket"], screw_map=bracket)]
+    )
+    assert result.steps[0].instruction == (
+        "Screw in the bracket. 3 screws (1 on the screw map: position 1)."
+    )
+    assert result.steps[1].instruction == "Press back the back cover."
+
+
+def test_an_assembly_video_takes_apart_everything_it_built():
+    steps = [step(1, "place", ["shelf"]), step(2, "screw in", ["door"], screw_map=screws(1))]
+    result = build_reassembly(steps, "assemble")
+    assert [s.action for s in result.steps] == ["unscrew", "remove"]

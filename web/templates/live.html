@@ -45,8 +45,14 @@
     </div>
     <p class="live-warn hidden" id="live-warn"></p>
     <p class="live-say" id="live-say"></p>
+    <button class="live-see hidden" type="button" id="live-see"></button>
+    <video class="live-proof hidden" id="live-proof" playsinline muted preload="none"></video>
     <p class="live-next" id="live-next"></p>
     <p class="live-heard" id="live-heard"></p>
+    <form class="live-ask" id="live-ask" autocomplete="off">
+      <input type="text" id="live-ask-text" maxlength="200" placeholder="Ask about this repair…" aria-label="Ask about this repair">
+      <button class="film-btn" type="submit" aria-label="Ask">↑</button>
+    </form>
     <p class="live-hint" id="live-hint"></p>
     <div class="live-controls">
       <button class="film-btn hidden" type="button" id="live-hold" aria-label="Hold the video to see the parts">⏸</button>
