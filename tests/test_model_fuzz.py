@@ -83,7 +83,28 @@ def ends_cleanly(tmp_path, monkeypatch, fake):
     guide = artifacts.load(jobs / job_id, Guide)  # passes the schema
     for step in guide.steps:
         assert 0 <= step.start_s <= step.end_s <= guide.duration_s + 0.01
+    pages_open(tmp_path, job_id)
     return status, guide
+
+
+def pages_open(tmp_path, job_id):
+    """Every page and file a visitor opens for this guide answers, never a server error."""
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+    from app.routes.upload import settings_dep
+
+    app.dependency_overrides[settings_dep] = lambda: Settings(model_api_key="", data_dir=tmp_path)
+    try:
+        client = TestClient(app)
+        pages = ("", "/film", "/live", "/tray", "/export.md")
+        paths = [f"/guides/{job_id}{page}" for page in pages]
+        paths += [f"/jobs/{job_id}", f"/api/jobs/{job_id}", f"/jobs/{job_id}/console"]
+        for path in paths:
+            response = client.get(path)
+            assert response.status_code == 200, (path, response.status_code)
+    finally:
+        app.dependency_overrides.pop(settings_dep, None)
 
 
 CANNOT_BE_SAVED = {"no steps", "all past the end"}  # nothing in the video to show
