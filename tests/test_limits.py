@@ -91,7 +91,7 @@ def test_a_visitor_behind_the_proxy_is_its_last_forwarded_address(tmp_path):
 @pytest.fixture
 def strict(tmp_path):
     settings = Settings(
-        model_api_key="",
+        model_api_key="test-key",
         data_dir=tmp_path,
         visitor_questions_per_hour=1,
         visitor_videos_per_day=1,

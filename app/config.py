@@ -21,6 +21,7 @@ class Settings:
     enable_inspector: bool = True  # [ENABLE_INSPECTOR]
     daily_job_limit: int = 20  # [DAILY_JOB_LIMIT]
     pipeline_workers: int = 4  # [PIPELINE_WORKERS] steps worked on at once in perception and motion
+    max_running_jobs: int = 2  # [MAX_RUNNING_JOBS] videos processed at once; the rest wait, 0 = any
     budget_usd: float = 120.0  # [BUDGET_USD]
     job_budget_usd: float = 2.5  # [JOB_BUDGET_USD]
     agent_budget_usd: float = 1.0  # [AGENT_BUDGET_USD] extra per job for the Muse Wonder agent
@@ -71,6 +72,7 @@ def get_settings() -> Settings:
         enable_inspector=enable_inspector,
         daily_job_limit=int(env.get("DAILY_JOB_LIMIT", "20")),
         pipeline_workers=int(env.get("PIPELINE_WORKERS", "4")),
+        max_running_jobs=int(env.get("MAX_RUNNING_JOBS", "2")),
         budget_usd=float(env.get("BUDGET_USD", "120.0")),
         job_budget_usd=float(env.get("JOB_BUDGET_USD", "2.5")),
         agent_budget_usd=float(env.get("AGENT_BUDGET_USD", "1.0")),

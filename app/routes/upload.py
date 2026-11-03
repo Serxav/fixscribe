@@ -58,6 +58,12 @@ async def upload_video(
             "<h1>Unsupported video type</h1><p>Please upload a .mp4, .mov or .m4v video.</p>",
             status_code=400,
         )
+    if not settings.model_api_key:
+        # Without a key every job would fail minutes later with a library's message.
+        return HTMLResponse(
+            "<h1>Guides are not set up on this server</h1><p>It has no Meta key yet.</p>",
+            status_code=503,
+        )
     if not claim_daily_slot(jobs_dir, settings.daily_job_limit):
         return HTMLResponse(
             "<h1>Daily limit reached, try tomorrow.</h1>",
@@ -90,7 +96,8 @@ async def upload_video(
         dest.unlink(missing_ok=True)
         update_status(job_id, jobs_dir, state="failed", error="video file is too big")
         return HTMLResponse(
-            "<h1>Video file is too big</h1>",
+            "<h1>Video file is too big</h1><p>The limit is 1 GB: film in 1080p, or a shorter"
+            " video.</p>",
             status_code=413,
         )
     try:

@@ -165,6 +165,14 @@ def test_timeout_then_success(tmp_path):
     assert fake.responses.calls == 2
 
 
+def test_an_unreachable_api_says_so_in_plain_words(tmp_path):
+    settings = make_settings(tmp_path)
+    fake = FakeClient([openai.APIConnectionError(request=REQ) for _ in range(10)])
+    client = MetaClient(settings, client=fake, sleep=lambda _: None)
+    with pytest.raises(MetaError, match="could not be reached"):
+        client.respond(model="muse-spark-1.3", input="hello")
+
+
 def test_respond_validation(tmp_path):
     settings = make_settings(tmp_path)
     fake = FakeClient([make_response(), make_response()])
