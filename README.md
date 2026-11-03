@@ -1,147 +1,158 @@
 # FixScribe
 
-Record a repair on your phone. Get a step-by-step repair guide.
+**Film a repair once on your phone. FixScribe turns the video into a step-by-step guide anyone can
+follow, then coaches the next person live through their camera.**
 
-FixScribe always watches the video and, if you narrate, it also listens. Each step gets an
-instruction, safety warnings, the part highlighted with SAM 3.1, a numbered screw map, a short
-loop clip and a "watch in video" jump. It also writes the reverse reassembly guide and checks
-that every removed screw goes back where it came from.
+Built on the Meta Model API (Muse Spark, SAM 3.1, Muse Voice, Muse Wonder) for the Meta Global AI
+Developer Hackathon, Indie track · theme: Build for Your World.
 
-Made for the Meta Global AI Developer Hackathon (Indie track).
+## The problem
 
-## What a technician gets
+Most instructions are written by someone who already knows how, so they skip the step where you
+get stuck. The person who just did the repair knows it best, but turning a video into a guide takes
+hours. FixScribe does that part.
 
-1. **Film the repair** on a phone, narrated or silent, any category: electronics, appliances,
-   furniture, bikes, cars, plumbing and more. Saying "step" / "paso" cuts the steps.
-2. **A guide in about 30 minutes** for an 8.5-minute video, measured working on one step at a time (a 6-step trial working on 4 at once points to about 17, not yet measured on a whole video): each step has an instruction, safety warnings, the part
-   highlighted, a numbered fastener map, a 6-second loop clip and a "watch in video" jump.
-3. **Putting it back**: the reverse guide, plus a check that every fastener taken out goes back.
-4. **Proof on every claim**: each step boundary, instruction, fastener count and part is graded
-   verified / supported / unverified, with the video seconds and words behind it.
-5. **Safety first**: fixed rules (`app/safety.py`) refuse professional-only jobs (gas, electrical
-   panel, airbag, refrigerant, high-voltage battery, microwave). No model can lower that decision.
-6. **Fix it by hand**: tap a fastener the guide missed and SAM 3.1 follows it through the step;
-   tap a wrong number to remove it.
-7. **While repairing**: "Ask FixScribe" by voice or text (answers point to the step and play it from the video: "▶ See step 3 at 01:42"),
-   a live camera mode that says which step you are on, a photo check ("is this step done?")
-   and a printable fastener tray.
+## What it does
+
+| | |
+|---|---|
+| **1. Film it** | One phone video of any repair or assembly: electronics, appliances, furniture, bikes, cars, plumbing… Narrated or silent; saying "step" / "paso" marks where each step begins. |
+| **2. A guide comes out** | Each step has its instruction, safety warnings, the part cut out on the frame by SAM 3.1, a numbered fastener map, a short loop clip and a "watch in video" jump to the exact second. |
+| **3. Proof on every claim** | Each step boundary, instruction, fastener count and part is graded verified / supported / unverified, with the video seconds and words behind it. What cannot be proven is marked, not hidden. |
+| **4. The way back** | The reverse guide, with a tally that every fastener taken out goes back in, and a printable fastener tray. |
+| **5. Safety first** | Fixed rules in `app/safety.py` refuse professional-only jobs (gas, mains panel, airbag, refrigerant, high-voltage battery, microwave). A model may make a decision stricter, never looser. |
+| **6. Live coach** | Point the phone at the job: it says which step you are on, marks the parts, and takes voice commands or questions. Answers name their step and play that moment of the video. |
 
 ## How it uses Meta models
 
-| Model | What it does in FixScribe |
-|---|---|
-| `muse-spark-1.3` | identifies the object, category and hazards; reads the whole video and transcript to write the steps; re-reads unclear steps on timecoded clips; checks every fastener candidate on three zoomed views; answers questions |
-| `muse-voice-transcribe-1.0` | timestamped turns; the spoken "step" / "paso" become the step cuts |
-| `sam-3.1` (images) | highlights the part; finds fastener candidates on the full frame and on zoomed tiles |
-| `sam-3.1` (video) | follows each fastener through the step, so a fastener counts only if it appears or disappears where the step says; follows a point the user taps |
-| `muse-wonder-1.0` | the optional agent (`ENABLE_INSPECTOR`): it looks at frames, points at parts, adds steps and asks the person when unsure. On one real 8.5-minute video it filed 15 steps covering the whole video with 5 SAM-proven parts in 13 turns, for $0.69 (2026-11-02) |
-| MMS-TTS (Meta open weights, CC-BY-NC 4.0, run locally) | reads the film and the live coach aloud in English; install it with `python -m scripts.get_voice`, otherwise the device voice is used |
-
-Unexpected uses:
-
-- **SAM 3.1 as a fastener counter and verifier.** Candidates come from SAM on the frame and on
-  zoomed tiles, SAM video follows them over time, and Spark confirms each one by number
-  (set-of-mark), never by guessing coordinates.
-- **Voice turns as step cuts.** The narration itself is the editing tool.
-- **An agent with eyes.** Muse Wonder uses SAM and frames as tools and stops to ask a person.
-
-Every call goes through `app/meta_client.py`: retries, 429 backoff, a global and a per-job
+Every call goes through one door, `app/meta_client.py`: retries, 429 backoff, a global and a per-job
 budget, and a spend log per stage.
 
-## Evaluation (`eval/`)
+| Model | Job in FixScribe |
+|---|---|
+| `muse-spark-1.3` | identifies the object, category, task and hazards; watches the whole video with the transcript and writes the steps; re-reads unclear steps on timecoded clips; points at parts; checks every mark; follows the live camera; answers questions |
+| `sam-3.1` (images) | cuts out the part Spark points at; finds fastener candidates on the frame and on zoomed tiles |
+| `sam-3.1` (video) | follows each part and fastener through its step, so a fastener counts only if it appears or disappears where the step says |
+| `muse-voice-transcribe-1.0` | timestamped turns; the spoken "step" / "paso" become the step cuts; hears the user in the coach |
+| `muse-wonder-1.0` | optional agent (`ENABLE_INSPECTOR`): looks at frames, points with SAM, adds steps and asks the person when unsure. On one real 8.5-minute video it filed 15 steps with 5 SAM-proven parts in 13 turns, for $0.69 |
+| MMS-TTS (Meta open weights, CC-BY-NC 4.0, local) | reads the film and the coach aloud; `python -m scripts.get_voice` installs it, otherwise the device voice is used |
 
-Answer keys written by eye. The first three exams score saved answers with no Meta calls; the
-coach exam spends credits.
+Unexpected uses: **SAM 3.1 as a fastener counter** (candidates from SAM, followed over time by SAM
+video, confirmed by Spark by number, never by guessing coordinates); **voice turns as step cuts**
+(the narration is the editing tool); **an agent with eyes** (Muse Wonder uses SAM and frames as
+tools and stops to ask a person).
+
+## How it works
+
+```
+phone video ─► ingest ─► transcribe ─► identify ─► signals ─► scenes ─► analyze ─► fusion ─► refine
+  (ffmpeg)    (Muse Voice) (Spark)      (OpenCV)   (code)    (Spark)    (code)    (Spark)
+           ─► plan ─► safety ─► frames ─► perception ─► motion ─► proof ─► narrate ─► publish ─► learn
+              (code)  (rules)   (code)   (Spark+SAM)  (SAM video) (code)   (Spark)    guide.json
+```
+
+17 stages, one process per job, one folder per job (`data/jobs/<id>/`), one Pydantic model per file,
+every file written atomically. A failed job resumes at the stage that failed without paying again
+for the stages before it. Optional stages add a warning and the job goes on; only ingest, scenes,
+analyze, plan, safety and publish can stop a job, and then the page shows one clear sentence.
+
+The live coach runs in two tiers: the **step** (a camera frame plus the guide's photos of the
+previous, current and next step go to Spark; one odd frame never moves it, a different step needs
+two frames in a row) and the
+**marks** (Spark names and points, SAM 3.1 cuts out, shown dashed; Spark checks again, shown solid).
+Next / back / repeat run without any model; anything phrased as a question goes to Spark.
+
+Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/ALGORITHM.md](docs/ALGORITHM.md).
+
+## Evaluation
+
+Answer keys written by eye, before tuning. The first three exams score saved answers with no Meta
+calls; the coach exam spends credits.
 
 | Exam | Command | Result |
 |---|---|---|
-| Part and fastener finding on 20 photos | `python -m eval.detect_score` | recall 0.89, precision 1.00, 16 of 20 perfect |
-| Fasteners in a real 16-step furniture video (720p) | `python -m eval.video_score` | recall 0.75, precision 1.00: no invented fastener; steps with no visible fastener left empty |
+| Parts and fasteners on 20 photos | `python -m eval.detect_score` | recall 0.83 → **0.89**, precision 0.98 → **1.00**, perfect photos 14 → **16** of 20 |
+| Fasteners in a real 16-step furniture video (720p) | `python -m eval.video_score` | recall 0.75, precision 1.00: no invented fastener |
 | Whole pipeline on labelled videos | `python -m eval.run_eval --reuse` | step F1, boundaries within ±2 s, fastener counts, seconds and dollars per stage |
-| Live coach on two videos, a frame every 4 s | `python -m eval.coach_exam <video> --real --walk` | see below |
+| Live coach, a frame every 4 s | `python -m eval.coach_exam <video> --real --walk` | below |
 
-Live coach, measured on 2026-11-01 (one phone repair, one furniture assembly):
+Live coach, one phone repair and one furniture assembly (2026-11-01):
 
 | Measure | Phone | Furniture |
 |---|---|---|
 | Right step, up to 8 s late | 88 % | 95 % |
 | Right step at that exact moment | 76 % | 80 % |
-| Right step at that moment, steps not used for tuning | 69 % | 65 % |
-| Marks on the right part | 93 % (14 of 15) | 74 % (14 of 19) |
-| The step's own part marked correctly | 9 of 11 | 5 of 8 |
+| Right step, steps not used for tuning | 69 % | 65 % |
+| Marks on the right part | 93 % | 74 % |
 
-An answer takes 8-9 s and marks 21-27 s. The two videos are few, the key's author also tuned the
-coach, and the furniture marks ranged from 74 % to 84 % between runs. A rerun on the phone video on
-2026-11-02 gave marks right 11 of 12 (92 %) and the step's own part 7 of 11, with a median of 28.5 s
-for the marks on a day the Meta API was slow. Pointing at the step's part again while the check runs
-then gave, on the same video the same evening, marks right 17 of 19 (89 %), the step's own part 10 of
-11 and a median of 20.0 s, for the same $0.48. Typed questions on that guide: 3 of 3 right, 2-4 s.
+Changing one thing at a time on the phone video (2026-11-02): the step's own part marked in 7 → **10**
+of 11 steps, marks median 27.1 s → **20.0 s**, marks right 92 % → 89 % (not every number went up).
+Typed questions: 3 of 3 right in 2–4 s. An answer from the camera takes about 8 s.
 
-The score on a guide page is the guide's own proof score, not an independent test. The 8.5-minute
-phone repair scores 98 %. Checked by eye, 8 of its 10 shown parts are surely right, one spills
-past the part and one is wrong. Of its 5 screws, 3 are placed from where the tool points and none
-is confirmed: the video is 720p.
+**Honest limits.** Precision 1.00 is on 20 photos; on a live camera the coach still marks the wrong
+part 11–26 % of the time. Two coach videos are few, and the key's author also tuned the coach.
+Fasteners hidden in wood or under a hand cannot be seen: then the count comes from the analysis
+and the guide says so. Small screws need 1080p or 4K, and the guide warns when the video is smaller.
+An 8.5-minute video took 14 to 30 minutes and $0.69 to $1.47 to turn into a guide, depending on the
+version of the pipeline.
 
-Honest limits: fasteners hidden inside the wood or under a hand cannot be seen; then the count
-comes from the analysis and the guide says so. Small fasteners need a 1080p or 4K video, and the
-guide warns when the video is smaller.
+## Built to survive real input
+
+959 tests, Meta always mocked. They include phone video as it really is (rotated, variable frame
+rate, 10-bit HDR, 60 fps, too short, not a video) and model answers as they really come back
+(reversed or negative times, invented categories and hazards, runaway text, broken JSON): every job
+ends with a guide or one clear sentence, never a crash.
 
 ## Safe to leave public
 
 No login: a job's unguessable link is its key, and no route lists jobs. The original video and raw
-model answers are never served, uploads open only as real phone video files, the location is
-dropped from working copies, every path to Meta has a budget, at most two videos are processed at
-once while the rest wait in line, and per-visitor limits (videos a day,
-coach minutes a day, questions an hour) can be turned on from the host's panel. See
+model answers are never served; uploads open only as real video files; the place of filming is
+dropped from working copies; every path to Meta has a budget; at most two videos are processed at
+once while the rest wait in line; per-visitor limits can be turned on from the host's panel. See
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#limits-on-a-public-server).
 
-## Run locally
+## Run it
 
 ```bash
 python3.12 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
-cp .env.example .env   # then add your key
+cp .env.example .env            # then add your Meta key
 .venv/bin/uvicorn app.main:app --reload
 ```
 
-Open http://127.0.0.1:8000 on a computer or phone and upload a video.
-
-Tests and lint (about 960 tests, Meta always mocked):
-
-```bash
-.venv/bin/pytest -q
-.venv/bin/ruff check .
-```
-
-Docker:
+Open http://127.0.0.1:8000 on a computer or phone and upload a video. No key? `python scripts/demo_job.py`
+builds a guide with the real pipeline and a fake Meta client.
 
 ```bash
-docker build -t fixscribe .
-docker run --env-file .env -p 8000:8000 fixscribe
+.venv/bin/pytest -q             # tests, Meta mocked
+.venv/bin/ruff check .          # lint
+docker build -t fixscribe . && docker run --env-file .env -p 8000:8000 fixscribe
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how it works.
+Hosting for judges: [docs/DEPLOY.md](docs/DEPLOY.md).
+
+## Repository map
+
+| Folder | What is in it |
+|---|---|
+| `app/` | FastAPI app: `main.py`, `routes/`, the pipeline stages in `pipeline/`, the agent in `agent/`, `meta_client.py` (the only door to Meta), `schemas.py`, `safety.py` |
+| `web/` | Jinja2 templates, plain JavaScript and CSS, landing photos and drawings |
+| `prompts/` | one versioned file per model task (`analyze_v1.md`, `live_v2.md`, …) |
+| `domains/` | one JSON profile per kind of object: fasteners, parts, tools, safety checks |
+| `eval/` | answer keys and exams ([eval/README.md](eval/README.md)) |
+| `tests/` | the test suite, Meta always mocked |
+| `scripts/` | tools to run a video, pack the sample guide, draw the landing ([scripts/README.md](scripts/README.md)) |
+| `docs/` | architecture, algorithm, design, deploy and hackathon notes ([docs/README.md](docs/README.md)) |
+| `tasks/` | every Muse Code task, review and report ([tasks/README.md](tasks/README.md)) |
+| `demo/` | the read-only sample guide shown to visitors |
 
 ## Built during the hackathon (Oct 26 – Nov 4, 2026)
 
-All code in this repository was written during the hackathon, starting on Oct 26, 2026.
-
-## Built with Muse Code
-
-Muse Code (Meta's coding agent, running `muse-spark-1.3`) wrote the first version of several stages
-from small written tasks: 16 of the repository's commits. From Oct 27 the code was written with
-another coding agent, and each commit says which. Every Muse Code task, review and report is kept
-in [`tasks/`](tasks/):
-
-1. A task file `tasks/<id>.md` names the files to touch, the function signatures, the exact Meta
-   docs pages and fields, testable "done when" checks, and why the task matters for judging.
-2. Muse Code runs headless (`muse exec`) in its own git worktree, sandboxed: it can edit files
-   and run tests, but it cannot commit, push or reach the network from the shell.
-3. Muse Code reports in a fixed format; each change is reviewed against a checklist, and
-   problems go to `tasks/<id>.review.md` for Muse Code to fix.
-4. Only reviewed work is committed and merged. Each Muse Code commit says
-   "Written by Muse Code (task <id>)".
+All code in this repository was written during the hackathon, from Oct 26, 2026. Muse Code (Meta's
+coding agent, running `muse-spark-1.3`) wrote the first version of several stages from small written
+tasks: 16 of the commits say "Written by Muse Code". From Oct 27 the code was written with another
+coding agent. Every Muse Code task, review and report is kept in [`tasks/`](tasks/).
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). The MMS-TTS voice model is CC-BY-NC 4.0 and is downloaded separately.
