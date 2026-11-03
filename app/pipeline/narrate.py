@@ -22,7 +22,7 @@ from app.schemas import (
 )
 
 VERSION = "1"
-MAX_OUTPUT_TOKENS = 12000  # 10+ steps x 2 lines plus reasoning: 4000 came back empty
+MAX_OUTPUT_TOKENS = 12000  # room for 10+ steps of two lines each, plus the reasoning
 PROFESSIONAL_LINE = "A qualified professional must do this step."
 
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "narrate_v1.md"

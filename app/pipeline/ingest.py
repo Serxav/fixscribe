@@ -20,11 +20,8 @@ OUT_FPS = 30
 MIN_FPS = 15
 MIN_VIDEO_S = 2.0  # one real step takes longer than this
 SCALE_720P = "scale=w='if(gt(iw,ih),-2,min(720,iw))':h='if(gt(iw,ih),min(720,ih),-2)'"
-# Measured on this machine (see tasks/018-media-ladder.md report): with fast=1
-# the filter skips the primaries/gamma conversion and saturation stays -26 %
-# off the SDR twin; without it the error is -0.1 % (factory fixture) and
-# +0.8 % on a file tagged with a real HLG transfer. The tonemap chains kept
-# saturation but crushed mean brightness from 128 to 40-85, so they lost.
+# HDR phone video to ordinary colour. This full conversion keeps saturation and brightness closest
+# to an SDR copy; the "fast" option and the tonemap filters lost one or the other.
 HDR_TO_SDR = "colorspace=all=bt709:iall=bt2020:format=yuv420p"
 _HDR_TRANSFERS = ("arib-std-b67", "smpte2084")
 

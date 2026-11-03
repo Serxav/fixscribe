@@ -9,7 +9,7 @@ import numpy as np
 from app import artifacts
 from app.meta_client import Detection
 
-# Signal lime #D4FF3A and graphite #0E0F11, in OpenCV BGR order.
+# The site's colors, in OpenCV BGR order.
 CUT_BGR = (31, 90, 255)  # the site's #ff5a1f
 CUT_TINT = 0.14
 PILL_BGR = (32, 16, 11)  # the site's dark label
