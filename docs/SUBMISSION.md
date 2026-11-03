@@ -51,4 +51,4 @@ so.]
 stages, with its tasks in `tasks/`; the rest was written with another coding agent, as each commit
 states.
 
-**Links:** [Deployed address] · [GitHub repository] · [3-minute video]
+**Links:** [Deployed address] · [GitHub repository] · [Demo film]
