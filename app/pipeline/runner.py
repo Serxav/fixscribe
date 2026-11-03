@@ -39,6 +39,8 @@ logger = logging.getLogger(__name__)
 MAX_ERROR_CHARS = 300
 LOCK_TRIES = 10
 STALE_AFTER_S = 120  # a queued job that never started, or a dead runner
+SLOT_POLL_S = 2.0
+IN_LINE = "line"  # the stage name a queued job shows while other videos take every slot
 
 
 @dataclass(frozen=True)
@@ -228,6 +230,40 @@ def job_lock(folder: Path, tries: int = LOCK_TRIES) -> Iterator[None]:
             fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
 
+@contextmanager
+def run_slot(
+    data_dir: Path, slots: int, on_wait: Callable[[], None], poll_s: float = SLOT_POLL_S
+) -> Iterator[None]:
+    """Hold one of ``slots`` places to run, waiting for one if needed; 0 means no limit.
+
+    Several judges uploading at once must not run out of memory together: the others wait in
+    line. Each place is a locked file, so a runner that dies gives its place back by itself.
+    """
+    if slots <= 0:
+        yield
+        return
+    data_dir.mkdir(parents=True, exist_ok=True)
+    waiting = False
+    while True:
+        for number in range(slots):
+            handle = open(data_dir / f"run-slot-{number}.lock", "a")
+            try:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                handle.close()
+                continue
+            try:
+                yield
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+                handle.close()
+            return
+        if not waiting:
+            on_wait()
+            waiting = True
+        time.sleep(poll_s)
+
+
 def is_running(job_id: str, jobs_dir: Path) -> bool:
     """True if a runner process holds the lock (a crashed runner does not)."""
     folder = job_dir(job_id, jobs_dir)
@@ -273,8 +309,16 @@ def run_job(
     folder = job_dir(job_id, jobs_dir)
     stages = stages_for(read_status(job_id, jobs_dir)) if stages is None else stages
     total = sum(stage.weight for stage in stages) or 1.0
-    with job_lock(folder):
-        update_status(job_id, jobs_dir, state="running", error=None, warnings=[], progress=0.0)
+
+    def in_line() -> None:
+        update_status(job_id, jobs_dir, state="queued", stage=IN_LINE, error=None)
+
+    # The job lock first: while it waits in line, the job is alive, never stale.
+    slots = getattr(settings, "max_running_jobs", 0)  # stand-in settings in tests: no line
+    with job_lock(folder), run_slot(jobs_dir.parent, slots, in_line):
+        update_status(
+            job_id, jobs_dir, state="running", stage=None, error=None, warnings=[], progress=0.0
+        )
         previous = artifacts.load_optional(folder, Manifest) if resume else None
         manifest = Manifest()
         done = 0.0

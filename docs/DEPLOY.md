@@ -12,6 +12,7 @@ The camera and microphone only work over https, so judges need a hosted address.
 | `BUDGET_USD` | what is left of the credit, minus a margin (for example `80`) | the one hard ceiling: past it no call is sent |
 | `JOB_BUDGET_USD` | `2.5` | one 8.5-minute video cost $1.47; a lower cap cuts the guide short |
 | `DAILY_JOB_LIMIT` | `50` | judges may film as many repairs as they like |
+| `MAX_RUNNING_JOBS` | `2` | videos processed at once; more wait in line, so 4 GB is never run out |
 | `LIVE_BUDGET_USD` | `30` | the coach on the sample guide, shared by every judge; a judge's own guide stops at $5 |
 | `LIVE_MAX_CALLS` | `10000` | coach calls on the sample guide; a judge's own guide stops at 1000 (about an hour) |
 | `ENABLE_INSPECTOR` | `true` | judges can try the Muse Wonder agent (about $0.70 a run) |

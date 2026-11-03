@@ -90,7 +90,8 @@ guide warns when the video is smaller.
 
 No login: a job's unguessable link is its key, and no route lists jobs. The original video and raw
 model answers are never served, uploads open only as real phone video files, the location is
-dropped from working copies, every path to Meta has a budget, and per-visitor limits (videos a day,
+dropped from working copies, every path to Meta has a budget, at most two videos are processed at
+once while the rest wait in line, and per-visitor limits (videos a day,
 coach minutes a day, questions an hour) can be turned on from the host's panel. See
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#limits-on-a-public-server).
 
@@ -105,7 +106,7 @@ cp .env.example .env   # then add your key
 
 Open http://127.0.0.1:8000 on a computer or phone and upload a video.
 
-Tests and lint (about 800 tests, Meta always mocked):
+Tests and lint (about 960 tests, Meta always mocked):
 
 ```bash
 .venv/bin/pytest -q

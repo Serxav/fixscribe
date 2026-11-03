@@ -1284,9 +1284,13 @@ class MetaClient:
             self._sleep(wait)
         status = getattr(last_exc, "status_code", None)
         logger.warning("meta api error status=%s attempt=%s", status, MAX_ATTEMPTS)
+        reason = (
+            f"failed with status {status}"
+            if status is not None
+            else "could not be reached (network or timeout)"
+        )
         raise MetaError(
-            f"meta api failed with status {status} after {MAX_ATTEMPTS} attempts",
-            status_code=status,
+            f"meta api {reason} after {MAX_ATTEMPTS} attempts", status_code=status
         ) from last_exc
 
 

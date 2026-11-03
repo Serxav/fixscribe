@@ -194,7 +194,8 @@
     var stages = data.stages || [];
     var running = stages.filter(function (s) { return s.status === "running"; })[0];
     var label = data.state === "done" ? "Your guide is ready"
-      : data.state === "failed" ? "Stopped" : running ? running.label + "…" : "Starting…";
+      : data.state === "failed" ? "Stopped" : running ? running.label + "…"
+      : data.stage === "line" ? "Waiting for another video to finish…" : "Starting…";
     $("stage-label").textContent = label;
     $("scan-caption").textContent = running ? running.label : data.state === "done" ? "Done" : label;
     $("live").className = "run-live " + data.state;

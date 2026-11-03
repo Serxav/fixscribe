@@ -161,6 +161,10 @@ There is no login: a job's link, 48 random bits, is its only key, and no route l
 - Uploads: `claim_daily_slot` counts them in a file that deleting a job does not touch, and ffmpeg
   opens them with a format and protocol whitelist (`UPLOAD_INPUT`), so a playlist named `.mp4` is
   refused. Working copies drop metadata such as the place of filming.
+- A server without `MODEL_API_KEY` refuses uploads at once (503) instead of failing them later.
+- At most `MAX_RUNNING_JOBS` videos (2 by default) are processed at once, so several uploads cannot
+  run the server out of memory together; the others wait in line and their page says so
+  (`run_slot`: one locked file per place, given back by the OS if a runner dies).
 - The agent's routes answer 403 when `ENABLE_INSPECTOR` is off.
 - The coach stops at `LIVE_BUDGET_USD` and `LIVE_MAX_CALLS` on the sample guide, and at $5 and 1000
   calls on any other. Camera frames and voice clips stay in a per-request folder deleted with the

@@ -15,7 +15,9 @@ from app.routes.upload import settings_dep
 def jobs_tmp(tmp_path):
     data_dir = tmp_path / "data"
     data_dir.mkdir()
-    app.dependency_overrides[settings_dep] = lambda: Settings(model_api_key="", data_dir=data_dir)
+    app.dependency_overrides[settings_dep] = lambda: Settings(
+        model_api_key="test-key", data_dir=data_dir
+    )
     yield data_dir / "jobs"
     app.dependency_overrides.pop(settings_dep, None)
 
@@ -69,7 +71,7 @@ def test_upload_txt_is_rejected(jobs_tmp, no_start):
 def test_upload_daily_limit(jobs_tmp, no_start, tmp_path):
     data_dir = tmp_path / "data"
     app.dependency_overrides[settings_dep] = lambda: Settings(
-        model_api_key="", data_dir=data_dir, daily_job_limit=0
+        model_api_key="test-key", data_dir=data_dir, daily_job_limit=0
     )
     response = TestClient(app).post(
         "/upload",
@@ -145,7 +147,9 @@ def test_job_that_cannot_start_is_marked_failed(tmp_path, monkeypatch):
     from app.main import app
     from app.routes.upload import settings_dep
 
-    app.dependency_overrides[settings_dep] = lambda: Settings(model_api_key="", data_dir=tmp_path)
+    app.dependency_overrides[settings_dep] = lambda: Settings(
+        model_api_key="test-key", data_dir=tmp_path
+    )
 
     def broken_start(job_id, jobs_dir):
         raise OSError("no python")
@@ -171,3 +175,18 @@ def test_privacy_and_terms_pages_are_linked_from_every_page(jobs_tmp, no_start):
     assert "Delete" in privacy.text
     terms = client.get("/terms")
     assert terms.status_code == 200 and "professional" in terms.text
+
+
+def test_a_server_without_a_key_refuses_videos_at_once(jobs_tmp, no_start, tmp_path):
+    app.dependency_overrides[settings_dep] = lambda: Settings(model_api_key="", data_dir=tmp_path)
+    try:
+        response = TestClient(app).post(
+            "/upload",
+            files={"video": ("repair.mp4", b"0123", "video/mp4")},
+            follow_redirects=False,
+        )
+    finally:
+        app.dependency_overrides.clear()
+    assert response.status_code == 503
+    assert "not set up" in response.text
+    assert no_start == []
