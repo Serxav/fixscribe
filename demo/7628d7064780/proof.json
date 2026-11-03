@@ -1,0 +1,465 @@
+{
+  "steps": [
+    {
+      "index": 1,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "scene change at 42.1 s",
+            "timecode re-check: 34.3–42.1 s",
+            "frame by frame review: 34.9–42.9 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 0.6 s: 'this is a real quick video on how to fix stuck and squeaking buttons on the orig'",
+            "voice 41.9 s: 'buttons so we can turn this underneath and over here we have the open button you'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'upper shell' found (confidence 0.94)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 2,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "scene change at 42.1 s",
+            "frame by frame review: 56.3–69.1 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "rewritten from the frame by frame review: Unclip and remove the open button."
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'power button' found (confidence 0.80)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 3,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "frame by frame review: 67.9–99.5 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 75.0 s: 'we just have a spring we have these plastic clips that hold it in and the center section here which kind of acts as a centering piece for the spring'",
+            "voice 65.8 s: 'just like that and as you you can see here'",
+            "voice 72.8 s: 'see if we can get a focus really we just have a spring we have these plastic cli'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'power button' found (confidence 0.94)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 4,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "frame by frame review: 124.0–142.5 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 115.0 s: 'I'm going to take silicone grease this is made by Danco 88693'",
+            "voice 128.0 s: 'we're going to take just a really small amount and we're going to apply it to the rub areas'",
+            "voice 72.8 s: 'see if we can get a focus really we just have a spring we have these plastic cli'",
+            "voice 140.9 s: 'The stuff is perfectly safe to get on your hands. And although it's not complete'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'power button' found (confidence 0.96)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 5,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "scene change at 184.8 s",
+            "frame by frame review: 154.0–180.9 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 152.0 s: 'you can apply some of the silicone grease to this too'",
+            "voice 174.0 s: 'and then take the spring put it back on and make sure it faces the correct direction'",
+            "voice 140.9 s: 'The stuff is perfectly safe to get on your hands. And although it's not complete'",
+            "voice 163.9 s: 'don't want too much much there we go'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'button spring' found (confidence 0.81)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 6,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "scene change at 184.8 s",
+            "frame by frame review: 185.6–193.8 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "rewritten from the frame by frame review: Display the empty power button housing."
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 7,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "scene change at 217.1 s",
+            "frame by frame review: 204.0–218.2 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 200.0 s: 'we're going to take our Phillips head screwdriver take out these two screws'",
+            "voice 193.6 s: 'perfect so on the other side there is just a little bit more bit more work to ge'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "fastener_count",
+          "status": "unverified",
+          "sources": [
+            "SAM: 0 screws removed (before/after stills)"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'slider screw' found (confidence 0.86)"
+          ]
+        }
+      ],
+      "score": 0.75
+    },
+    {
+      "index": 8,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "scene change at 217.1 s",
+            "frame by frame review: 217.0–225.2 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 223.0 s: 'and this assembly just pulls out just like that'",
+            "voice 235.0 s: 'when you press the button it actually pushes this slider against a spring'",
+            "voice 218.3 s: 'alright and this assembly just pulls out just like that now the way this works i'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'slider assembly' found (confidence 0.93)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 9,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "frame by frame review: 260.2–284.8 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 269.0 s: 'you can completely disconnect the spring too if that makes it a little easier to get in there'",
+            "voice 264.5 s: 'just like that'",
+            "voice 267.3 s: 'and you can completely disconnect the spring too if that makes it a little easie'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'slider assembly' found (confidence 0.95)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 10,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "timecode re-check: 314.7–321.4 s",
+            "frame by frame review: 315.1–321.5 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 320.0 s: 'and lastly we will pop out the open button and do the exact same thing as we did the power button'",
+            "voice 314.0 s: 'and lastly we will pop out the open button and do the exact same thing as we did'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'open button' found (confidence 0.84)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 11,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "frame by frame review: 328.1–354.6 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 331.0 s: 'we are going to put a little bit of silicone right in here in these contact areas'",
+            "voice 340.0 s: 'and lastly right here this is a slide area as well'",
+            "voice 355.0 s: 'anywhere that two pieces of plastic rub together that's what you want to get the silicone grease on'",
+            "voice 314.0 s: 'and lastly we will pop out the open button and do the exact same thing as we did'",
+            "voice 332.2 s: 'in these contact areas'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'open button' found (confidence 0.98)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 12,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "frame by frame review: 373.2–376.8 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "rewritten from the frame by frame review: Fit the open button into its slider housing."
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'open button' found (confidence 0.97)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 13,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "pause at 399.2 s",
+            "timecode re-check: 373.0–394.0 s",
+            "frame by frame review: 374.0–393.0 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 390.0 s: 'put our spring back on and reinsert this back where it needs to go just like that'",
+            "voice 372.4 s: 'and we are going to take our spring loaded assembly'",
+            "voice 379.1 s: 'right here'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'slider assembly' found (confidence 0.93)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 14,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "pause at 399.2 s",
+            "frame by frame review: 399.2–422.7 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "rewritten from the frame by frame review: Hold the assembly down and tighten only the lower screw."
+          ]
+        },
+        {
+          "field": "fastener_count",
+          "status": "verified",
+          "sources": [
+            "SAM: 2 screws removed (before/after stills)"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'slider screw' found (confidence 0.87)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 15,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "timecode re-check: 438.0–448.0 s",
+            "frame by frame review: 439.2–448.4 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 438.0 s: 'now we can go ahead and turn that over and give these buttons a test'",
+            "voice 442.0 s: 'much better'",
+            "video 445.0 s: fingers press power and open buttons smoothly",
+            "voice 436.8 s: 'okay so now we can go ahead and turn that over and give these buttons a test'",
+            "voice 441.7 s: 'much better'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'open button' found (confidence 0.80)"
+          ]
+        }
+      ],
+      "score": 1.0
+    }
+  ],
+  "score": 0.983
+}

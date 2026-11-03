@@ -1,0 +1,103 @@
+{
+  "part": "wooden board",
+  "tries": [
+    {
+      "t_s": 108.18,
+      "box": [
+        100,
+        118,
+        976,
+        507
+      ],
+      "confidence": 0.789,
+      "fill": 0.128,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 116.1,
+      "box": [
+        100,
+        125,
+        960,
+        495
+      ],
+      "confidence": 0.691,
+      "fill": 0.446,
+      "why": "Magenta shape is in the green strip above the actual light wood planks and shows no wood; it covers background/legs/clothing, not the wooden board below.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 127.23,
+      "box": [
+        97,
+        125,
+        934,
+        476
+      ],
+      "confidence": 0.789,
+      "fill": 0.596,
+      "why": "Magenta line is in the upper background strip tracing rug and background clutter, not the pale slatted wooden board below with the staple gun on it. It covers mostly something other than the board.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 108.18,
+      "check": "last look, blur forgiven",
+      "box": [
+        97,
+        131,
+        964,
+        550
+      ],
+      "confidence": 0.777,
+      "fill": 0.548,
+      "why": "magenta outline is above/right of the hand-touch on the background rug, not on the long pale rectangular board; shape covers rug/background, not wood",
+      "result": "Spark rejected the cut-out"
+    }
+  ],
+  "zoom": [
+    0,
+    404,
+    1000,
+    936
+  ],
+  "review": {
+    "confidence": 0.88,
+    "end_s": 150.1,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      3,
+      6,
+      8
+    ],
+    "points": [],
+    "start_s": 108.2,
+    "work_frame": 1,
+    "work_x": 650,
+    "work_y": 410
+  },
+  "close_ups": [
+    {
+      "t_s": 116.1,
+      "spot": [
+        649,
+        621
+      ],
+      "crop": [
+        449,
+        265,
+        849,
+        976
+      ],
+      "box": [
+        0,
+        260,
+        1000,
+        620
+      ],
+      "name": "wooden board",
+      "result": "the part is bigger than the close-up"
+    }
+  ]
+}

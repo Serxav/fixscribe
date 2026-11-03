@@ -1,0 +1,125 @@
+{
+  "part": "battery connector",
+  "tries": [
+    {
+      "t_s": 44.22,
+      "box": [
+        545,
+        435,
+        605,
+        485
+      ],
+      "confidence": 0.176,
+      "fill": 0.254,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 42.29,
+      "box": [
+        542,
+        443,
+        588,
+        485
+      ],
+      "confidence": 0.508,
+      "fill": 0.854,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 45.04,
+      "box": [
+        546,
+        449,
+        584,
+        481
+      ],
+      "confidence": 0.377,
+      "fill": 0.574,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 44.22,
+      "check": "last look, blur forgiven",
+      "box": [
+        548,
+        432,
+        592,
+        478
+      ],
+      "confidence": 0.475,
+      "fill": 0.761,
+      "result": "weak cut-out"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.72,
+    "end_s": 45.0,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      6,
+      9,
+      7
+    ],
+    "points": [],
+    "start_s": 44.2,
+    "work_frame": 8,
+    "work_x": 565,
+    "work_y": 465
+  },
+  "close_ups": [
+    {
+      "t_s": 42.29,
+      "spot": [
+        564,
+        464
+      ],
+      "crop": [
+        364,
+        108,
+        764,
+        819
+      ],
+      "box": [
+        470,
+        365,
+        560,
+        535
+      ],
+      "name": "battery connector",
+      "confidence": 0.342,
+      "fill": 0.725,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 44.22,
+      "spot": [
+        565,
+        465
+      ],
+      "crop": [
+        365,
+        109,
+        765,
+        820
+      ],
+      "box": [
+        453,
+        452,
+        542,
+        522
+      ],
+      "name": "battery connector",
+      "confidence": 0.361,
+      "fill": 1.126,
+      "result": "weak cut-out"
+    }
+  ]
+}

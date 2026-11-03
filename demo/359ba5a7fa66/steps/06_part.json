@@ -1,0 +1,62 @@
+{
+  "part": "leather corner",
+  "tries": [],
+  "zoom": [
+    0,
+    0,
+    728,
+    1000
+  ],
+  "review": {
+    "confidence": 0.92,
+    "end_s": 392.1,
+    "fastener_frame": 6,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      6,
+      11,
+      8
+    ],
+    "points": [
+      {
+        "x": 556,
+        "y": 705
+      },
+      {
+        "x": 569,
+        "y": 668
+      }
+    ],
+    "start_s": 359.5,
+    "work_frame": 5,
+    "work_x": 544,
+    "work_y": 610
+  },
+  "close_ups": [
+    {
+      "t_s": 375.51,
+      "spot": [
+        396,
+        609
+      ],
+      "crop": [
+        250,
+        350,
+        541,
+        867
+      ],
+      "box": [
+        110,
+        0,
+        935,
+        668
+      ],
+      "name": "leather corner",
+      "confidence": 0.957,
+      "fill": 0.518,
+      "why": "Magenta shape clearly outlines the folded cream leather flap on the cushion corner, with two staples visible fixing it, matching leather corner fold.",
+      "result": "kept"
+    }
+  ]
+}

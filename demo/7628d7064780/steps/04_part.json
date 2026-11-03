@@ -1,0 +1,70 @@
+{
+  "part": "power button",
+  "tries": [
+    {
+      "t_s": 138.8,
+      "box": [
+        135,
+        288,
+        765,
+        1000
+      ],
+      "confidence": 0.957,
+      "fill": 0.33,
+      "why": "Gray plastic button held between fingers, magenta outline tightly follows the button edges and excludes fingers, consistent with power button being lubricated.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    445,
+    109,
+    812,
+    1000
+  ],
+  "review": {
+    "confidence": 0.9,
+    "end_s": 142.5,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      9,
+      8,
+      7
+    ],
+    "points": [],
+    "start_s": 124.0,
+    "work_frame": 11,
+    "work_x": 550,
+    "work_y": 550
+  },
+  "close_ups": [
+    {
+      "t_s": 131.32,
+      "spot": null,
+      "result": "the spot could not be followed to this frame"
+    },
+    {
+      "t_s": 138.8,
+      "spot": [
+        646,
+        599
+      ],
+      "crop": [
+        572,
+        468,
+        719,
+        729
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "blurred plastic",
+        "visible": false,
+        "x_max": 555,
+        "x_min": 465,
+        "y_max": 545,
+        "y_min": 455
+      }
+    }
+  ]
+}

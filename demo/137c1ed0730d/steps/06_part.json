@@ -1,0 +1,69 @@
+{
+  "part": "soldered memory",
+  "tries": [
+    {
+      "t_s": 93.72,
+      "box": [
+        560,
+        230,
+        710,
+        380
+      ],
+      "confidence": 0.555,
+      "fill": 0.616,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 94.88,
+      "box": [
+        580,
+        210,
+        730,
+        350
+      ],
+      "confidence": 0.516,
+      "fill": 0.833,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 95.9,
+      "result": "Spark does not see it"
+    },
+    {
+      "t_s": 93.72,
+      "check": "last look, blur forgiven",
+      "box": [
+        545,
+        245,
+        725,
+        390
+      ],
+      "confidence": 0.586,
+      "fill": 0.592,
+      "result": "weak cut-out"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.9,
+    "end_s": 99.2,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      6,
+      7,
+      8
+    ],
+    "points": [],
+    "start_s": 92.2,
+    "work_frame": 0,
+    "work_x": 0,
+    "work_y": 0
+  }
+}

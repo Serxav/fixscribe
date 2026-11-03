@@ -1,0 +1,479 @@
+{
+  "title": "Fix Sticking and Squeaking Power and Open Buttons on Sony PlayStation One",
+  "device": "Sony PlayStation One",
+  "summary": "Fix squeaking and sticking PlayStation One power and open buttons by opening the shell, removing the buttons and lid slider, lubricating all plastic rub points with silicone grease, and reassembling.",
+  "difficulty": "easy",
+  "estimated_minutes": 20,
+  "tools": [
+    "Phillips head screwdriver",
+    "Danco 88693 silicone grease"
+  ],
+  "parts": [
+    "upper shell",
+    "power button",
+    "power button spring",
+    "open button",
+    "lid slider assembly",
+    "slider spring",
+    "slider screws"
+  ],
+  "warnings": [
+    "Unplug console before disassembly",
+    "Small springs can spring out and get lost",
+    "Use only plastic-safe silicone grease in thin layer"
+  ],
+  "steps": [
+    {
+      "source_index": null,
+      "title": "Separate the upper shell",
+      "instruction": "Lift off the upper shell and set aside the lower half to work on the buttons.",
+      "start_s": 25.0,
+      "end_s": 42.0,
+      "target_part": "upper shell",
+      "sam_concept": "plastic shell",
+      "action": "open",
+      "removes": [
+        "upper shell"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [],
+      "evidence": [
+        {
+          "t_s": 30.0,
+          "source": "audio",
+          "text": "first things first you need to remove these six screws on the bottom of the chassis"
+        },
+        {
+          "t_s": 33.0,
+          "source": "video",
+          "text": "hands lift upper shell and set aside lower half"
+        }
+      ],
+      "confidence": 0.85
+    },
+    {
+      "source_index": null,
+      "title": "Unclip the power button",
+      "instruction": "Gently press the plastic clips on the power button and pop it out the bottom.",
+      "start_s": 42.0,
+      "end_s": 68.0,
+      "target_part": "power button",
+      "sam_concept": "round button",
+      "action": "unclip",
+      "removes": [
+        "power button"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Plastic clips are fragile and can snap if forced"
+      ],
+      "evidence": [
+        {
+          "t_s": 55.0,
+          "source": "audio",
+          "text": "the power button is actually very easy all you need to do to get this out is just press these gently these plastic clips and it pops out the bottom"
+        }
+      ],
+      "confidence": 0.9
+    },
+    {
+      "source_index": null,
+      "title": "Inspect power button wear",
+      "instruction": "Inspect the power button spring, clips, and center post for rub marks and dust.",
+      "start_s": 68.0,
+      "end_s": 102.0,
+      "target_part": "power button",
+      "sam_concept": "round button",
+      "action": "inspect",
+      "removes": [
+        "power button"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [],
+      "evidence": [
+        {
+          "t_s": 75.0,
+          "source": "audio",
+          "text": "we just have a spring we have these plastic clips that hold it in and the center section here which kind of acts as a centering piece for the spring"
+        }
+      ],
+      "confidence": 0.88
+    },
+    {
+      "source_index": null,
+      "title": "Lubricate power button",
+      "instruction": "Apply a very thin layer of silicone grease to the power button rub areas with your finger.",
+      "start_s": 102.0,
+      "end_s": 142.0,
+      "target_part": "power button",
+      "sam_concept": "round button",
+      "action": "other",
+      "removes": [
+        "power button"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Use only plastic-safe silicone grease, use very thin layer"
+      ],
+      "evidence": [
+        {
+          "t_s": 115.0,
+          "source": "audio",
+          "text": "I'm going to take silicone grease this is made by Danco 88693"
+        },
+        {
+          "t_s": 128.0,
+          "source": "audio",
+          "text": "we're going to take just a really small amount and we're going to apply it to the rub areas"
+        }
+      ],
+      "confidence": 0.9
+    },
+    {
+      "source_index": null,
+      "title": "Refit power button spring",
+      "instruction": "Lubricate the spring contact lightly and place the spring back on the center post in the correct direction.",
+      "start_s": 142.0,
+      "end_s": 185.0,
+      "target_part": "power button spring",
+      "sam_concept": "metal spring",
+      "action": "place",
+      "removes": [
+        "power button spring"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Small spring can fall and get lost"
+      ],
+      "evidence": [
+        {
+          "t_s": 152.0,
+          "source": "audio",
+          "text": "you can apply some of the silicone grease to this too"
+        },
+        {
+          "t_s": 174.0,
+          "source": "audio",
+          "text": "and then take the spring put it back on and make sure it faces the correct direction"
+        }
+      ],
+      "confidence": 0.86
+    },
+    {
+      "source_index": null,
+      "title": "Reinsert power button",
+      "instruction": "Pop the power button back into the shell in the correct orientation.",
+      "start_s": 185.0,
+      "end_s": 193.0,
+      "target_part": "power button",
+      "sam_concept": "round button",
+      "action": "insert",
+      "removes": [
+        "power button"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [],
+      "evidence": [
+        {
+          "t_s": 186.5,
+          "source": "audio",
+          "text": "and then pop that guy right back in"
+        }
+      ],
+      "confidence": 0.92
+    },
+    {
+      "source_index": null,
+      "title": "Unscrew slider assembly",
+      "instruction": "Remove the two Phillips screws holding the open-button slider assembly.",
+      "start_s": 193.0,
+      "end_s": 218.0,
+      "target_part": "slider screws",
+      "sam_concept": "metal screw",
+      "action": "unscrew",
+      "removes": [
+        "slider screws"
+      ],
+      "screw_count": 2,
+      "fastener_s": 205.0,
+      "fastener_where": "two holes on slider mounting bracket",
+      "warnings": [
+        "Hold assembly so spring does not fly when screws release"
+      ],
+      "evidence": [
+        {
+          "t_s": 200.0,
+          "source": "audio",
+          "text": "we're going to take our Phillips head screwdriver take out these two screws"
+        }
+      ],
+      "confidence": 0.93
+    },
+    {
+      "source_index": null,
+      "title": "Remove slider assembly",
+      "instruction": "Pull the spring-loaded slider assembly straight out of the shell.",
+      "start_s": 218.0,
+      "end_s": 260.0,
+      "target_part": "lid slider assembly",
+      "sam_concept": "plastic slider",
+      "action": "remove",
+      "removes": [
+        "lid slider assembly"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Small slider spring can detach unexpectedly"
+      ],
+      "evidence": [
+        {
+          "t_s": 223.0,
+          "source": "audio",
+          "text": "and this assembly just pulls out just like that"
+        },
+        {
+          "t_s": 235.0,
+          "source": "audio",
+          "text": "when you press the button it actually pushes this slider against a spring"
+        }
+      ],
+      "confidence": 0.9
+    },
+    {
+      "source_index": null,
+      "title": "Lubricate slider contacts",
+      "instruction": "Rub silicone grease into all plastic-on-plastic contact and wear areas of the slider.",
+      "start_s": 260.0,
+      "end_s": 305.0,
+      "target_part": "lid slider assembly",
+      "sam_concept": "plastic slider",
+      "action": "other",
+      "removes": [
+        "lid slider assembly"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Do not lose the detached slider spring"
+      ],
+      "evidence": [
+        {
+          "t_s": 255.0,
+          "source": "audio",
+          "text": "we're going to go ahead and just apply some silicone grease in here just rub this into all of the contact areas"
+        },
+        {
+          "t_s": 269.0,
+          "source": "audio",
+          "text": "you can completely disconnect the spring too if that makes it a little easier to get in there"
+        }
+      ],
+      "confidence": 0.88
+    },
+    {
+      "source_index": null,
+      "title": "Remove open button",
+      "instruction": "Pop the open button out of the shell.",
+      "start_s": 305.0,
+      "end_s": 324.0,
+      "target_part": "open button",
+      "sam_concept": "round button",
+      "action": "remove",
+      "removes": [
+        "open button"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Do not bend the thin plastic clips"
+      ],
+      "evidence": [
+        {
+          "t_s": 320.0,
+          "source": "audio",
+          "text": "and lastly we will pop out the open button and do the exact same thing as we did the power button"
+        }
+      ],
+      "confidence": 0.89
+    },
+    {
+      "source_index": null,
+      "title": "Lubricate open button",
+      "instruction": "Apply a very thin layer of silicone grease to the open button contact areas, slide area, and shaft.",
+      "start_s": 324.0,
+      "end_s": 366.0,
+      "target_part": "open button",
+      "sam_concept": "round button",
+      "action": "other",
+      "removes": [
+        "open button"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Excess grease attracts dust and causes sticking"
+      ],
+      "evidence": [
+        {
+          "t_s": 331.0,
+          "source": "audio",
+          "text": "we are going to put a little bit of silicone right in here in these contact areas"
+        },
+        {
+          "t_s": 340.0,
+          "source": "audio",
+          "text": "and lastly right here this is a slide area as well"
+        },
+        {
+          "t_s": 355.0,
+          "source": "audio",
+          "text": "anywhere that two pieces of plastic rub together that's what you want to get the silicone grease on"
+        }
+      ],
+      "confidence": 0.9
+    },
+    {
+      "source_index": null,
+      "title": "Reinsert open button",
+      "instruction": "Pop the open button back in facing the right direction.",
+      "start_s": 366.0,
+      "end_s": 375.0,
+      "target_part": "open button",
+      "sam_concept": "round button",
+      "action": "insert",
+      "removes": [
+        "open button"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [],
+      "evidence": [
+        {
+          "t_s": 366.0,
+          "source": "audio",
+          "text": "so let's go ahead and pop this back in"
+        },
+        {
+          "t_s": 369.0,
+          "source": "audio",
+          "text": "make sure it faces the right direction of course"
+        }
+      ],
+      "confidence": 0.92
+    },
+    {
+      "source_index": null,
+      "title": "Reinstall slider assembly",
+      "instruction": "Put the slider spring back on and reinsert the slider assembly into position.",
+      "start_s": 375.0,
+      "end_s": 398.0,
+      "target_part": "lid slider assembly",
+      "sam_concept": "plastic slider",
+      "action": "insert",
+      "removes": [
+        "lid slider assembly",
+        "slider spring"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Ensure spring hook is seated before releasing"
+      ],
+      "evidence": [
+        {
+          "t_s": 390.0,
+          "source": "audio",
+          "text": "put our spring back on and reinsert this back where it needs to go just like that"
+        }
+      ],
+      "confidence": 0.88
+    },
+    {
+      "source_index": null,
+      "title": "Screw in slider assembly",
+      "instruction": "Hold the assembly down, seat each screw counterclockwise until it clicks, then tighten both screws.",
+      "start_s": 398.0,
+      "end_s": 436.0,
+      "target_part": "slider screws",
+      "sam_concept": "metal screw",
+      "action": "screw in",
+      "removes": [
+        "slider screws"
+      ],
+      "screw_count": 2,
+      "fastener_s": 415.0,
+      "fastener_where": "two holes on slider mounting bracket",
+      "warnings": [
+        "Do not overtighten screws in plastic posts"
+      ],
+      "evidence": [
+        {
+          "t_s": 403.0,
+          "source": "audio",
+          "text": "now you're going to want to hold that down with a finger or two while you grab the hardware"
+        },
+        {
+          "t_s": 414.0,
+          "source": "audio",
+          "text": "make sure you turn this counterclockwise gently counterclockwise until you hear a little bit of a click"
+        }
+      ],
+      "confidence": 0.9
+    },
+    {
+      "source_index": null,
+      "title": "Test the buttons",
+      "instruction": "Flip the shell over and press the power and open buttons to verify smooth return.",
+      "start_s": 436.0,
+      "end_s": 458.0,
+      "target_part": "power and open buttons",
+      "sam_concept": "round buttons",
+      "action": "other",
+      "removes": [
+        "power button",
+        "open button"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [],
+      "evidence": [
+        {
+          "t_s": 438.0,
+          "source": "audio",
+          "text": "now we can go ahead and turn that over and give these buttons a test"
+        },
+        {
+          "t_s": 442.0,
+          "source": "audio",
+          "text": "much better"
+        },
+        {
+          "t_s": 445.0,
+          "source": "video",
+          "text": "fingers press power and open buttons smoothly"
+        }
+      ],
+      "confidence": 0.9
+    }
+  ]
+}

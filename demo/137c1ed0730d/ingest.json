@@ -1,0 +1,21 @@
+{
+  "duration_s": 203.434667,
+  "width": 1280,
+  "height": 720,
+  "has_audio": true,
+  "fps": 30.0,
+  "source": {
+    "filename": "original.mp4",
+    "width": 1920,
+    "height": 1080,
+    "rotation": 0,
+    "fps": 30.0,
+    "vfr": false,
+    "codec": "h264",
+    "pix_fmt": "yuv420p",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709",
+    "hdr": false,
+    "duration_s": 203.434667
+  }
+}

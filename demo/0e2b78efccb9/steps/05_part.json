@@ -1,0 +1,121 @@
+{
+  "part": "toggle",
+  "tries": [
+    {
+      "t_s": 128.01,
+      "box": [
+        78,
+        382,
+        110,
+        420
+      ],
+      "confidence": 0.684,
+      "fill": 0.818,
+      "why": "Magenta shape covers only blurry skin/finger with no clearly visible toggle part; cannot confirm it is a toggle, so doubtful.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 110.24,
+      "box": [
+        268,
+        232,
+        284,
+        261
+      ],
+      "result": "another part, away from the spot being worked on"
+    },
+    {
+      "t_s": 114.07,
+      "box": [
+        85,
+        210,
+        130,
+        285
+      ],
+      "result": "another part, away from the spot being worked on"
+    },
+    {
+      "t_s": 128.01,
+      "check": "last look, blur forgiven",
+      "box": [
+        72,
+        382,
+        108,
+        418
+      ],
+      "confidence": 0.652,
+      "fill": 0.761,
+      "why": "magenta shape covers only blurred finger/hand skin with same color/texture as surrounding hand, no distinct toggle or wire visible at pliers contact point; it is mostly hand, not the part",
+      "result": "Spark rejected the cut-out"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.8,
+    "end_s": 130.3,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      2,
+      4,
+      3
+    ],
+    "points": [],
+    "start_s": 110.2,
+    "work_frame": 11,
+    "work_x": 90,
+    "work_y": 400
+  },
+  "close_ups": [
+    {
+      "t_s": 110.24,
+      "spot": [
+        89,
+        400
+      ],
+      "crop": [
+        0,
+        44,
+        400,
+        755
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "wrist skin",
+        "visible": false,
+        "x_max": 225,
+        "x_min": 185,
+        "y_max": 445,
+        "y_min": 405
+      }
+    },
+    {
+      "t_s": 128.01,
+      "spot": [
+        90,
+        400
+      ],
+      "crop": [
+        0,
+        44,
+        400,
+        755
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "back of hand",
+        "visible": false,
+        "x_max": 265,
+        "x_min": 185,
+        "y_max": 490,
+        "y_min": 420
+      }
+    }
+  ]
+}

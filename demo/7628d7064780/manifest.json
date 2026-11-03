@@ -1,0 +1,142 @@
+{
+  "stages": {
+    "ingest": {
+      "status": "done",
+      "version": "1",
+      "started_at": "2026-11-03T16:50:18+00:00",
+      "seconds": 24.121,
+      "usd": 0.0,
+      "error": null
+    },
+    "transcribe": {
+      "status": "done",
+      "version": "1",
+      "started_at": "2026-11-03T16:50:42+00:00",
+      "seconds": 85.931,
+      "usd": 0.028657,
+      "error": null
+    },
+    "identify": {
+      "status": "done",
+      "version": "1",
+      "started_at": "2026-11-03T16:52:08+00:00",
+      "seconds": 18.797,
+      "usd": 0.011416,
+      "error": null
+    },
+    "signals": {
+      "status": "done",
+      "version": "1",
+      "started_at": "2026-11-03T16:52:27+00:00",
+      "seconds": 2.322,
+      "usd": 0.0,
+      "error": null
+    },
+    "scenes": {
+      "status": "done",
+      "version": "1",
+      "started_at": "2026-11-03T16:52:29+00:00",
+      "seconds": 0.0,
+      "usd": 0.0,
+      "error": null
+    },
+    "analyze": {
+      "status": "done",
+      "version": "1",
+      "started_at": "2026-11-03T16:52:29+00:00",
+      "seconds": 60.648,
+      "usd": 0.13505,
+      "error": null
+    },
+    "fusion": {
+      "status": "done",
+      "version": "1",
+      "started_at": "2026-11-03T16:53:30+00:00",
+      "seconds": 0.003,
+      "usd": 0.0,
+      "error": null
+    },
+    "refine": {
+      "status": "done",
+      "version": "1",
+      "started_at": "2026-11-03T16:53:30+00:00",
+      "seconds": 100.555,
+      "usd": 0.095528,
+      "error": null
+    },
+    "plan": {
+      "status": "done",
+      "version": "2",
+      "started_at": "2026-11-03T16:55:10+00:00",
+      "seconds": 0.005,
+      "usd": 0.0,
+      "error": null
+    },
+    "safety": {
+      "status": "done",
+      "version": "1",
+      "started_at": "2026-11-03T16:55:10+00:00",
+      "seconds": 0.004,
+      "usd": 0.0,
+      "error": null
+    },
+    "frames": {
+      "status": "done",
+      "version": "2",
+      "started_at": "2026-11-03T16:55:10+00:00",
+      "seconds": 18.837,
+      "usd": 0.0,
+      "error": null
+    },
+    "perception": {
+      "status": "done",
+      "version": "1",
+      "started_at": "2026-11-03T16:55:29+00:00",
+      "seconds": 549.914,
+      "usd": 1.110891,
+      "error": null
+    },
+    "motion": {
+      "status": "done",
+      "version": "3",
+      "started_at": "2026-11-03T17:04:39+00:00",
+      "seconds": 704.493,
+      "usd": 0.21,
+      "error": null
+    },
+    "proof": {
+      "status": "done",
+      "version": "1",
+      "started_at": "2026-11-03T17:16:24+00:00",
+      "seconds": 0.002,
+      "usd": 0.0,
+      "error": null
+    },
+    "narrate": {
+      "status": "done",
+      "version": "1",
+      "started_at": "2026-11-03T17:16:24+00:00",
+      "seconds": 63.063,
+      "usd": 0.036596,
+      "error": null
+    },
+    "publish": {
+      "status": "done",
+      "version": "3",
+      "started_at": "2026-11-03T17:17:27+00:00",
+      "seconds": 0.005,
+      "usd": 0.0,
+      "error": null
+    },
+    "learn": {
+      "status": "done",
+      "version": "1",
+      "started_at": "2026-11-03T17:17:27+00:00",
+      "seconds": 0.001,
+      "usd": 0.0,
+      "error": null
+    }
+  },
+  "total_seconds": 1628.701,
+  "total_usd": 1.628138
+}

@@ -1,0 +1,63 @@
+{
+  "language": "en",
+  "intro": "In this guide you will take apart the Dell Latitude 7455 laptop. You will need a Phillips screwdriver and a thin plastic pry tool, and make sure it is powered off and below 25 percent charge.",
+  "outro_disassemble": "You have exposed every major component, great work.",
+  "outro_assemble": "You have reassembled your laptop, well done and ready to power on.",
+  "steps": [
+    {
+      "index": 1,
+      "disassemble": "Undo the seven Phillips-head screws around the bottom cover. Leave the two captive screws in place as you loosen them and do not force them out.",
+      "assemble": "Set the bottom cover back on and drive in the seven Phillips-head screws. Tighten the two captive screws at the top edge as you secure it."
+    },
+    {
+      "index": 2,
+      "disassemble": "Pry around the sides and front with a thin plastic tool, then release the back last and lift the bottom cover off. Use only plastic so you do not bend the cover or break the clips.",
+      "assemble": "Set the bottom cover back into position and press around the edges until you feel the clips snap in."
+    },
+    {
+      "index": 3,
+      "disassemble": "Unplug the battery connector from the main board. You must disconnect it first so you avoid a short circuit on…",
+      "assemble": "Plug the battery connector back into the main board until you feel it seat."
+    },
+    {
+      "index": 4,
+      "disassemble": "Undo the five Phillips-head screws holding the battery to the base. Keep them sorted as you work and do not puncture the battery pack.",
+      "assemble": "Drive in the five Phillips-head screws to secure the battery to the base as you hold it steady."
+    },
+    {
+      "index": 5,
+      "disassemble": "Lift the 54Wh battery out of the chassis. Do not puncture, bend,…",
+      "assemble": "Set the 54Wh battery back into the chassis where you lifted it…"
+    },
+    {
+      "index": 6,
+      "disassemble": "Look at the soldered LPDDR5X memory on the board where you will see it is permanently fixed.",
+      "assemble": "Leave the soldered memory untouched as you move on."
+    },
+    {
+      "index": 7,
+      "disassemble": "Undo the single screw holding the SSD metal plate. Hold the small shield as you loosen it so it does not spring away.",
+      "assemble": "Hold the SSD metal plate in place and drive in the single screw as you secure it."
+    },
+    {
+      "index": 8,
+      "disassemble": "Pull the SSD shroud forward and lift it off to expose the thermal pad inside. Pull forward, not up, so you do not damage the M.2 slot.",
+      "assemble": "Set the SSD shroud back over the drive and slide it back until you lock it in place."
+    },
+    {
+      "index": 9,
+      "disassemble": "Locate the Wi-Fi card where you will find it close to the cooling fan.",
+      "assemble": "Leave the Wi-Fi card in place close to the cooling fan where you found it."
+    },
+    {
+      "index": 10,
+      "disassemble": "Undo the single screw and slide the Wi-Fi cover to the left to lift it off. You will then see the card underneath.",
+      "assemble": "Set the Wi-Fi cover back on, slide it right, and drive in the single screw to secure it as you finish."
+    },
+    {
+      "index": 11,
+      "disassemble": "Inspect the fan, single long heat pipe, heatsink and heat spreader you see here.",
+      "assemble": "Leave the fan, heat pipe, heatsink and heat spreader as you inspected them."
+    }
+  ]
+}

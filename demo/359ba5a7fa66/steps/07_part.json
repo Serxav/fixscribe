@@ -1,0 +1,124 @@
+{
+  "part": "leather cover",
+  "tries": [
+    {
+      "t_s": 434.56,
+      "box": [
+        110,
+        165,
+        925,
+        760
+      ],
+      "confidence": 0.609,
+      "fill": 0.633,
+      "why": "Magenta outline sits above the beige cushion and encloses patterned rug, legs/hands and background space, not the leather cover material itself.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 401.47,
+      "box": [
+        106,
+        206,
+        958,
+        894
+      ],
+      "confidence": 0.832,
+      "fill": 0.74,
+      "why": "Magenta shape encloses background patterned rug/carpet and person's hands/legs, not the beige cushion/cover in foreground; it covers mostly non-part.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 456.31,
+      "box": [
+        60,
+        325,
+        975,
+        1000
+      ],
+      "confidence": 0.98,
+      "fill": 0.578,
+      "why": "Magenta shape encloses floral carpet/mat and person's shorts/legs above the cushion, not the pale leather seat cover below. It covers mostly background/clothing, not leather.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 434.56,
+      "check": "last look, blur forgiven",
+      "box": [
+        110,
+        145,
+        973,
+        762
+      ],
+      "confidence": 0.586,
+      "fill": 0.786,
+      "result": "weak cut-out"
+    }
+  ],
+  "zoom": [
+    0,
+    197,
+    1000,
+    565
+  ],
+  "review": {
+    "confidence": 0.9,
+    "end_s": 456.3,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      2,
+      12,
+      11
+    ],
+    "points": [],
+    "start_s": 396.0,
+    "work_frame": 8,
+    "work_x": 635,
+    "work_y": 585
+  },
+  "close_ups": [
+    {
+      "t_s": 401.47,
+      "spot": [
+        635,
+        411
+      ],
+      "crop": [
+        435,
+        55,
+        835,
+        766
+      ],
+      "box": [
+        0,
+        339,
+        1000,
+        690
+      ],
+      "name": "foam cushion",
+      "result": "another part is under the tool"
+    },
+    {
+      "t_s": 434.56,
+      "spot": [
+        635,
+        412
+      ],
+      "crop": [
+        435,
+        56,
+        835,
+        767
+      ],
+      "box": [
+        0,
+        476,
+        1000,
+        628
+      ],
+      "name": "leather cover",
+      "result": "the part is bigger than the close-up"
+    }
+  ]
+}

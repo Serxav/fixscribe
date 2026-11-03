@@ -1,0 +1,57 @@
+{
+  "mode": "narrated",
+  "duration_s": 203.44,
+  "transcript": "Hello. This is Nick from Laptop Media and today we will show you how to open the Dell Latitude 7455. To open this this compact device you have to undo seven Phillips head screws. The ones in the top two two edges are captive and they'll lift the panel up. Pry the sides and the front with a thin plastic tool the back should be last. this machine has a 54 watt hour battery to take it out unplug the connector from the main board and undo the five Phillips head screws that secure the unit to the base. The capacity is enough for around 16 hours of video playback. The result is great. To achieve that, you have to apply the best power efficiency preset in the Windows Power and Battery menu and select the quiet power plan in the Dell Optimizer app. The memory is solid. You get 16 or 32 gigabytes of LPDDR5X 8448 megahertz RAM. For storage there is just one M.2 slot compatible with the shortest 2230 Gen 4 SSDs. The NVMe is covered covered by a metal plate that is held in place by a single screw. After undoing it you have to pull the shroud forward. The metal cap houses a thermal pad on the on the inside. The Wi-Fi card is placed close to the cooling fan. The removal of the metal cover here is similar to the one of the SSD but this time around you have to slide the small plate to the left there is also a small cooling pad beneath it The thermal system is as as simple as it gets one fan a single long heat pipe one heat sink and a large heat heat spreader",
+  "turns": [
+    {
+      "start_s": 1.82,
+      "end_s": 26.54,
+      "text": "Hello. This is Nick from Laptop Media and today we will show you how to open the Dell Latitude 7455. To open this this compact device you have to undo seven Phillips head screws. The ones in the top two two edges are captive and they'll lift the panel up. Pry the sides and the front with a thin plastic tool the back should be last."
+    },
+    {
+      "start_s": 39.82,
+      "end_s": 50.86,
+      "text": "this machine has a 54 watt hour battery to take it out unplug the connector from the main board and undo the five Phillips head screws that secure the unit to the base."
+    },
+    {
+      "start_s": 51.34,
+      "end_s": 68.94,
+      "text": "The capacity is enough for around 16 hours of video playback. The result is great. To achieve that, you have to apply the best power efficiency preset in the Windows Power and Battery menu and select the quiet power plan in the Dell Optimizer app."
+    },
+    {
+      "start_s": 89.74,
+      "end_s": 98.7,
+      "text": "The memory is solid. You get 16 or 32 gigabytes of LPDDR5X 8448 megahertz RAM."
+    },
+    {
+      "start_s": 99.18,
+      "end_s": 112.3,
+      "text": "For storage there is just one M.2 slot compatible with the shortest 2230 Gen 4 SSDs. The NVMe is covered covered by a metal plate that is held in place by a single screw."
+    },
+    {
+      "start_s": 122.54,
+      "end_s": 125.98,
+      "text": "After undoing it you have to pull the shroud forward."
+    },
+    {
+      "start_s": 129.26,
+      "end_s": 132.38,
+      "text": "The metal cap houses a thermal pad on the on the inside."
+    },
+    {
+      "start_s": 147.66,
+      "end_s": 150.78,
+      "text": "The Wi-Fi card is placed close to the cooling fan."
+    },
+    {
+      "start_s": 151.1,
+      "end_s": 162.46,
+      "text": "The removal of the metal cover here is similar to the one of the SSD but this time around you have to slide the small plate to the left there is also a small cooling pad beneath it"
+    },
+    {
+      "start_s": 176.22,
+      "end_s": 184.14,
+      "text": "The thermal system is as as simple as it gets one fan a single long heat pipe one heat sink and a large heat heat spreader"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "steps": [
+    {
+      "index": 1,
+      "clip": "steps/01_motion.mp4",
+      "clip_reverse": "steps/01_motion_rev.mp4",
+      "cutout": "steps/01_cutout.png",
+      "cutout_box": {
+        "x": 0.13472222222222222,
+        "y": 0.1482084690553746,
+        "w": 0.7194444444444444,
+        "h": 0.8517915309446255
+      },
+      "outline": "M175 252 L135 373 L154 998 L404 998 L414 977 L838 904 L851 845 L407 912 L286 391 L214 274 Z M206 169 L206 171 L203 174 L203 176 L201 178 L201 189 L204 192 L206 192 L210 195 L212 195 L215 199 L218 199 L228 205 L231 205 L232 207 L240 207 L240 204 L239 202 L240 194 L239 192 L239 186 L238 184 L238 181 L235 176 L235 163 L233 163 L232 161 L231 161 L229 163 L218 163 L217 164 L212 164 Z M347 150 L343 150 L342 148 L340 150 L325 150 L324 151 L311 151 L310 153 L303 153 L301 155 L288 155 L286 156 L274 156 L271 158 L281 158 L282 156 L285 158 L294 158 L296 156 L310 156 L311 155 L312 156 L315 155 L336 155 L338 153 L344 153 L347 151 Z",
+      "part": "foam pad",
+      "fasteners_tracked": 0,
+      "frames": 75,
+      "start_s": 87.78,
+      "end_s": 92.78,
+      "voice": true
+    },
+    {
+      "index": 5,
+      "clip": "steps/05_motion.mp4",
+      "clip_reverse": "steps/05_motion_rev.mp4",
+      "cutout": "steps/05_cutout.png",
+      "cutout_box": {
+        "x": 0.3375,
+        "y": 0.19832402234636873,
+        "w": 0.6361111111111111,
+        "h": 0.4748603351955307
+      },
+      "outline": "M939 214 L924 198 L831 233 L522 430 L442 394 L400 398 L415 404 L386 413 L371 440 L383 446 L357 462 L368 479 L353 483 L344 532 L354 542 L339 570 L344 644 L386 672 L407 659 L422 669 L643 655 L928 479 L972 416 L960 408 Z M586 668 L592 668 L590 666 L588 666 Z M612 668 L619 668 L618 668 L617 666 L615 666 L614 668 Z",
+      "part": "leather side panel",
+      "fasteners_tracked": 0,
+      "frames": 75,
+      "start_s": 347.8,
+      "end_s": 352.8,
+      "voice": true
+    },
+    {
+      "index": 6,
+      "clip": "steps/06_motion.mp4",
+      "clip_reverse": "steps/06_motion_rev.mp4",
+      "cutout": "steps/06_cutout.png",
+      "cutout_box": {
+        "x": 0.13472222222222222,
+        "y": 0.0,
+        "w": 0.8138888888888889,
+        "h": 0.6708333333333333
+      },
+      "outline": "M135 0 L322 342 L443 622 L476 669 L525 633 L588 654 L918 481 L933 435 L947 442 L817 254 L596 4 Z",
+      "part": "leather corner",
+      "fasteners_tracked": 0,
+      "frames": 75,
+      "start_s": 373.01,
+      "end_s": 378.01,
+      "voice": true
+    }
+  ],
+  "notes": []
+}

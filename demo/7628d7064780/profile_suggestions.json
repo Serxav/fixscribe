@@ -1,0 +1,56 @@
+{
+  "category": "electronics",
+  "object_name": "Sony PlayStation One",
+  "suggestions": [
+    {
+      "field": "parts",
+      "value": "upper shell",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "power button",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "power button spring",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "open button",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "lid slider assembly",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "slider spring",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "slider screw",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "power and open button",
+      "seen_in": "step 15: Test the buttons"
+    },
+    {
+      "field": "tools",
+      "value": "phillips head screwdriver",
+      "seen_in": "guide tools"
+    },
+    {
+      "field": "tools",
+      "value": "danco 88693 silicone grease",
+      "seen_in": "guide tools"
+    }
+  ]
+}

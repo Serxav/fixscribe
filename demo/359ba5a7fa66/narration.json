@@ -1,0 +1,43 @@
+{
+  "language": "de",
+  "intro": "Du baust das Sitzkissen für die Bank neu auf. Räume den Arbeitsbereich frei, hole dir Hilfe für schwere Platten, halte kleine Schrauben von Kindern fern und lege dir Kuchenmesser, Tacker und Teppichmesser bereit.",
+  "outro_disassemble": "Dein neu aufgebautes Bankpolster sitzt straff und sieht großartig aus.",
+  "outro_assemble": "Alles ist sauber zerlegt und bereit für den nächsten Bezug, gut gemacht.",
+  "steps": [
+    {
+      "index": 1,
+      "disassemble": "Lege die Holzplatte auf den Schaumstoff und schneide ihn mit dem Kuchenmesser ohne Schrauben exakt gerade zu. Halte die Finger von der langen Klinge fern und schneide senkrecht, damit die Kante gerade bleibt.",
+      "assemble": "Lege das zugeschnittene Schaumstoffstück wieder von der Holzplatte weg."
+    },
+    {
+      "index": 2,
+      "disassemble": "Schichte Holzplatte, Schaumstoff, Wattevlies und Kunstleder ohne Schrauben mit Überstand an allen Seiten übereinander. Richte alles sauber mittig aus.",
+      "assemble": "Nimm Holzplatte, Schaumstoff, Wattevlies und Kunstleder wieder auseinander."
+    },
+    {
+      "index": 3,
+      "disassemble": "Ziehe Wattevlies und dann Kunstleder in der Mitte straff und befestige sie mit zwei Schrauben am Brett. Halte die Hände beim Tackern vom Gerätekopf fern.",
+      "assemble": "Entferne die zwei Schrauben und löse Kunstleder und Wattevlies wieder vom Brett."
+    },
+    {
+      "index": 4,
+      "disassemble": "Ziehe das Kunstleder an der gegenüberliegenden Mitte straff und hefte es ohne zusätzliche Schrauben mit dem Tacker am Brett fest. Halte die Finger vom Tacker fern, um Verletzungen zu vermeiden.",
+      "assemble": "Löse das Kunstleder an der gegenüberliegenden Seite wieder vom Brett."
+    },
+    {
+      "index": 5,
+      "disassemble": "Falte das Wattevlies über die Holzkante und lege das Kunstleder ohne Schrauben in einer eckigen Geschenkfalte um. Schneide das Leder an der Kante nicht ein, damit es die Holzecke schützt.",
+      "assemble": "Öffne die Eckfalte und nimm das Kunstleder wieder vom Wattevlies weg."
+    },
+    {
+      "index": 6,
+      "disassemble": "Halte die gefaltete Ecke straff und fixiere sie mit zwei Schrauben. Halte den Stoff gespannt, aber die Finger weg von der Tackerstelle.",
+      "assemble": "Entferne die zwei Schrauben und löse die Eckfalte des Kunstleders."
+    },
+    {
+      "index": 7,
+      "disassemble": "Spanne den Bezug rundum nach und befestige ihn gleichmäßig mit zehn Schrauben, dann schneide Überstände mit dem Teppichmesser ab. Schneide immer von der fertigen Vorderseite weg, die Klinge ist sehr scharf.",
+      "assemble": "Entferne die zehn Schrauben und löse den Bezug rundum, lege abgeschnittene Überstände zurück."
+    }
+  ]
+}

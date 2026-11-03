@@ -1,0 +1,61 @@
+{
+  "category": "generic",
+  "object_name": "harp",
+  "suggestions": [
+    {
+      "field": "parts",
+      "value": "harp string",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "brass wire",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "toggle",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "tuning pin",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "shoe",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "harp body",
+      "seen_in": "step 1: Leave the harp resting on the"
+    },
+    {
+      "field": "parts",
+      "value": "old string",
+      "seen_in": "step 2: Remove old string"
+    },
+    {
+      "field": "parts",
+      "value": "new wire",
+      "seen_in": "step 4: Feed new wire through harp"
+    },
+    {
+      "field": "parts",
+      "value": "toggled wire",
+      "seen_in": "step 6: Tighten knot and seat toggle"
+    },
+    {
+      "field": "parts",
+      "value": "new string",
+      "seen_in": "step 9: Hook string onto pin"
+    },
+    {
+      "field": "tools",
+      "value": "tuning key",
+      "seen_in": "guide tools"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "level": "caution",
+  "reasons": [
+    "Hazards: sharp edges, heavy part."
+  ],
+  "prechecks": [
+    "Clear the work area before starting.",
+    "Get help before lifting heavy panels.",
+    "Keep small fasteners away from children."
+  ],
+  "blocked": []
+}

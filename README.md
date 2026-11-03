@@ -131,6 +131,10 @@ docker build -t fixscribe . && docker run --env-file .env -p 8000:8000 fixscribe
 
 Hosting for judges: [docs/DEPLOY.md](docs/DEPLOY.md).
 
+**No need to run anything to see results:** [demo/](demo/README.md) has four guides FixScribe wrote
+from openly licensed internet videos (a laptop, a game console, a harp, a seat cushion), with
+every step photo, cut-out, clip and proof file.
+
 ## Repository map
 
 | Folder | What is in it |
@@ -144,7 +148,7 @@ Hosting for judges: [docs/DEPLOY.md](docs/DEPLOY.md).
 | `scripts/` | tools to run a video, pack the sample guide, draw the landing ([scripts/README.md](scripts/README.md)) |
 | `docs/` | architecture, algorithm, design, deploy and hackathon notes ([docs/README.md](docs/README.md)) |
 | `tasks/` | every Muse Code task, review and report ([tasks/README.md](tasks/README.md)) |
-| `demo/` | the read-only sample guide shown to visitors |
+| `demo/` | four sample guides made from internet videos, one per kind of object ([demo/README.md](demo/README.md)) |
 
 ## Built during the hackathon (Oct 26 – Nov 4, 2026)
 

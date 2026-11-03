@@ -1,0 +1,21 @@
+{
+  "object_name": "Dell Latitude 7455 laptop",
+  "category": "electronics",
+  "brand": "Dell",
+  "model": "Latitude 7455",
+  "task": "disassemble",
+  "problem": "",
+  "hazards": [
+    "lithium_battery",
+    "sharp_edges"
+  ],
+  "skill": "intermediate",
+  "language": "en",
+  "evidence": [
+    "Technician says 'how to open the Dell Latitude 7455'",
+    "'Latitude' printed on bottom cover in frame 1",
+    "'DELL 54Wh' battery label visible in frame 2",
+    "'SSD 2230' label visible on motherboard in frame 4"
+  ],
+  "confidence": 0.97
+}

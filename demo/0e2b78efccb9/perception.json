@@ -1,0 +1,241 @@
+{
+  "steps": [
+    {
+      "index": 1,
+      "part": {
+        "concept": "harp body",
+        "box": {
+          "x": 0.0,
+          "y": 0.0,
+          "w": 0.765,
+          "h": 0.997
+        },
+        "confidence": 0.965,
+        "t_s": 10.370000000000001,
+        "area": null
+      },
+      "review": {
+        "matches": false,
+        "instruction": "Leave the harp resting on the ground.",
+        "start_s": 10.4,
+        "end_s": 18.5,
+        "confidence": 0.95
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/01_overlay.jpg",
+      "sam_calls": 2,
+      "notes": []
+    },
+    {
+      "index": 2,
+      "part": null,
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 58.9,
+        "end_s": 65.6,
+        "confidence": 0.85
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/02_overlay.jpg",
+      "sam_calls": 0,
+      "notes": [
+        "The old string could not be proven on any frame of this step."
+      ]
+    },
+    {
+      "index": 3,
+      "part": {
+        "concept": "harp body",
+        "box": {
+          "x": 0.0,
+          "y": 0.0,
+          "w": 0.78,
+          "h": 1.0
+        },
+        "confidence": 0.844,
+        "t_s": 69.81,
+        "area": null
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 69.8,
+        "end_s": 74.7,
+        "confidence": 0.9
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/03_overlay.jpg",
+      "sam_calls": 2,
+      "notes": []
+    },
+    {
+      "index": 4,
+      "part": null,
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 90.7,
+        "end_s": 107.2,
+        "confidence": 0.85
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/04_overlay.jpg",
+      "sam_calls": 4,
+      "notes": [
+        "The new wire could not be proven on any frame of this step."
+      ]
+    },
+    {
+      "index": 5,
+      "part": null,
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 110.2,
+        "end_s": 130.3,
+        "confidence": 0.8
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/05_overlay.jpg",
+      "sam_calls": 2,
+      "notes": [
+        "The toggle could not be proven on any frame of this step."
+      ]
+    },
+    {
+      "index": 6,
+      "part": null,
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 129.2,
+        "end_s": 142.3,
+        "confidence": 0.9
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/06_overlay.jpg",
+      "sam_calls": 2,
+      "notes": [
+        "The toggled wire could not be proven on any frame of this step."
+      ]
+    },
+    {
+      "index": 7,
+      "part": {
+        "concept": "new wire",
+        "box": {
+          "x": 0.234,
+          "y": 0.488,
+          "w": 0.021,
+          "h": 0.09
+        },
+        "confidence": 0.895,
+        "t_s": 150.78,
+        "area": {
+          "x": 0.0,
+          "y": 0.0,
+          "w": 1.0,
+          "h": 1.0
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 147.2,
+        "end_s": 153.3,
+        "confidence": 0.78
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/07_overlay.jpg",
+      "sam_calls": 4,
+      "notes": []
+    },
+    {
+      "index": 8,
+      "part": {
+        "concept": "harp body",
+        "box": {
+          "x": 0.0,
+          "y": 0.0,
+          "w": 0.34,
+          "h": 1.0
+        },
+        "confidence": 0.855,
+        "t_s": 155.21,
+        "area": {
+          "x": 0.0,
+          "y": 0.0,
+          "w": 0.47,
+          "h": 1.0
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 154.2,
+        "end_s": 155.2,
+        "confidence": 0.85
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/08_overlay.jpg",
+      "sam_calls": 2,
+      "notes": []
+    },
+    {
+      "index": 9,
+      "part": null,
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 158.4,
+        "end_s": 163.2,
+        "confidence": 0.75
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/09_overlay.jpg",
+      "sam_calls": 2,
+      "notes": [
+        "The new string could not be proven on any frame of this step."
+      ]
+    },
+    {
+      "index": 10,
+      "part": null,
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 164.8,
+        "end_s": 192.6,
+        "confidence": 0.9
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/10_overlay.jpg",
+      "sam_calls": 5,
+      "notes": [
+        "The new string could not be proven on any frame of this step."
+      ]
+    }
+  ],
+  "sam_calls": 25
+}

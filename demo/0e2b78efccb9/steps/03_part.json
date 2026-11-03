@@ -1,0 +1,84 @@
+{
+  "part": "harp body",
+  "tries": [
+    {
+      "t_s": 69.81,
+      "box": [
+        0,
+        0,
+        756,
+        997
+      ],
+      "confidence": 0.797,
+      "fill": 0.403,
+      "why": "magenta outline encloses wooden harp soundboard with visible bridge pins and wood grain, clearly part of harp body",
+      "result": "kept"
+    },
+    {
+      "t_s": 69.81,
+      "zoom": "whole frame",
+      "box": [
+        0,
+        0,
+        780,
+        1000
+      ],
+      "confidence": 0.844,
+      "fill": 0.395,
+      "why": "Magenta outline traces the light wooden harp soundboard with metal pins, clearly harp body wood, not hand or mat.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.9,
+    "end_s": 74.7,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      6,
+      7,
+      1
+    ],
+    "points": [],
+    "start_s": 69.8,
+    "work_frame": 2,
+    "work_x": 631,
+    "work_y": 329
+  },
+  "close_ups": [
+    {
+      "t_s": 75.98,
+      "spot": null,
+      "result": "the spot could not be followed to this frame"
+    },
+    {
+      "t_s": 69.81,
+      "spot": [
+        631,
+        329
+      ],
+      "crop": [
+        431,
+        0,
+        831,
+        711
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "black background",
+        "visible": false,
+        "x_max": 556,
+        "x_min": 510,
+        "y_max": 464,
+        "y_min": 418
+      }
+    }
+  ]
+}

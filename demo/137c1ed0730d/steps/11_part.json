@@ -1,0 +1,41 @@
+{
+  "part": "thermal system",
+  "tries": [
+    {
+      "t_s": 186.48,
+      "box": [
+        50,
+        115,
+        960,
+        875
+      ],
+      "confidence": 0.793,
+      "fill": 0.922,
+      "why": "Magenta outline clearly encloses the large black left fan and the single long heat pipe/heatsink running across the top to the right, matching the thermal system.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.95,
+    "end_s": 189.2,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      9,
+      10,
+      11
+    ],
+    "points": [],
+    "start_s": 176.3,
+    "work_frame": 0,
+    "work_x": 0,
+    "work_y": 0
+  }
+}

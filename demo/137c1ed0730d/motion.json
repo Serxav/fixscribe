@@ -1,0 +1,121 @@
+{
+  "steps": [
+    {
+      "index": 1,
+      "clip": "steps/01_motion.mp4",
+      "clip_reverse": "steps/01_motion_rev.mp4",
+      "cutout": "steps/01_cutout.png",
+      "cutout_box": {
+        "x": 0.8944444444444445,
+        "y": 0.9064039408866995,
+        "w": 0.013888888888888888,
+        "h": 0.022167487684729065
+      },
+      "outline": "M897 906 L896 909 L896 911 L894 914 L894 919 L896 921 L896 924 L897 926 L904 926 L907 921 L907 916 L906 914 L906 911 L904 909 L903 909 L901 906 Z",
+      "part": "cover screws",
+      "fasteners_tracked": 0,
+      "frames": 75,
+      "start_s": 15.0,
+      "end_s": 20.0,
+      "voice": true
+    },
+    {
+      "index": 2,
+      "clip": "steps/02_motion.mp4",
+      "clip_reverse": "steps/02_motion_rev.mp4",
+      "cutout": "steps/02_cutout.png",
+      "cutout_box": {
+        "x": 0.04027777777777778,
+        "y": 0.03694581280788178,
+        "w": 0.9027777777777778,
+        "h": 0.9211822660098522
+      },
+      "outline": "M138 47 L44 948 L939 943 L899 510 L858 515 L839 480 L733 59 L693 54 L636 236 L594 268 L583 232 L611 39 Z",
+      "part": "back cover",
+      "fasteners_tracked": 0,
+      "frames": 75,
+      "start_s": 26.19,
+      "end_s": 31.19,
+      "voice": true
+    },
+    {
+      "index": 7,
+      "clip": "steps/07_motion.mp4",
+      "clip_reverse": "steps/07_motion_rev.mp4",
+      "cutout": "steps/07_cutout.png",
+      "cutout_box": {
+        "x": 0.4486111111111111,
+        "y": 0.25833333333333336,
+        "w": 0.17916666666666667,
+        "h": 0.24027777777777778
+      },
+      "outline": "M582 262 L557 258 L535 265 L532 274 L521 281 L449 285 L465 450 L472 479 L482 492 L547 497 L617 492 L626 486 L607 340 L589 267 Z",
+      "part": "metal cover",
+      "fasteners_tracked": 0,
+      "frames": 75,
+      "start_s": 99.0,
+      "end_s": 104.0,
+      "voice": true
+    },
+    {
+      "index": 8,
+      "clip": "steps/08_motion.mp4",
+      "clip_reverse": "steps/08_motion_rev.mp4",
+      "cutout": "steps/08_cutout.png",
+      "cutout_box": {
+        "x": 0.7791666666666667,
+        "y": 0.2536945812807882,
+        "w": 0.08472222222222223,
+        "h": 0.17733990147783252
+      },
+      "outline": "M835 256 L819 254 L806 268 L779 271 L783 369 L786 377 L788 414 L790 421 L806 421 L818 429 L825 421 L846 419 L851 414 L851 397 L846 355 L846 330 L851 320 L854 325 L851 330 L858 328 L858 333 L862 337 L862 323 L847 318 L844 305 L846 303 L840 286 L839 264 Z",
+      "part": "metal cover",
+      "fasteners_tracked": 0,
+      "frames": 75,
+      "start_s": 121.33,
+      "end_s": 126.33,
+      "voice": true
+    },
+    {
+      "index": 10,
+      "clip": "steps/10_motion.mp4",
+      "clip_reverse": "steps/10_motion_rev.mp4",
+      "cutout": "steps/10_cutout.png",
+      "cutout_box": {
+        "x": 0.42777777777777776,
+        "y": 0.34236453201970446,
+        "w": 0.07916666666666666,
+        "h": 0.1206896551724138
+      },
+      "outline": "M432 347 L429 362 L429 384 L428 387 L429 392 L429 424 L432 429 L464 436 L467 456 L469 461 L476 461 L483 456 L483 438 L485 436 L494 433 L501 426 L501 392 L506 372 L506 360 L503 347 L497 345 L474 345 L472 342 L465 342 L464 345 L460 342 L458 345 L442 345 L439 342 Z",
+      "part": "card cover",
+      "fasteners_tracked": 0,
+      "frames": 75,
+      "start_s": 155.55,
+      "end_s": 160.55,
+      "voice": true
+    },
+    {
+      "index": 11,
+      "clip": "steps/11_motion.mp4",
+      "clip_reverse": "steps/11_motion_rev.mp4",
+      "cutout": "steps/11_cutout.png",
+      "cutout_box": {
+        "x": 0.004166666666666667,
+        "y": 0.03940886699507389,
+        "w": 0.9958333333333333,
+        "h": 0.9261083743842364
+      },
+      "outline": "M993 116 L858 101 L839 42 L800 44 L786 96 L724 44 L754 84 L162 67 L15 103 L11 879 L238 862 L331 943 L925 963 L942 860 L947 904 L990 889 Z M194 929 L196 929 L196 926 L197 924 L203 924 L204 926 L206 926 L208 921 L208 919 L207 916 L197 916 L196 919 L194 919 L194 921 L196 921 L197 924 L196 926 L194 926 Z M107 904 L110 909 L114 909 L115 911 L118 911 L119 914 L121 911 L122 911 L122 909 L121 906 L121 904 L114 904 L112 901 L108 901 Z",
+      "part": "thermal system",
+      "fasteners_tracked": 0,
+      "frames": 75,
+      "start_s": 183.98,
+      "end_s": 188.98,
+      "voice": true
+    }
+  ],
+  "notes": [
+    "Step 5: no motion clip (ffmpeg failed:\n[aost#0:1/aac @ 0x7c0ac70900] [enc:aac @ 0x7c0ac09880] Error encoding a frame: Invalid argument\n[aost#0:1/aac @ 0x7c0ac70900] Task finished with error code: -22 (Invalid argument)\n[aost#0:1/aac @ 0x7c0ac70900] Terminating thread with return code -22 (Invalid argument))."
+  ]
+}

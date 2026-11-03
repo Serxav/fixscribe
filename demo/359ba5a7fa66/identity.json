@@ -1,0 +1,19 @@
+{
+  "object_name": "bench seat cushion",
+  "category": "furniture",
+  "brand": "",
+  "model": "",
+  "task": "assemble",
+  "problem": "",
+  "hazards": [
+    "sharp_edges"
+  ],
+  "skill": "beginner",
+  "language": "de",
+  "evidence": [
+    "Technician says he needs upholstery for a bench and pallet couch",
+    "Frames show wooden board laid on foam, batting and faux leather",
+    "Frames show hand stapler tacking the cover under the board"
+  ],
+  "confidence": 0.9
+}

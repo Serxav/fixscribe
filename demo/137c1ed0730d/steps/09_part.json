@@ -1,0 +1,119 @@
+{
+  "part": "wi-fi card",
+  "tries": [
+    {
+      "t_s": 148.86,
+      "box": [
+        412,
+        393,
+        494,
+        537
+      ],
+      "confidence": 0.469,
+      "fill": 0.775,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 150.11,
+      "box": [
+        395,
+        490,
+        485,
+        565
+      ],
+      "confidence": 0.449,
+      "fill": 0.676,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 147.9,
+      "box": [
+        449,
+        344,
+        513,
+        402
+      ],
+      "result": "another part, away from the spot being worked on"
+    },
+    {
+      "t_s": 148.86,
+      "check": "last look, blur forgiven",
+      "box": [
+        418,
+        380,
+        490,
+        508
+      ],
+      "confidence": 0.475,
+      "fill": 0.729,
+      "result": "weak cut-out"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.85,
+    "end_s": 148.9,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      6,
+      4,
+      12
+    ],
+    "points": [],
+    "start_s": 148.9,
+    "work_frame": 5,
+    "work_x": 435,
+    "work_y": 530
+  },
+  "close_ups": [
+    {
+      "t_s": 150.11,
+      "spot": [
+        435,
+        530
+      ],
+      "crop": [
+        235,
+        174,
+        635,
+        885
+      ],
+      "box": [
+        355,
+        385,
+        785,
+        495
+      ],
+      "name": "chassis frame",
+      "result": "another part is under the tool"
+    },
+    {
+      "t_s": 148.86,
+      "spot": [
+        435,
+        530
+      ],
+      "crop": [
+        235,
+        174,
+        635,
+        885
+      ],
+      "box": [
+        397,
+        410,
+        625,
+        490
+      ],
+      "name": "chassis frame",
+      "result": "another part is under the tool"
+    }
+  ]
+}

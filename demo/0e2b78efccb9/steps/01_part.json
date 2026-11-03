@@ -1,0 +1,55 @@
+{
+  "part": "harp body",
+  "tries": [
+    {
+      "t_s": 10.37,
+      "box": [
+        0,
+        0,
+        774,
+        998
+      ],
+      "confidence": 0.965,
+      "fill": 0.581,
+      "why": "Magenta outline tightly follows the wooden harp structure with tuning pins/eyelets, clearly the harp body wood lying on dark ground, not tool/hand/mat/shadow.",
+      "result": "kept"
+    },
+    {
+      "t_s": 10.37,
+      "zoom": "whole frame",
+      "box": [
+        0,
+        0,
+        765,
+        997
+      ],
+      "confidence": 0.965,
+      "fill": 0.569,
+      "why": "Magenta outline follows wooden harp structure with string eyelets/tuning hardware, clearly part of the harp body on dark mat, not a tool/hand/mat.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    981,
+    1000
+  ],
+  "review": {
+    "confidence": 0.95,
+    "end_s": 18.5,
+    "fastener_frame": 0,
+    "instruction": "Leave the harp resting on the ground.",
+    "matches": false,
+    "part_frames": [
+      1,
+      2,
+      3
+    ],
+    "points": [],
+    "start_s": 10.4,
+    "work_frame": 0,
+    "work_x": 0,
+    "work_y": 0
+  }
+}

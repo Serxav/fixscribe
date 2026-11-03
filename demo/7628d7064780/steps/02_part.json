@@ -1,0 +1,109 @@
+{
+  "part": "power button",
+  "tries": [
+    {
+      "t_s": 58.95,
+      "box": [
+        640,
+        620,
+        790,
+        835
+      ],
+      "confidence": 0.891,
+      "fill": 0.44,
+      "why": "Magenta outline encloses the fingertip in the center and does not clearly trace the grey plastic button; most of the enclosed area is hand/skin, not the power button part.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 41.37,
+      "box": [
+        190,
+        725,
+        288,
+        870
+      ],
+      "result": "another part, away from the spot being worked on"
+    },
+    {
+      "t_s": 44.16,
+      "box": [
+        770,
+        555,
+        887,
+        762
+      ],
+      "confidence": 0.781,
+      "fill": 0.755,
+      "why": "Magenta outline encloses surrounding gray case plastic and center boss, not a distinct separate power button. No clearly separable button shape is visible; it is mostly housing.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 58.95,
+      "check": "last look, blur forgiven",
+      "box": [
+        665,
+        620,
+        805,
+        805
+      ],
+      "confidence": 0.801,
+      "fill": 0.651,
+      "why": "Magenta outlines the circular underside of the power button with clips being pressed by finger, matching the unclip step; shape is centered on the button, not a hand/tool/mat/hole.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.9,
+    "end_s": 69.1,
+    "fastener_frame": 0,
+    "instruction": "Unclip and remove the open button.",
+    "matches": false,
+    "part_frames": [
+      1,
+      2,
+      4
+    ],
+    "points": [],
+    "start_s": 56.3,
+    "work_frame": 8,
+    "work_x": 710,
+    "work_y": 720
+  },
+  "close_ups": [
+    {
+      "t_s": 41.37,
+      "spot": null,
+      "result": "the spot could not be followed to this frame"
+    },
+    {
+      "t_s": 58.95,
+      "spot": [
+        710,
+        720
+      ],
+      "crop": [
+        510,
+        288,
+        910,
+        1000
+      ],
+      "box": [
+        355,
+        490,
+        667,
+        785
+      ],
+      "name": "power button",
+      "confidence": 0.828,
+      "fill": 0.509,
+      "why": "magenta shape includes a finger/hand over the circular plastic and does not cleanly trace only the power button, so it is not clearly that part alone",
+      "result": "Spark rejected the cut-out"
+    }
+  ]
+}

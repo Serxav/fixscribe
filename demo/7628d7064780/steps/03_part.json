@@ -1,0 +1,72 @@
+{
+  "part": "power button",
+  "tries": [
+    {
+      "t_s": 80.55,
+      "box": [
+        0,
+        225,
+        710,
+        580
+      ],
+      "confidence": 0.945,
+      "fill": 0.656,
+      "why": "Grey plastic disc with central ribbed post and side clips held between fingers matches PS1 power button; magenta line closely traces the button edges, not fingers or background.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    241,
+    0,
+    797,
+    1000
+  ],
+  "review": {
+    "confidence": 0.9,
+    "end_s": 99.5,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      7,
+      3,
+      4
+    ],
+    "points": [],
+    "start_s": 67.9,
+    "work_frame": 5,
+    "work_x": 670,
+    "work_y": 335
+  },
+  "close_ups": [
+    {
+      "t_s": 86.58,
+      "spot": null,
+      "result": "the spot could not be followed to this frame"
+    },
+    {
+      "t_s": 80.55,
+      "spot": [
+        613,
+        335
+      ],
+      "crop": [
+        501,
+        137,
+        724,
+        532
+      ],
+      "box": [
+        376,
+        329,
+        532,
+        875
+      ],
+      "name": "power button",
+      "confidence": 0.863,
+      "fill": 0.531,
+      "why": "Blurry narrow light fragment held between fingers; cannot clearly identify as Sony PlayStation One power button, shape and detail insufficient to confirm spring/clips/post.",
+      "result": "Spark rejected the cut-out"
+    }
+  ]
+}

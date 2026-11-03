@@ -1,0 +1,64 @@
+{
+  "part": "battery",
+  "tries": [
+    {
+      "t_s": 83.83,
+      "box": [
+        113,
+        465,
+        892,
+        835
+      ],
+      "confidence": 0.98,
+      "fill": 0.876,
+      "why": "Magenta outline traces the rectangular Dell 54Wh battery in the chassis with clearly readable DELL label and certification markings, so it is unambiguously the battery.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.95,
+    "end_s": 84.9,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      9,
+      10,
+      11
+    ],
+    "points": [],
+    "start_s": 83.2,
+    "work_frame": 6,
+    "work_x": 855,
+    "work_y": 670
+  },
+  "close_ups": [
+    {
+      "t_s": 85.43,
+      "spot": [
+        854,
+        669
+      ],
+      "crop": [
+        600,
+        288,
+        1000,
+        1000
+      ],
+      "box": [
+        0,
+        14,
+        870,
+        515
+      ],
+      "name": "laptop battery",
+      "result": "the part is bigger than the close-up"
+    }
+  ]
+}

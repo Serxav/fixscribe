@@ -1,0 +1,83 @@
+{
+  "language": "en",
+  "intro": "You will service the Sony PlayStation One buttons in this guide. You will need a Phillips screwdriver and plastic-safe silicone grease.",
+  "outro_disassemble": "Great job, you have given those buttons a smooth new life.",
+  "outro_assemble": "Nice work, you have your PlayStation One back together and ready to play.",
+  "steps": [
+    {
+      "index": 1,
+      "disassemble": "You can lift the upper shell off the lower half and set it aside. There are no screws for you…",
+      "assemble": "You can place the upper shell back onto the lower half."
+    },
+    {
+      "index": 2,
+      "disassemble": "You can press the plastic clips to pop the power button out the bottom with no screws to remove. Be gentle because the plastic clips are fragile and can snap if forced.",
+      "assemble": "You can pop the power button back into the shell."
+    },
+    {
+      "index": 3,
+      "disassemble": "You can inspect the power button spring, clips and center post for rub marks and dust. There are no screws for you to remove here.",
+      "assemble": "You can finish your inspection and leave the power button parts in place."
+    },
+    {
+      "index": 4,
+      "disassemble": "With no screws for you to remove, you can rub a very thin layer of plastic-safe silicone grease onto the power button wear areas. Use only plastic-safe grease and keep it very thin.",
+      "assemble": "You can wipe the silicone grease off the power button rub areas."
+    },
+    {
+      "index": 5,
+      "disassemble": "With no screws for you to remove, you can lightly lubricate the contact and place the power button spring back on the center post in the correct direction. Take care because the small spring can fall and get lost.",
+      "assemble": "You can lift the power button spring off the center post."
+    },
+    {
+      "index": 6,
+      "disassemble": "You can pop the power button back into the shell in the correct orientation. There are no screws for you to…",
+      "assemble": "You can pop the power button back out of the shell."
+    },
+    {
+      "index": 7,
+      "disassemble": "You can remove the two Phillips screws holding the open-button slider assembly. Hold the assembly down so the spring does not fly as you release the screws.",
+      "assemble": "You can put the slider assembly back and drive in the two Phillips screws."
+    },
+    {
+      "index": 8,
+      "disassemble": "You can pull the spring-loaded slider assembly straight out of the shell with no other screws to remove. Watch out because the small slider spring can detach unexpectedly.",
+      "assemble": "You can push the slider assembly straight back into the shell."
+    },
+    {
+      "index": 9,
+      "disassemble": "With no screws for you to remove, you can rub silicone grease into the slider contact and wear areas. Be careful not to lose the detached slider spring.",
+      "assemble": "You can wipe the silicone grease off the slider contacts."
+    },
+    {
+      "index": 10,
+      "disassemble": "You can pop the open button out of the shell. There are no screws for you to…",
+      "assemble": "You can pop the open button back into the shell."
+    },
+    {
+      "index": 11,
+      "disassemble": "With no screws for you to remove, you can apply a very thin layer of silicone grease to the open button contacts, slide area and shaft. Keep it very thin because excess grease attracts dust and causes sticking.",
+      "assemble": "You can wipe the silicone grease off the open button contacts, slide area and shaft."
+    },
+    {
+      "index": 12,
+      "disassemble": "You can pop the open button back into the shell facing the right direction. There are no screws for you to remove here.",
+      "assemble": "You can pop the open button back out of the shell."
+    },
+    {
+      "index": 13,
+      "disassemble": "You can reattach the slider spring and reinsert the slider assembly into position with no screws yet. Secure the small spring carefully because it is under tension and can slip or launch and cause loss or injury.",
+      "assemble": "You can detach the slider spring and pull the slider assembly back out."
+    },
+    {
+      "index": 14,
+      "disassemble": "You can hold the slider assembly down and tighten the two Phillips screws, seating each counterclockwise until it clicks first. Do not overtighten the screws in the plastic posts.",
+      "assemble": "You can loosen and remove the two Phillips screws from the slider assembly."
+    },
+    {
+      "index": 15,
+      "disassemble": "You can flip the shell over and press the Power and Open buttons to check for smooth return. There are no screws for you to remove…",
+      "assemble": "You can flip the shell back over and release the Power and Open buttons."
+    }
+  ]
+}

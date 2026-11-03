@@ -1,0 +1,510 @@
+{
+  "steps": [
+    {
+      "index": 1,
+      "part": {
+        "concept": "upper shell",
+        "box": {
+          "x": 0.161,
+          "y": 0.015,
+          "w": 0.779,
+          "h": 0.982
+        },
+        "confidence": 0.945,
+        "t_s": 34.91,
+        "area": null
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 34.9,
+        "end_s": 42.9,
+        "confidence": 0.85
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/01_overlay.jpg",
+      "sam_calls": 2,
+      "notes": []
+    },
+    {
+      "index": 2,
+      "part": {
+        "concept": "power button",
+        "box": {
+          "x": 0.665,
+          "y": 0.62,
+          "w": 0.14,
+          "h": 0.185
+        },
+        "confidence": 0.801,
+        "t_s": 58.949999999999996,
+        "area": {
+          "x": 0.0,
+          "y": 0.0,
+          "w": 1.0,
+          "h": 1.0
+        }
+      },
+      "review": {
+        "matches": false,
+        "instruction": "Unclip and remove the open button.",
+        "start_s": 56.3,
+        "end_s": 69.1,
+        "confidence": 0.9
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/02_overlay.jpg",
+      "sam_calls": 4,
+      "notes": []
+    },
+    {
+      "index": 3,
+      "part": {
+        "concept": "power button",
+        "box": {
+          "x": 0.241,
+          "y": 0.225,
+          "w": 0.394,
+          "h": 0.355
+        },
+        "confidence": 0.945,
+        "t_s": 80.55,
+        "area": {
+          "x": 0.241,
+          "y": 0.0,
+          "w": 0.556,
+          "h": 1.0
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 67.9,
+        "end_s": 99.5,
+        "confidence": 0.9
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/03_overlay.jpg",
+      "sam_calls": 2,
+      "notes": []
+    },
+    {
+      "index": 4,
+      "part": {
+        "concept": "power button",
+        "box": {
+          "x": 0.494,
+          "y": 0.365,
+          "w": 0.231,
+          "h": 0.635
+        },
+        "confidence": 0.957,
+        "t_s": 138.8,
+        "area": {
+          "x": 0.445,
+          "y": 0.109,
+          "w": 0.367,
+          "h": 0.891
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 124.0,
+        "end_s": 142.5,
+        "confidence": 0.9
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/04_overlay.jpg",
+      "sam_calls": 1,
+      "notes": []
+    },
+    {
+      "index": 5,
+      "part": {
+        "concept": "button spring",
+        "box": {
+          "x": 0.52,
+          "y": 0.265,
+          "w": 0.166,
+          "h": 0.265
+        },
+        "confidence": 0.812,
+        "t_s": 180.95,
+        "area": {
+          "x": 0.37,
+          "y": 0.0,
+          "w": 0.614,
+          "h": 1.0
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 154.0,
+        "end_s": 180.9,
+        "confidence": 0.85
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/05_overlay.jpg",
+      "sam_calls": 2,
+      "notes": []
+    },
+    {
+      "index": 6,
+      "part": null,
+      "review": {
+        "matches": false,
+        "instruction": "Display the empty power button housing.",
+        "start_s": 185.6,
+        "end_s": 193.8,
+        "confidence": 0.9
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/06_overlay.jpg",
+      "sam_calls": 0,
+      "notes": [
+        "The power button could not be proven on any frame of this step."
+      ]
+    },
+    {
+      "index": 7,
+      "part": {
+        "concept": "slider screw",
+        "box": {
+          "x": 0.673,
+          "y": 0.713,
+          "w": 0.04,
+          "h": 0.069
+        },
+        "confidence": 0.863,
+        "t_s": 204.02,
+        "area": {
+          "x": 0.518,
+          "y": 0.412,
+          "w": 0.331,
+          "h": 0.588
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 204.0,
+        "end_s": 218.2,
+        "confidence": 0.92
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": null,
+      "sam_calls": 23,
+      "notes": [
+        "Perception failed for this step: meta api failed with status 500 after 4 attempts"
+      ]
+    },
+    {
+      "index": 8,
+      "part": {
+        "concept": "slider assembly",
+        "box": {
+          "x": 0.372,
+          "y": 0.096,
+          "w": 0.301,
+          "h": 0.596
+        },
+        "confidence": 0.93,
+        "t_s": 220.94,
+        "area": {
+          "x": 0.274,
+          "y": 0.069,
+          "w": 0.481,
+          "h": 0.931
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 217.0,
+        "end_s": 225.2,
+        "confidence": 0.85
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/08_overlay.jpg",
+      "sam_calls": 1,
+      "notes": []
+    },
+    {
+      "index": 9,
+      "part": {
+        "concept": "slider assembly",
+        "box": {
+          "x": 0.353,
+          "y": 0.047,
+          "w": 0.377,
+          "h": 0.527
+        },
+        "confidence": 0.953,
+        "t_s": 280.46,
+        "area": {
+          "x": 0.262,
+          "y": 0.0,
+          "w": 0.54,
+          "h": 0.574
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 260.2,
+        "end_s": 284.8,
+        "confidence": 0.85
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/09_overlay.jpg",
+      "sam_calls": 2,
+      "notes": []
+    },
+    {
+      "index": 10,
+      "part": {
+        "concept": "open button",
+        "box": {
+          "x": 0.506,
+          "y": 0.239,
+          "w": 0.195,
+          "h": 0.464
+        },
+        "confidence": 0.84,
+        "t_s": 320.28,
+        "area": {
+          "x": 0.134,
+          "y": 0.0,
+          "w": 0.866,
+          "h": 0.998
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 315.1,
+        "end_s": 321.5,
+        "confidence": 0.92
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/10_overlay.jpg",
+      "sam_calls": 1,
+      "notes": []
+    },
+    {
+      "index": 11,
+      "part": {
+        "concept": "open button",
+        "box": {
+          "x": 0.37,
+          "y": 0.133,
+          "w": 0.234,
+          "h": 0.457
+        },
+        "confidence": 0.984,
+        "t_s": 339.4,
+        "area": {
+          "x": 0.37,
+          "y": 0.086,
+          "w": 0.361,
+          "h": 0.682
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 328.1,
+        "end_s": 354.6,
+        "confidence": 0.9
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/11_overlay.jpg",
+      "sam_calls": 3,
+      "notes": []
+    },
+    {
+      "index": 12,
+      "part": {
+        "concept": "open button",
+        "box": {
+          "x": 0.4,
+          "y": 0.103,
+          "w": 0.387,
+          "h": 0.728
+        },
+        "confidence": 0.969,
+        "t_s": 376.76,
+        "area": {
+          "x": 0.082,
+          "y": 0.0,
+          "w": 0.918,
+          "h": 1.0
+        }
+      },
+      "review": {
+        "matches": false,
+        "instruction": "Fit the open button into its slider housing.",
+        "start_s": 373.2,
+        "end_s": 376.8,
+        "confidence": 0.85
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/12_overlay.jpg",
+      "sam_calls": 2,
+      "notes": []
+    },
+    {
+      "index": 13,
+      "part": {
+        "concept": "slider assembly",
+        "box": {
+          "x": 0.438,
+          "y": 0.083,
+          "w": 0.367,
+          "h": 0.699
+        },
+        "confidence": 0.934,
+        "t_s": 385.60999999999996,
+        "area": {
+          "x": 0.379,
+          "y": 0.0,
+          "w": 0.488,
+          "h": 0.906
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 374.0,
+        "end_s": 393.0,
+        "confidence": 0.9
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/13_overlay.jpg",
+      "sam_calls": 2,
+      "notes": []
+    },
+    {
+      "index": 14,
+      "part": {
+        "concept": "slider screw",
+        "box": {
+          "x": 0.637,
+          "y": 0.753,
+          "w": 0.04,
+          "h": 0.067
+        },
+        "confidence": 0.867,
+        "t_s": 422.7,
+        "area": {
+          "x": 0.473,
+          "y": 0.335,
+          "w": 0.373,
+          "h": 0.665
+        }
+      },
+      "review": {
+        "matches": false,
+        "instruction": "Hold the assembly down and tighten only the lower screw.",
+        "start_s": 399.2,
+        "end_s": 422.7,
+        "confidence": 0.85
+      },
+      "screws_before": 4,
+      "screws_after": 1,
+      "removed": [
+        {
+          "id": "S1",
+          "number": 1,
+          "box": {
+            "x": 0.659375,
+            "y": 0.22037037037037038,
+            "w": 0.046354166666666585,
+            "h": 0.11574074074074076
+          },
+          "confidence": 0.58,
+          "pointed": false,
+          "tracked": true
+        },
+        {
+          "id": "S2",
+          "number": 2,
+          "box": {
+            "x": 0.5520833333333334,
+            "y": 0.3388888888888889,
+            "w": 0.017708333333333326,
+            "h": 0.031481481481481444
+          },
+          "confidence": 0.75,
+          "pointed": false,
+          "tracked": true
+        }
+      ],
+      "overlay": "steps/14_overlay.jpg",
+      "sam_calls": 22,
+      "notes": []
+    },
+    {
+      "index": 15,
+      "part": {
+        "concept": "open button",
+        "box": {
+          "x": 0.68,
+          "y": 0.519,
+          "w": 0.256,
+          "h": 0.441
+        },
+        "confidence": 0.797,
+        "t_s": 447.38,
+        "area": {
+          "x": 0.6,
+          "y": 0.288,
+          "w": 0.4,
+          "h": 0.712
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 439.2,
+        "end_s": 448.4,
+        "confidence": 0.92
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/15_overlay.jpg",
+      "sam_calls": 1,
+      "notes": []
+    }
+  ],
+  "sam_calls": 68
+}

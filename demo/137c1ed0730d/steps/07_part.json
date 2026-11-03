@@ -1,0 +1,58 @@
+{
+  "part": "metal cover",
+  "tries": [],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.9,
+    "end_s": 120.3,
+    "fastener_frame": 1,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      1,
+      11,
+      12
+    ],
+    "points": [
+      {
+        "x": 830,
+        "y": 435
+      }
+    ],
+    "start_s": 113.6,
+    "work_frame": 8,
+    "work_x": 825,
+    "work_y": 425
+  },
+  "close_ups": [
+    {
+      "t_s": 98.1,
+      "spot": [
+        825,
+        425
+      ],
+      "crop": [
+        600,
+        69,
+        1000,
+        780
+      ],
+      "box": [
+        470,
+        275,
+        705,
+        488
+      ],
+      "name": "metal cover",
+      "confidence": 0.93,
+      "fill": 0.679,
+      "why": "Magenta outline traces the silver SSD metal shield with QR label and screw notch, clearly visible on the board.",
+      "result": "kept"
+    }
+  ]
+}

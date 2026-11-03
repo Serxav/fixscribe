@@ -1,0 +1,55 @@
+{
+  "steps": [
+    {
+      "index": 6,
+      "start_s": 89.0,
+      "end_s": 99.0,
+      "instruction": "Inspect the soldered LPDDR5X memory on the board.",
+      "action": "inspect",
+      "removes": [],
+      "screw_count": 0,
+      "warnings": [],
+      "confidence": 0.95
+    },
+    {
+      "index": 10,
+      "start_s": 153.0,
+      "end_s": 168.3,
+      "instruction": "Remove the screw and slide the Wi-Fi cover to the left to lift it off.",
+      "action": "remove",
+      "removes": [
+        "Wi-Fi cover"
+      ],
+      "screw_count": 1,
+      "warnings": [],
+      "confidence": 0.85
+    },
+    {
+      "index": 5,
+      "start_s": 82.6,
+      "end_s": 85.0,
+      "instruction": "Lift the 54Wh battery out of the chassis.",
+      "action": "remove",
+      "removes": [
+        "battery"
+      ],
+      "screw_count": 0,
+      "warnings": [
+        "Do not puncture, bend, or short the battery."
+      ],
+      "confidence": 0.92
+    },
+    {
+      "index": 11,
+      "start_s": 176.0,
+      "end_s": 189.2,
+      "instruction": "Inspect the fan, single long heat pipe, heatsink and heat spreader.",
+      "action": "inspect",
+      "removes": [],
+      "screw_count": 0,
+      "warnings": [],
+      "confidence": 0.92
+    }
+  ],
+  "skipped": []
+}

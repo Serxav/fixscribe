@@ -1,0 +1,89 @@
+{
+  "part": "slider assembly",
+  "tries": [
+    {
+      "t_s": 385.61,
+      "box": [
+        122,
+        92,
+        874,
+        864
+      ],
+      "confidence": 0.934,
+      "fill": 0.522,
+      "why": "Magenta outline follows the gray plastic slider chassis with spring visible, held by fingers with tweezers touching center, clearly the slider assembly.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    379,
+    0,
+    867,
+    906
+  ],
+  "review": {
+    "confidence": 0.9,
+    "end_s": 393.0,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      8,
+      4,
+      3
+    ],
+    "points": [],
+    "start_s": 374.0,
+    "work_frame": 7,
+    "work_x": 370,
+    "work_y": 425
+  },
+  "close_ups": [
+    {
+      "t_s": 387.68,
+      "spot": [
+        475,
+        478
+      ],
+      "crop": [
+        377,
+        304,
+        572,
+        651
+      ],
+      "box": [
+        380,
+        5,
+        560,
+        770
+      ],
+      "name": "slider rail",
+      "confidence": 0.805,
+      "fill": 0.359,
+      "why": "Blurry zoomed crop; magenta outline follows an indistinct dark edge next to the spring, not clearly identifiable as the slider rail.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 385.61,
+      "spot": [
+        559,
+        385
+      ],
+      "crop": [
+        461,
+        211,
+        656,
+        558
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "dark opening",
+        "visible": false,
+        "x_max": 580,
+        "x_min": 520,
+        "y_max": 580,
+        "y_min": 520
+      }
+    }
+  ]
+}

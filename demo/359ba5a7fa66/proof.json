@@ -1,0 +1,246 @@
+{
+  "steps": [
+    {
+      "index": 1,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "scene change at 68.0 s",
+            "scene change at 108.3 s",
+            "frame by frame review: 67.8–104.9 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 72.0 s: 'lege ich das Brett, welches später die Bank sein soll, einfach auf das Polster drauf'",
+            "video 90.0 s: person cuts white foam along edge of wooden board with long knife",
+            "voice 68.9 s: 'So, zum zuschneiden von der Polsterung ähm lege ich das Brett, welches später di'",
+            "voice 108.1 s: 'So, ähm kurz zu dem dem Aufbau, jetzt hier die oberste Schicht ist die Holzplatt'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'foam pad' found (confidence 0.94)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 2,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "frame by frame review: 108.2–150.1 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 115.0 s: 'die oberste Schicht ist die Holzplatte, billigste Holzplatte aus dem Baumarkt'",
+            "video 125.0 s: wood board sits on foam pad over white batting and beige faux leather spread on rug",
+            "voice 108.1 s: 'So, ähm kurz zu dem dem Aufbau, jetzt hier die oberste Schicht ist die Holzplatt'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "unverified",
+          "sources": [
+            "SAM: no part found"
+          ]
+        }
+      ],
+      "score": 0.6666666666666666
+    },
+    {
+      "index": 3,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "frame by frame review: 186.5–228.5 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 180.0 s: 'was wichtig ist wenn wir rangehen erstmal die Mitte fixieren'",
+            "voice 198.0 s: 'zweimal reintackern eins und und zwei, das reicht schon'",
+            "voice 108.1 s: 'So, ähm kurz zu dem dem Aufbau, jetzt hier die oberste Schicht ist die Holzplatt'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "fastener_count",
+          "status": "supported",
+          "sources": [
+            "SAM: 0 screws removed (before/after stills)",
+            "Muse Spark saw the tool stop at 1 spots: too small for SAM to cut"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "unverified",
+          "sources": [
+            "SAM: no part found"
+          ]
+        }
+      ],
+      "score": 0.625
+    },
+    {
+      "index": 4,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "timecode re-check: 230.6–248.0 s",
+            "frame by frame review: 231.6–238.4 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 232.0 s: 'Und genau das gleiche noch einmal hier'",
+            "voice 230.6 s: 'Und genau das gleiche noch einmal hier'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "unverified",
+          "sources": [
+            "SAM: no part found"
+          ]
+        }
+      ],
+      "score": 0.6666666666666666
+    },
+    {
+      "index": 5,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "frame by frame review: 284.0–357.3 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 300.0 s: 'dann kann ich das hier ordentlich hier rüberziehen'",
+            "voice 310.0 s: 'lege diesen überstehenden Ding hier schön längs rein'",
+            "voice 275.0 s: 'Da das Ganze recht wichtig ist und nicht ganz einfach ist wie ich immer finde, z'",
+            "voice 320.1 s: 'so und hier versuche ich nachher eine schöne Kante zu haben reinlegen man könnte'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'leather side panel' found (confidence 0.65)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 6,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "scene change at 394.7 s",
+            "frame by frame review: 359.5–392.1 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 363.0 s: 'so die tacker ich jetzt nicht die tackere ich mir jetzt hier fest'",
+            "voice 372.0 s: 'einmal tackern zweimal tackern dann hebt es'",
+            "voice 359.6 s: 'so die tacker ich jetzt nicht die tackere ich mir jetzt hier fest'",
+            "voice 366.2 s: 'festhalten'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "fastener_count",
+          "status": "supported",
+          "sources": [
+            "SAM: 0 screws removed (before/after stills)",
+            "Muse Spark saw the tool stop at 2 spots: too small for SAM to cut"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'leather corner' found (confidence 0.96)"
+          ]
+        }
+      ],
+      "score": 0.875
+    },
+    {
+      "index": 7,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "scene change at 457.1 s",
+            "frame by frame review: 396.0–456.3 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 406.0 s: 'trotzdem werde ich jetzt alles alles schön nachspannen'",
+            "voice 412.0 s: 'die schneide ich jetzt mit dem Teppichmesser mir so raus wie ich es nicht brauche'",
+            "voice 394.9 s: 'So, nachdem ich jetzt alle Ecken gemacht habe, von vorne sieht es so aus geht so'",
+            "voice 405.0 s: 'trotzdem werde ich jetzt alles alles schön nachspannen was gleichmäßig fest ist '",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "fastener_count",
+          "status": "unverified",
+          "sources": [
+            "SAM: 0 screws removed (before/after stills)"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "unverified",
+          "sources": [
+            "SAM: no part found"
+          ]
+        }
+      ],
+      "score": 0.5
+    }
+  ],
+  "score": 0.762
+}

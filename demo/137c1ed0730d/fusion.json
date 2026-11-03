@@ -1,0 +1,126 @@
+{
+  "candidates": 25,
+  "steps": [
+    {
+      "index": 1,
+      "start_s": 1.0667,
+      "end_s": 20.0,
+      "start_source": "scene",
+      "end_source": "spark",
+      "start_shift_s": -0.7333,
+      "end_shift_s": 0.0,
+      "agreement": 0.8,
+      "confidence": 0.76
+    },
+    {
+      "index": 2,
+      "start_s": 20.0,
+      "end_s": 38.6667,
+      "start_source": "spark",
+      "end_source": "scene",
+      "start_shift_s": 0.0,
+      "end_shift_s": -0.3333,
+      "agreement": 0.6,
+      "confidence": 0.552
+    },
+    {
+      "index": 3,
+      "start_s": 38.6667,
+      "end_s": 46.2667,
+      "start_source": "scene",
+      "end_source": "pause",
+      "start_shift_s": -0.3333,
+      "end_shift_s": -0.7333,
+      "agreement": 0.8,
+      "confidence": 0.752
+    },
+    {
+      "index": 4,
+      "start_s": 46.2667,
+      "end_s": 82.0,
+      "start_source": "pause",
+      "end_source": "spark",
+      "start_shift_s": -0.7333,
+      "end_shift_s": 0.0,
+      "agreement": 0.8,
+      "confidence": 0.744
+    },
+    {
+      "index": 5,
+      "start_s": 82.0,
+      "end_s": 89.0,
+      "start_source": "spark",
+      "end_source": "spark",
+      "start_shift_s": 0.0,
+      "end_shift_s": 0.0,
+      "agreement": 0.6,
+      "confidence": 0.54
+    },
+    {
+      "index": 6,
+      "start_s": 89.0,
+      "end_s": 99.0,
+      "start_source": "spark",
+      "end_source": "spark",
+      "start_shift_s": 0.0,
+      "end_shift_s": 0.0,
+      "agreement": 0.6,
+      "confidence": 0.528
+    },
+    {
+      "index": 7,
+      "start_s": 99.0,
+      "end_s": 121.3333,
+      "start_source": "spark",
+      "end_source": "pause",
+      "start_shift_s": 0.0,
+      "end_shift_s": -0.6667,
+      "agreement": 0.6,
+      "confidence": 0.552
+    },
+    {
+      "index": 8,
+      "start_s": 121.3333,
+      "end_s": 135.0,
+      "start_source": "pause",
+      "end_source": "spark",
+      "start_shift_s": -0.6667,
+      "end_shift_s": 0.0,
+      "agreement": 0.8,
+      "confidence": 0.72
+    },
+    {
+      "index": 9,
+      "start_s": 145.7333,
+      "end_s": 155.0,
+      "start_source": "pause",
+      "end_source": "spark",
+      "start_shift_s": -1.2667,
+      "end_shift_s": 0.0,
+      "agreement": 0.8,
+      "confidence": 0.712
+    },
+    {
+      "index": 10,
+      "start_s": 155.0,
+      "end_s": 175.0667,
+      "start_source": "spark",
+      "end_source": "pause",
+      "start_shift_s": 0.0,
+      "end_shift_s": 0.0667,
+      "agreement": 0.6,
+      "confidence": 0.528
+    },
+    {
+      "index": 11,
+      "start_s": 176.0,
+      "end_s": 191.0,
+      "start_source": "spark",
+      "end_source": "spark",
+      "start_shift_s": 0.0,
+      "end_shift_s": 0.0,
+      "agreement": 0.6,
+      "confidence": 0.54
+    }
+  ]
+}

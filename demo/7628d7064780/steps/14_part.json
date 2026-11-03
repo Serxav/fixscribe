@@ -1,0 +1,57 @@
+{
+  "part": "slider screws",
+  "tries": [],
+  "zoom": [
+    66,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.85,
+    "end_s": 422.7,
+    "fastener_frame": 8,
+    "instruction": "Hold the assembly down and tighten only the lower screw.",
+    "matches": false,
+    "part_frames": [
+      8,
+      3
+    ],
+    "points": [
+      {
+        "x": 631,
+        "y": 835
+      }
+    ],
+    "start_s": 399.2,
+    "work_frame": 3,
+    "work_x": 603,
+    "work_y": 806
+  },
+  "close_ups": [
+    {
+      "t_s": 422.7,
+      "spot": [
+        660,
+        789
+      ],
+      "crop": [
+        473,
+        335,
+        846,
+        1000
+      ],
+      "box": [
+        440,
+        630,
+        548,
+        730
+      ],
+      "name": "slider screw",
+      "confidence": 0.867,
+      "fill": 0.598,
+      "why": "clearly visible metallic phillips screw head seated in plastic recess, magenta outline tightly follows the screw head",
+      "result": "kept"
+    }
+  ]
+}

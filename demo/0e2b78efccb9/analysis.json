@@ -1,0 +1,325 @@
+{
+  "title": "Replace a Broken Brass Harp String",
+  "device": "harp",
+  "summary": "Lay harp down, remove old string, feed new brass wire through soundboard, tie toggle, trim, hook to tuning pin and wind to pitch.",
+  "difficulty": "medium",
+  "estimated_minutes": 20,
+  "tools": [
+    "tuning key",
+    "pliers"
+  ],
+  "parts": [
+    "harp string",
+    "brass wire",
+    "toggle",
+    "tuning pin",
+    "shoe"
+  ],
+  "warnings": [
+    "Sharp brass wire ends can cut skin",
+    "Harp is heavy - lift carefully to avoid back injury or dropping",
+    "String under tension can snap during winding"
+  ],
+  "steps": [
+    {
+      "source_index": null,
+      "title": "Lay harp on its back",
+      "instruction": "Lay the harp on its back on the ground to work on it.",
+      "start_s": 11.7,
+      "end_s": 16.7,
+      "target_part": "harp body",
+      "sam_concept": "wooden harp",
+      "action": "flip",
+      "removes": [],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Harp is heavy - lift carefully to avoid dropping or back injury"
+      ],
+      "evidence": [
+        {
+          "t_s": 13.0,
+          "source": "audio",
+          "text": "To replace a string, I'll work with work with the harp lying on its back on the ground."
+        },
+        {
+          "t_s": 14.0,
+          "source": "video",
+          "text": "Harp lying on its back on black cloth"
+        }
+      ],
+      "confidence": 0.95
+    },
+    {
+      "source_index": null,
+      "title": "Remove old string",
+      "instruction": "Pull the old broken string off the harp and save it for reuse.",
+      "start_s": 56.8,
+      "end_s": 68.0,
+      "target_part": "old string",
+      "sam_concept": "harp string",
+      "action": "remove",
+      "removes": [
+        "old string"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Sharp broken wire end can prick skin"
+      ],
+      "evidence": [
+        {
+          "t_s": 57.5,
+          "source": "audio",
+          "text": "The first thing I'm going to do is to pull the pull the old string off"
+        },
+        {
+          "t_s": 63.0,
+          "source": "audio",
+          "text": "I'm going to try and save this string because it's long enough to use use further up that octave so it can go into into my string bag."
+        }
+      ],
+      "confidence": 0.95
+    },
+    {
+      "source_index": null,
+      "title": "Turn harp onto right side",
+      "instruction": "Turn the harp down onto its right side to access pin, shoe and back.",
+      "start_s": 69.5,
+      "end_s": 84.0,
+      "target_part": "harp body",
+      "sam_concept": "wooden harp",
+      "action": "flip",
+      "removes": [],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Harp is heavy - support it while turning to prevent falling"
+      ],
+      "evidence": [
+        {
+          "t_s": 70.5,
+          "source": "audio",
+          "text": "Then I'll turn the harp down onto its right side."
+        },
+        {
+          "t_s": 77.0,
+          "source": "audio",
+          "text": "and this will give me access to all the the things I need the pin at the top the shoe at the bottom and inside the back of the harp"
+        }
+      ],
+      "confidence": 0.93
+    },
+    {
+      "source_index": null,
+      "title": "Feed new wire through harp",
+      "instruction": "Feed wire off the reel into the front hole and grab it through the back hole.",
+      "start_s": 88.1,
+      "end_s": 106.0,
+      "target_part": "new wire",
+      "sam_concept": "metal wire",
+      "action": "insert",
+      "removes": [
+        "new wire"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Sharp wire end can cut fingers - feed carefully"
+      ],
+      "evidence": [
+        {
+          "t_s": 89.5,
+          "source": "audio",
+          "text": "so I feed the wire into the harp off the reel I don't cut it to to length first"
+        },
+        {
+          "t_s": 97.0,
+          "source": "audio",
+          "text": "so you see how this works you just poke it into the front"
+        },
+        {
+          "t_s": 104.0,
+          "source": "audio",
+          "text": "and then grab it through the hole at the back."
+        }
+      ],
+      "confidence": 0.92
+    },
+    {
+      "source_index": null,
+      "title": "Tie toggle to wire",
+      "instruction": "Loop wire once around toggle and fold back in a hairpin to tie toggle knot.",
+      "start_s": 109.1,
+      "end_s": 127.0,
+      "target_part": "toggle",
+      "sam_concept": "small peg",
+      "action": "attach",
+      "removes": [
+        "toggle",
+        "new wire"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [],
+      "evidence": [
+        {
+          "t_s": 113.0,
+          "source": "audio",
+          "text": "and so here's the wire that's inside the harp I can tie the toggle to it because it's 0.6 that's thick enough to use a very simplest knots you just go round the toggle once and then you fold the wire back over itself in a hairpin"
+        }
+      ],
+      "confidence": 0.9
+    },
+    {
+      "source_index": null,
+      "title": "Tighten knot and seat toggle",
+      "instruction": "Tighten toggle knot with pliers and pull wire through to seat toggle.",
+      "start_s": 127.5,
+      "end_s": 142.5,
+      "target_part": "toggled wire",
+      "sam_concept": "metal wire",
+      "action": "place",
+      "removes": [
+        "toggle",
+        "new wire"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Pliers can pinch fingers - squeeze carefully"
+      ],
+      "evidence": [
+        {
+          "t_s": 130.0,
+          "source": "audio",
+          "text": "and then to make sure it's doesn't fall off when we're putting it in use the pliers to pull it nice and tight so there's my toggle knot and then all I do pull it through"
+        }
+      ],
+      "confidence": 0.9
+    },
+    {
+      "source_index": null,
+      "title": "Cut wire and make hook",
+      "instruction": "Cut wire about five centimeters above pin and bend a small hook.",
+      "start_s": 143.4,
+      "end_s": 154.0,
+      "target_part": "new wire",
+      "sam_concept": "metal wire",
+      "action": "other",
+      "removes": [],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Cut wire ends are sharp - keep away from eyes and skin"
+      ],
+      "evidence": [
+        {
+          "t_s": 144.5,
+          "source": "audio",
+          "text": "I can cut it to length I don't know a few five centimeters above the pin"
+        },
+        {
+          "t_s": 150.0,
+          "source": "audio",
+          "text": "just snap it off with the pliers make a little hook and then I'll turn the harp up"
+        }
+      ],
+      "confidence": 0.91
+    },
+    {
+      "source_index": null,
+      "title": "Turn harp upright",
+      "instruction": "Turn the harp back upright.",
+      "start_s": 154.1,
+      "end_s": 159.0,
+      "target_part": "harp body",
+      "sam_concept": "wooden harp",
+      "action": "flip",
+      "removes": [],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Harp is heavy - support it while turning"
+      ],
+      "evidence": [
+        {
+          "t_s": 154.8,
+          "source": "audio",
+          "text": "and then I'll turn the harp up"
+        },
+        {
+          "t_s": 157.0,
+          "source": "video",
+          "text": "Hands lift and turn harp upright"
+        }
+      ],
+      "confidence": 0.9
+    },
+    {
+      "source_index": null,
+      "title": "Hook string onto pin",
+      "instruction": "Hook the wire hook onto the tuning pin.",
+      "start_s": 159.3,
+      "end_s": 163.0,
+      "target_part": "new string",
+      "sam_concept": "harp string",
+      "action": "attach",
+      "removes": [
+        "new string"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [],
+      "evidence": [
+        {
+          "t_s": 160.0,
+          "source": "audio",
+          "text": "you can hook the hook onto the pin"
+        }
+      ],
+      "confidence": 0.92
+    },
+    {
+      "source_index": null,
+      "title": "Wind and tune string",
+      "instruction": "Wind the string up with the tuning key and bring to pitch.",
+      "start_s": 163.9,
+      "end_s": 194.5,
+      "target_part": "new string",
+      "sam_concept": "harp string",
+      "action": "other",
+      "removes": [
+        "new string"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "String under tension can snap - keep face clear and do not over-tighten"
+      ],
+      "evidence": [
+        {
+          "t_s": 165.5,
+          "source": "audio",
+          "text": "and then you can wind it up"
+        },
+        {
+          "t_s": 194.0,
+          "source": "audio",
+          "text": "that's it"
+        }
+      ],
+      "confidence": 0.93
+    }
+  ]
+}

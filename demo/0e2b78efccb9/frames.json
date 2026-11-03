@@ -1,0 +1,74 @@
+{
+  "steps": [
+    {
+      "index": 1,
+      "keyframe_s": 15.93,
+      "image": "steps/01.jpg",
+      "clip": "steps/01.mp4",
+      "still": "stills/01.png"
+    },
+    {
+      "index": 2,
+      "keyframe_s": 58.63,
+      "image": "steps/02.jpg",
+      "clip": "steps/02.mp4",
+      "still": "stills/02.png"
+    },
+    {
+      "index": 3,
+      "keyframe_s": 75.97,
+      "image": "steps/03.jpg",
+      "clip": "steps/03.mp4",
+      "still": "stills/03.png"
+    },
+    {
+      "index": 4,
+      "keyframe_s": 88.6,
+      "image": "steps/04.jpg",
+      "clip": "steps/04.mp4",
+      "still": "stills/04.png"
+    },
+    {
+      "index": 5,
+      "keyframe_s": 126.83,
+      "image": "steps/05.jpg",
+      "clip": "steps/05.mp4",
+      "still": "stills/05.png"
+    },
+    {
+      "index": 6,
+      "keyframe_s": 142.23,
+      "image": "steps/06.jpg",
+      "clip": "steps/06.mp4",
+      "still": "stills/06.png"
+    },
+    {
+      "index": 7,
+      "keyframe_s": 150.37,
+      "image": "steps/07.jpg",
+      "clip": "steps/07.mp4",
+      "still": "stills/07.png"
+    },
+    {
+      "index": 8,
+      "keyframe_s": 158.87,
+      "image": "steps/08.jpg",
+      "clip": "steps/08.mp4",
+      "still": "stills/08.png"
+    },
+    {
+      "index": 9,
+      "keyframe_s": 161.03,
+      "image": "steps/09.jpg",
+      "clip": "steps/09.mp4",
+      "still": "stills/09.png"
+    },
+    {
+      "index": 10,
+      "keyframe_s": 193.8,
+      "image": "steps/10.jpg",
+      "clip": "steps/10.mp4",
+      "still": "stills/10.png"
+    }
+  ]
+}

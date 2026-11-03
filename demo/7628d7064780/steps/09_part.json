@@ -1,0 +1,83 @@
+{
+  "part": "slider assembly",
+  "tries": [
+    {
+      "t_s": 268.36,
+      "box": [
+        0,
+        320,
+        880,
+        1000
+      ],
+      "confidence": 0.887,
+      "fill": 0.287,
+      "why": "Magenta mask does not tightly trace the grey plastic piece and includes large areas of fingers/skin, so it covers mostly hand rather than clearly being the slider assembly.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 280.46,
+      "box": [
+        170,
+        82,
+        867,
+        1000
+      ],
+      "confidence": 0.953,
+      "fill": 0.577,
+      "why": "Gray plastic slider assembly clearly visible held by fingers, magenta line follows its exact outer perimeter including lower legs and cutouts.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    262,
+    0,
+    802,
+    574
+  ],
+  "review": {
+    "confidence": 0.85,
+    "end_s": 284.8,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      6,
+      7,
+      1
+    ],
+    "points": [],
+    "start_s": 260.2,
+    "work_frame": 3,
+    "work_x": 620,
+    "work_y": 550
+  },
+  "close_ups": [
+    {
+      "t_s": 280.46,
+      "spot": null,
+      "result": "the spot could not be followed to this frame"
+    },
+    {
+      "t_s": 268.36,
+      "spot": [
+        596,
+        315
+      ],
+      "crop": [
+        488,
+        123,
+        704,
+        507
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "human finger",
+        "visible": false,
+        "x_max": 1000,
+        "x_min": 302,
+        "y_max": 1000,
+        "y_min": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "part": "toggled wire",
+  "tries": [
+    {
+      "t_s": 132.1,
+      "box": [
+        115,
+        175,
+        185,
+        360
+      ],
+      "confidence": 0.809,
+      "fill": 0.165,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 133.71,
+      "box": [
+        272,
+        278,
+        298,
+        341
+      ],
+      "result": "another part, away from the spot being worked on"
+    },
+    {
+      "t_s": 135.17,
+      "box": [
+        208,
+        84,
+        277,
+        192
+      ],
+      "result": "another part, away from the spot being worked on"
+    },
+    {
+      "t_s": 132.1,
+      "check": "last look, blur forgiven",
+      "box": [
+        75,
+        172,
+        184,
+        350
+      ],
+      "confidence": 0.816,
+      "fill": 0.119,
+      "result": "weak cut-out"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.9,
+    "end_s": 142.3,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      5,
+      6,
+      4
+    ],
+    "points": [],
+    "start_s": 129.2,
+    "work_frame": 4,
+    "work_x": 165,
+    "work_y": 335
+  },
+  "close_ups": [
+    {
+      "t_s": 133.71,
+      "spot": [
+        165,
+        334
+      ],
+      "crop": [
+        0,
+        0,
+        400,
+        711
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "human hand",
+        "visible": false,
+        "x_max": 730,
+        "x_min": 125,
+        "y_max": 630,
+        "y_min": 250
+      }
+    },
+    {
+      "t_s": 132.1,
+      "spot": [
+        165,
+        335
+      ],
+      "crop": [
+        0,
+        0,
+        400,
+        711
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "hand skin",
+        "visible": false,
+        "x_max": 530,
+        "x_min": 370,
+        "y_max": 620,
+        "y_min": 430
+      }
+    }
+  ]
+}

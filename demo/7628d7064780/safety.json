@@ -1,0 +1,12 @@
+{
+  "level": "caution",
+  "reasons": [
+    "Hazards: mains voltage, sharp edges, spring tension, chemicals, lithium battery."
+  ],
+  "prechecks": [
+    "Power off the device completely.",
+    "Disconnect the battery connector first.",
+    "Discharge below 25 percent before opening a battery device."
+  ],
+  "blocked": []
+}

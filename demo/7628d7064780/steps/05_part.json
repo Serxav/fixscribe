@@ -1,0 +1,77 @@
+{
+  "part": "button spring",
+  "tries": [
+    {
+      "t_s": 180.95,
+      "box": [
+        232,
+        260,
+        475,
+        527
+      ],
+      "confidence": 0.777,
+      "fill": 0.428,
+      "why": "Magenta outline includes the metallic coil but also includes a large area of finger skin at the bottom and is very blurry. It does not tightly trace only the spring, so it cannot clearly be confirmed as button spring.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 180.95,
+      "check": "last look, blur forgiven",
+      "box": [
+        245,
+        265,
+        515,
+        530
+      ],
+      "confidence": 0.812,
+      "fill": 0.378,
+      "why": "Magenta shape traces a small metallic coil with visible turns held between fingers, matching button spring appearance and expected touch location.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    370,
+    0,
+    984,
+    1000
+  ],
+  "review": {
+    "confidence": 0.85,
+    "end_s": 180.9,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      11
+    ],
+    "points": [],
+    "start_s": 154.0,
+    "work_frame": 11,
+    "work_x": 525,
+    "work_y": 480
+  },
+  "close_ups": [
+    {
+      "t_s": 180.95,
+      "spot": [
+        692,
+        480
+      ],
+      "crop": [
+        569,
+        261,
+        814,
+        698
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "human finger",
+        "visible": false,
+        "x_max": 1000,
+        "x_min": 190,
+        "y_max": 1000,
+        "y_min": 0
+      }
+    }
+  ]
+}

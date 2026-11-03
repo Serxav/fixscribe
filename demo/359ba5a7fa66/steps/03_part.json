@@ -1,0 +1,128 @@
+{
+  "part": "leather cover",
+  "tries": [
+    {
+      "t_s": 200.65,
+      "box": [
+        70,
+        420,
+        970,
+        680
+      ],
+      "confidence": 0.523,
+      "fill": 0.551,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 214.5,
+      "box": [
+        0,
+        105,
+        1000,
+        815
+      ],
+      "confidence": 0.883,
+      "fill": 0.47,
+      "why": "Magenta outline spans the top strip including black letterbox, rug, person's arm and empty space, not clearly tracing the beige leather/batting sheet. It covers mostly non-part, so not a valid leather cover mark.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 207.5,
+      "box": [
+        0,
+        110,
+        1000,
+        810
+      ],
+      "confidence": 0.863,
+      "fill": 0.406,
+      "why": "Magenta scribble is in top-right over black bar/background, not over the cream leather cover in center; covers mostly empty space/background, not the part.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 200.65,
+      "check": "last look, blur forgiven",
+      "box": [
+        75,
+        440,
+        950,
+        760
+      ],
+      "confidence": 0.574,
+      "fill": 0.415,
+      "result": "weak cut-out"
+    }
+  ],
+  "zoom": [
+    0,
+    418,
+    1000,
+    821
+  ],
+  "review": {
+    "confidence": 0.9,
+    "end_s": 228.5,
+    "fastener_frame": 8,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      10,
+      9,
+      11
+    ],
+    "points": [
+      {
+        "x": 473,
+        "y": 559
+      }
+    ],
+    "start_s": 186.5,
+    "work_frame": 8,
+    "work_x": 473,
+    "work_y": 559
+  },
+  "close_ups": [
+    {
+      "t_s": 214.5,
+      "spot": [
+        473,
+        643
+      ],
+      "crop": [
+        273,
+        287,
+        673,
+        998
+      ],
+      "box": [
+        0,
+        210,
+        1000,
+        460
+      ],
+      "name": "wooden board",
+      "result": "another part is under the tool"
+    },
+    {
+      "t_s": 200.65,
+      "spot": [
+        473,
+        643
+      ],
+      "crop": [
+        273,
+        287,
+        673,
+        998
+      ],
+      "box": [
+        0,
+        280,
+        1000,
+        505
+      ],
+      "name": "wooden board",
+      "result": "another part is under the tool"
+    }
+  ]
+}

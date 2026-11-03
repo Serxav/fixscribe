@@ -1,0 +1,318 @@
+{
+  "title": "Make a Bench Seat Cushion",
+  "device": "bench seat cushion",
+  "summary": "Build a bench cushion by cutting foam to the wood board size, layering board, foam, batting and faux leather, stapling centers, folding square corners, stapling them, then re-tensioning, stapling all around and trimming excess.",
+  "difficulty": "easy",
+  "estimated_minutes": 45,
+  "mode": "narrated",
+  "duration_s": 493.566667,
+  "tools": [
+    "long cake knife",
+    "staple gun with 8mm staples",
+    "carpet knife"
+  ],
+  "parts": [
+    "wooden board",
+    "foam pad",
+    "batting layer",
+    "faux leather cover",
+    "staple"
+  ],
+  "warnings": [
+    "Sharp knives can cut skin.",
+    "Staple gun can cause injury if fired at fingers."
+  ],
+  "steps": [
+    {
+      "index": 1,
+      "title": "Cut foam to board size",
+      "instruction": "Place the wooden board on the foam and cut the foam to size with a cake knife, staying square.",
+      "start_s": 68.0,
+      "end_s": 108.27,
+      "keyframe_s": null,
+      "target_part": "foam pad",
+      "sam_concept": "foam pad",
+      "action": "other",
+      "removes": [
+        "foam pad"
+      ],
+      "depends_on": [],
+      "screws": null,
+      "clip": null,
+      "image": null,
+      "overlay": null,
+      "warnings": [
+        "Keep fingers clear of the long blade and cut vertically to stay square."
+      ],
+      "notes": [],
+      "motion": null,
+      "evidence": [
+        {
+          "t_s": 72.0,
+          "source": "audio",
+          "text": "lege ich das Brett, welches später die Bank sein soll, einfach auf das Polster drauf"
+        },
+        {
+          "t_s": 90.0,
+          "source": "video",
+          "text": "person cuts white foam along edge of wooden board with long knife"
+        }
+      ],
+      "confidence": 0.736,
+      "review": "auto",
+      "source_index": 1
+    },
+    {
+      "index": 2,
+      "title": "Layer wood foam batting and leather",
+      "instruction": "Stack wood board on foam pad over batting and faux leather with overhang on all sides.",
+      "start_s": 108.27,
+      "end_s": 150.0,
+      "keyframe_s": null,
+      "target_part": "wooden board",
+      "sam_concept": "wooden board",
+      "action": "place",
+      "removes": [
+        "wooden board",
+        "foam pad",
+        "batting layer",
+        "faux leather cover"
+      ],
+      "depends_on": [],
+      "screws": null,
+      "clip": null,
+      "image": null,
+      "overlay": null,
+      "warnings": [],
+      "notes": [],
+      "motion": null,
+      "evidence": [
+        {
+          "t_s": 115.0,
+          "source": "audio",
+          "text": "die oberste Schicht ist die Holzplatte, billigste Holzplatte aus dem Baumarkt"
+        },
+        {
+          "t_s": 125.0,
+          "source": "video",
+          "text": "wood board sits on foam pad over white batting and beige faux leather spread on rug"
+        }
+      ],
+      "confidence": 0.528,
+      "review": "auto",
+      "source_index": 2
+    },
+    {
+      "index": 3,
+      "title": "Staple center of cover",
+      "instruction": "Pull batting then faux leather tight at center and staple twice to the board.",
+      "start_s": 150.0,
+      "end_s": 230.0,
+      "keyframe_s": null,
+      "target_part": "faux leather cover",
+      "sam_concept": "leather cover",
+      "action": "attach",
+      "removes": [
+        "faux leather cover",
+        "batting layer"
+      ],
+      "depends_on": [],
+      "screws": {
+        "count": 2,
+        "boxes": [],
+        "kind": "screw",
+        "seen_s": 200.0,
+        "where": "center of wooden board"
+      },
+      "clip": null,
+      "image": null,
+      "overlay": null,
+      "warnings": [
+        "Keep hands away from staple gun nose when firing."
+      ],
+      "notes": [],
+      "motion": null,
+      "evidence": [
+        {
+          "t_s": 180.0,
+          "source": "audio",
+          "text": "was wichtig ist wenn wir rangehen erstmal die Mitte fixieren"
+        },
+        {
+          "t_s": 198.0,
+          "source": "audio",
+          "text": "zweimal reintackern eins und und zwei, das reicht schon"
+        }
+      ],
+      "confidence": 0.54,
+      "review": "auto",
+      "source_index": 3
+    },
+    {
+      "index": 4,
+      "title": "Staple opposite side center",
+      "instruction": "Pull the faux leather tight at the center of the opposite side and staple it to the board.",
+      "start_s": 230.6,
+      "end_s": 248.0,
+      "keyframe_s": null,
+      "target_part": "faux leather cover",
+      "sam_concept": "leather cover",
+      "action": "attach",
+      "removes": [
+        "faux leather cover"
+      ],
+      "depends_on": [],
+      "screws": null,
+      "clip": null,
+      "image": null,
+      "overlay": null,
+      "warnings": [
+        "Keep fingers clear of the staple gun to avoid injury."
+      ],
+      "notes": [],
+      "motion": null,
+      "evidence": [
+        {
+          "t_s": 232.0,
+          "source": "audio",
+          "text": "Und genau das gleiche noch einmal hier"
+        }
+      ],
+      "confidence": 0.85,
+      "review": "auto",
+      "source_index": 4
+    },
+    {
+      "index": 5,
+      "title": "Fold corners square",
+      "instruction": "Fold the corner batting over the wood edge and tuck the leather into a square gift-wrap fold.",
+      "start_s": 275.0,
+      "end_s": 359.0,
+      "keyframe_s": null,
+      "target_part": "leather corner",
+      "sam_concept": "leather cover",
+      "action": "place",
+      "removes": [
+        "faux leather cover"
+      ],
+      "depends_on": [],
+      "screws": null,
+      "clip": null,
+      "image": null,
+      "overlay": null,
+      "warnings": [
+        "Do not cut the leather at the edge that must protect the wood corner."
+      ],
+      "notes": [],
+      "motion": null,
+      "evidence": [
+        {
+          "t_s": 300.0,
+          "source": "audio",
+          "text": "dann kann ich das hier ordentlich hier rüberziehen"
+        },
+        {
+          "t_s": 310.0,
+          "source": "audio",
+          "text": "lege diesen überstehenden Ding hier schön längs rein"
+        }
+      ],
+      "confidence": 0.516,
+      "review": "auto",
+      "source_index": 5
+    },
+    {
+      "index": 6,
+      "title": "Staple corner fold",
+      "instruction": "Hold the folded corner tight and drive two staples to fix it.",
+      "start_s": 359.6,
+      "end_s": 394.67,
+      "keyframe_s": null,
+      "target_part": "leather corner",
+      "sam_concept": "leather cover",
+      "action": "attach",
+      "removes": [
+        "faux leather cover"
+      ],
+      "depends_on": [],
+      "screws": {
+        "count": 2,
+        "boxes": [],
+        "kind": "screw",
+        "seen_s": 373.0,
+        "where": "corner of wooden board"
+      },
+      "clip": null,
+      "image": null,
+      "overlay": null,
+      "warnings": [
+        "Hold fabric taut but keep fingers clear of stapling point."
+      ],
+      "notes": [],
+      "motion": null,
+      "evidence": [
+        {
+          "t_s": 363.0,
+          "source": "audio",
+          "text": "so die tacker ich jetzt nicht die tackere ich mir jetzt hier fest"
+        },
+        {
+          "t_s": 372.0,
+          "source": "audio",
+          "text": "einmal tackern zweimal tackern dann hebt es"
+        }
+      ],
+      "confidence": 0.54,
+      "review": "auto",
+      "source_index": 6
+    },
+    {
+      "index": 7,
+      "title": "Tension staple and trim excess",
+      "instruction": "Re-tension the cover all around, staple evenly, and trim overlapping bulges with a carpet knife.",
+      "start_s": 394.9,
+      "end_s": 457.07,
+      "keyframe_s": null,
+      "target_part": "faux leather cover",
+      "sam_concept": "leather cover",
+      "action": "other",
+      "removes": [
+        "faux leather cover"
+      ],
+      "depends_on": [],
+      "screws": {
+        "count": 10,
+        "boxes": [],
+        "kind": "screw",
+        "seen_s": 430.0,
+        "where": "along sides of wooden board"
+      },
+      "clip": null,
+      "image": null,
+      "overlay": null,
+      "warnings": [
+        "Cut away from the finished front to avoid tearing through; blade is very sharp."
+      ],
+      "notes": [],
+      "motion": null,
+      "evidence": [
+        {
+          "t_s": 406.0,
+          "source": "audio",
+          "text": "trotzdem werde ich jetzt alles alles schön nachspannen"
+        },
+        {
+          "t_s": 412.0,
+          "source": "audio",
+          "text": "die schneide ich jetzt mit dem Teppichmesser mir so raus wie ich es nicht brauche"
+        }
+      ],
+      "confidence": 0.492,
+      "review": "needs_review",
+      "source_index": 7
+    }
+  ],
+  "checks": [
+    "Low confidence, please review steps: 7."
+  ]
+}

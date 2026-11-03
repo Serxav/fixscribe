@@ -1,0 +1,58 @@
+{
+  "language": "en",
+  "intro": "This guide shows you how to replace a broken string on your harp. You will need a new wire, a toggle, pliers and a tuning key.",
+  "outro_disassemble": "Your harp is newly strung and ready to play beautifully.",
+  "outro_assemble": "Your harp is back together and ready to enjoy.",
+  "steps": [
+    {
+      "index": 1,
+      "disassemble": "Lay your harp on its back on the ground to work on it.…",
+      "assemble": "Lift the harp upright off the ground. You will stand it back up…"
+    },
+    {
+      "index": 2,
+      "disassemble": "Pull the old broken string off the harp and save it for reuse. The sharp broken end can prick you, so handle it carefully.",
+      "assemble": "Place the old broken string back onto the harp. You will refit it in position."
+    },
+    {
+      "index": 3,
+      "disassemble": "Turn the harp down onto its right side so you can reach the pin, shoe and back. It is heavy, so support it while you turn it to stop it falling.",
+      "assemble": "Turn the harp back onto its back. You will lay it flat again."
+    },
+    {
+      "index": 4,
+      "disassemble": "Feed the new wire off the reel into the front hole and grab it through the back hole. The sharp end can cut your fingers, so feed it carefully.",
+      "assemble": "Pull the new wire back out through the front hole. You will remove it from the harp."
+    },
+    {
+      "index": 5,
+      "disassemble": "Loop the wire once around the toggle and fold it back in a hairpin. Tighten the knot with pliers as you hold it secure.",
+      "assemble": "Untie the knot and slide the toggle off the wire. You will free the wire end."
+    },
+    {
+      "index": 6,
+      "disassemble": "Tighten the toggle knot firmly with pliers. Pull the wire through as you seat the toggle in place.",
+      "assemble": "Loosen the toggle knot with pliers and push the toggle out of its seat. You will leave it loose."
+    },
+    {
+      "index": 7,
+      "disassemble": "Cut the wire about five centimeters above the pin and bend a small hook. The sharp end can cut you, so handle it carefully.",
+      "assemble": "Straighten the small hook and rejoin the cut wire. You will leave a straight length for removal."
+    },
+    {
+      "index": 8,
+      "disassemble": "Turn the harp back upright. It is heavy, so support it while…",
+      "assemble": "Tip the harp back down onto its back. You will lay the…"
+    },
+    {
+      "index": 9,
+      "disassemble": "Hook the wire hook onto the tuning pin. Hold it steady as…",
+      "assemble": "Lift the wire hook off the tuning pin. You will free it…"
+    },
+    {
+      "index": 10,
+      "disassemble": "Wind the string up with the tuning key and bring it to pitch. The string is under tension and can snap, so keep your face clear and do not over-tighten.",
+      "assemble": "Unwind the string with the tuning key to release tension. You will leave it slack."
+    }
+  ]
+}

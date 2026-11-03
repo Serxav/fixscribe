@@ -1,0 +1,51 @@
+{
+  "steps": [
+    {
+      "index": 5,
+      "start_s": 109.1,
+      "end_s": 129.0,
+      "instruction": "Loop the wire once around the toggle, fold it back in a hairpin and tighten the knot with pliers.",
+      "action": "other",
+      "removes": [],
+      "screw_count": 0,
+      "warnings": [],
+      "confidence": 0.75
+    },
+    {
+      "index": 6,
+      "start_s": 127.5,
+      "end_s": 142.5,
+      "instruction": "Tighten the toggle knot with pliers and pull the wire through to seat the toggle.",
+      "action": "attach",
+      "removes": [],
+      "screw_count": 0,
+      "warnings": [],
+      "confidence": 0.9
+    },
+    {
+      "index": 7,
+      "start_s": 143.4,
+      "end_s": 154.4,
+      "instruction": "Cut the wire about 5 cm above the pin and bend a small hook.",
+      "action": "other",
+      "removes": [],
+      "screw_count": 0,
+      "warnings": [
+        "Sharp wire end can cause cuts - handle carefully."
+      ],
+      "confidence": 0.9
+    },
+    {
+      "index": 9,
+      "start_s": 159.3,
+      "end_s": 161.9,
+      "instruction": "Hook the wire hook onto the tuning pin.",
+      "action": "attach",
+      "removes": [],
+      "screw_count": 0,
+      "warnings": [],
+      "confidence": 0.9
+    }
+  ],
+  "skipped": []
+}

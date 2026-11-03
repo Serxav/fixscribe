@@ -1,0 +1,102 @@
+{
+  "part": "leather cover",
+  "tries": [
+    {
+      "t_s": 238.41,
+      "box": [
+        0,
+        440,
+        1000,
+        780
+      ],
+      "confidence": 0.233,
+      "fill": 0.402,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 236.62,
+      "box": [
+        0,
+        445,
+        1000,
+        800
+      ],
+      "confidence": 0.199,
+      "fill": 0.804,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 234.84,
+      "box": [
+        0,
+        490,
+        1000,
+        825
+      ],
+      "confidence": 0.613,
+      "fill": 0.56,
+      "why": "Green box/magenta outline spans full width including patterned mat, hands and stapler, not clearly isolating the beige faux-leather surface at x~400 y~460; shape covers mostly background/hands rather than the leather cover.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 238.41,
+      "check": "last look, blur forgiven",
+      "box": [
+        12,
+        110,
+        1000,
+        887
+      ],
+      "confidence": 0.797,
+      "fill": 0.769,
+      "why": "Magenta shape does not follow the tan leather cover edges; it spans wide to include large areas of red patterned mat/background on left/right and hands/tool at center, so it covers mostly something other than the leather cover.",
+      "result": "Spark rejected the cut-out"
+    }
+  ],
+  "zoom": [
+    0,
+    363,
+    1000,
+    825
+  ],
+  "review": {
+    "confidence": 0.9,
+    "end_s": 238.4,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      5,
+      4,
+      6
+    ],
+    "points": [],
+    "start_s": 231.6,
+    "work_frame": 6,
+    "work_x": 400,
+    "work_y": 460
+  },
+  "close_ups": [
+    {
+      "t_s": 236.62,
+      "spot": [
+        399,
+        574
+      ],
+      "crop": [
+        199,
+        218,
+        599,
+        929
+      ],
+      "box": [
+        0,
+        395,
+        1000,
+        755
+      ],
+      "name": "leather cover",
+      "result": "the part is bigger than the close-up"
+    }
+  ]
+}

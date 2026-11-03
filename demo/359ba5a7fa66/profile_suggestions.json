@@ -1,0 +1,51 @@
+{
+  "category": "furniture",
+  "object_name": "bench seat cushion",
+  "suggestions": [
+    {
+      "field": "parts",
+      "value": "wooden board",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "foam pad",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "batting layer",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "faux leather cover",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "staple",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "leather corner",
+      "seen_in": "step 5: Fold corners square"
+    },
+    {
+      "field": "tools",
+      "value": "long cake knife",
+      "seen_in": "guide tools"
+    },
+    {
+      "field": "tools",
+      "value": "staple gun with 8mm staples",
+      "seen_in": "guide tools"
+    },
+    {
+      "field": "tools",
+      "value": "carpet knife",
+      "seen_in": "guide tools"
+    }
+  ]
+}

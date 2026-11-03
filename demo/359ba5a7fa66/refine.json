@@ -1,0 +1,18 @@
+{
+  "steps": [
+    {
+      "index": 4,
+      "start_s": 230.6,
+      "end_s": 248.0,
+      "instruction": "Pull the faux leather tight at the center of the opposite side and staple it to the board.",
+      "action": "attach",
+      "removes": [],
+      "screw_count": 0,
+      "warnings": [
+        "Keep fingers clear of the staple gun to avoid injury."
+      ],
+      "confidence": 0.85
+    }
+  ],
+  "skipped": []
+}

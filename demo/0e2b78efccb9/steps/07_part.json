@@ -1,0 +1,103 @@
+{
+  "part": "new wire",
+  "tries": [
+    {
+      "t_s": 150.78,
+      "box": [
+        233,
+        488,
+        258,
+        576
+      ],
+      "confidence": 0.887,
+      "fill": 0.593,
+      "why": "Image is too blurry/low-resolution to clearly identify a wire or hook; magenta line traces an indistinct dark blob between fingers, not clearly visible as new wire, so doubt -> false.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 152.03,
+      "box": [
+        229,
+        424,
+        258,
+        580
+      ],
+      "confidence": 0.766,
+      "fill": 0.233,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 144.68,
+      "box": [
+        508,
+        730,
+        565,
+        916
+      ],
+      "result": "another part, away from the spot being worked on"
+    },
+    {
+      "t_s": 150.78,
+      "check": "last look, blur forgiven",
+      "box": [
+        234,
+        488,
+        255,
+        578
+      ],
+      "confidence": 0.895,
+      "fill": 0.655,
+      "why": "Magenta shape is a small vertical elongated object pinched between fingers at the expected work point, consistent with the new wire being cut/hooked, not clearly a hand, tool, mat or shadow.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.78,
+    "end_s": 153.3,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      8,
+      9,
+      3
+    ],
+    "points": [],
+    "start_s": 147.2,
+    "work_frame": 8,
+    "work_x": 244,
+    "work_y": 574
+  },
+  "close_ups": [
+    {
+      "t_s": 150.78,
+      "spot": [
+        244,
+        574
+      ],
+      "crop": [
+        44,
+        218,
+        444,
+        929
+      ],
+      "box": [
+        470,
+        392,
+        530,
+        512
+      ],
+      "name": "new wire",
+      "confidence": 0.91,
+      "fill": 0.594,
+      "why": "Magenta blob is a thick blurry region between fingers, not a clearly visible thin wire; it covers background/shadow and blur rather than a distinct wire shape.",
+      "result": "Spark rejected the cut-out"
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "part": "metal cover",
+  "tries": [
+    {
+      "t_s": 129.05,
+      "box": [
+        798,
+        306,
+        872,
+        470
+      ],
+      "confidence": 0.66,
+      "fill": 0.985,
+      "why": "Magenta outline covers mostly black gloved fingers, with only a small silver fragment visible. It does not clearly isolate the metal SSD shield/shroud, so it is mostly hand, not the part.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 120.37,
+      "box": [
+        790,
+        256,
+        877,
+        430
+      ],
+      "confidence": 0.914,
+      "fill": 0.687,
+      "why": "magenta outline tightly traces the silver crinkled metal SSD shield cover visible on the board",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.88,
+    "end_s": 132.0,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      1,
+      2,
+      5
+    ],
+    "points": [],
+    "start_s": 127.4,
+    "work_frame": 7,
+    "work_x": 830,
+    "work_y": 445
+  },
+  "close_ups": [
+    {
+      "t_s": 120.37,
+      "spot": [
+        830,
+        445
+      ],
+      "crop": [
+        600,
+        89,
+        1000,
+        800
+      ],
+      "box": [
+        420,
+        425,
+        730,
+        565
+      ],
+      "name": "SSD shroud",
+      "result": "another part is under the tool"
+    },
+    {
+      "t_s": 129.05,
+      "spot": [
+        830,
+        445
+      ],
+      "crop": [
+        600,
+        89,
+        1000,
+        800
+      ],
+      "box": [
+        470,
+        461,
+        774,
+        578
+      ],
+      "name": "SSD shroud",
+      "result": "another part is under the tool"
+    }
+  ]
+}
