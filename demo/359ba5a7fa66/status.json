@@ -1,0 +1,12 @@
+{
+  "job_id": "359ba5a7fa66",
+  "state": "done",
+  "stage": null,
+  "progress": 1.0,
+  "error": null,
+  "warnings": [],
+  "created_at": "2026-11-03T16:50:18+00:00",
+  "updated_at": "2026-11-03T17:29:24+00:00",
+  "kind": "guide",
+  "reference_job": null
+}

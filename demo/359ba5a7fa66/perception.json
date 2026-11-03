@@ -1,0 +1,225 @@
+{
+  "steps": [
+    {
+      "index": 1,
+      "part": {
+        "concept": "foam pad",
+        "box": {
+          "x": 0.369,
+          "y": 0.528,
+          "w": 0.483,
+          "h": 0.472
+        },
+        "confidence": 0.945,
+        "t_s": 90.28,
+        "area": {
+          "x": 0.288,
+          "y": 0.0,
+          "w": 0.66,
+          "h": 1.0
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 67.8,
+        "end_s": 104.9,
+        "confidence": 0.93
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/01_overlay.jpg",
+      "sam_calls": 1,
+      "notes": []
+    },
+    {
+      "index": 2,
+      "part": null,
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 108.2,
+        "end_s": 150.1,
+        "confidence": 0.88
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/02_overlay.jpg",
+      "sam_calls": 4,
+      "notes": [
+        "The wooden board could not be proven on any frame of this step."
+      ]
+    },
+    {
+      "index": 3,
+      "part": null,
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 186.5,
+        "end_s": 228.5,
+        "confidence": 0.9
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [
+        {
+          "id": "S1",
+          "number": 1,
+          "box": {
+            "x": 0.445,
+            "y": 0.531,
+            "w": 0.056,
+            "h": 0.056
+          },
+          "confidence": null,
+          "pointed": true,
+          "tracked": false
+        }
+      ],
+      "overlay": "steps/03_overlay.jpg",
+      "sam_calls": 15,
+      "notes": [
+        "The leather cover could not be proven on any frame of this step.",
+        "0 of 2 screws put in are clearly visible in the video; the count comes from the analysis."
+      ]
+    },
+    {
+      "index": 4,
+      "part": null,
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 231.6,
+        "end_s": 238.4,
+        "confidence": 0.9
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/04_overlay.jpg",
+      "sam_calls": 4,
+      "notes": [
+        "The leather cover could not be proven on any frame of this step."
+      ]
+    },
+    {
+      "index": 5,
+      "part": {
+        "concept": "leather side panel",
+        "box": {
+          "x": 0.379,
+          "y": 0.672,
+          "w": 0.097,
+          "h": 0.143
+        },
+        "confidence": 0.648,
+        "t_s": 350.3,
+        "area": {
+          "x": 0.288,
+          "y": 0.491,
+          "w": 0.269,
+          "h": 0.477
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 284.0,
+        "end_s": 357.3,
+        "confidence": 0.92
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/05_overlay.jpg",
+      "sam_calls": 1,
+      "notes": []
+    },
+    {
+      "index": 6,
+      "part": {
+        "concept": "leather corner",
+        "box": {
+          "x": 0.282,
+          "y": 0.35,
+          "w": 0.24,
+          "h": 0.345
+        },
+        "confidence": 0.957,
+        "t_s": 375.51,
+        "area": {
+          "x": 0.25,
+          "y": 0.35,
+          "w": 0.291,
+          "h": 0.517
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 359.5,
+        "end_s": 392.1,
+        "confidence": 0.92
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [
+        {
+          "id": "S2",
+          "number": 1,
+          "box": {
+            "x": 0.528,
+            "y": 0.677,
+            "w": 0.056,
+            "h": 0.056
+          },
+          "confidence": null,
+          "pointed": true,
+          "tracked": false
+        },
+        {
+          "id": "S3",
+          "number": 2,
+          "box": {
+            "x": 0.541,
+            "y": 0.64,
+            "w": 0.056,
+            "h": 0.056
+          },
+          "confidence": null,
+          "pointed": true,
+          "tracked": false
+        }
+      ],
+      "overlay": "steps/06_overlay.jpg",
+      "sam_calls": 8,
+      "notes": [
+        "0 of 2 screws put in are clearly visible in the video; the count comes from the analysis."
+      ]
+    },
+    {
+      "index": 7,
+      "part": null,
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 396.0,
+        "end_s": 456.3,
+        "confidence": 0.9
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/07_overlay.jpg",
+      "sam_calls": 14,
+      "notes": [
+        "The leather cover could not be proven on any frame of this step.",
+        "0 of 10 screws put in are clearly visible in the video; the count comes from the analysis."
+      ]
+    }
+  ],
+  "sam_calls": 47
+}

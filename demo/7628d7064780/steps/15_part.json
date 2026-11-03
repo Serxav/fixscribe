@@ -1,0 +1,58 @@
+{
+  "part": "open buttons",
+  "tries": [],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.92,
+    "end_s": 448.4,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      11,
+      10,
+      9
+    ],
+    "points": [],
+    "start_s": 439.2,
+    "work_frame": 10,
+    "work_x": 825,
+    "work_y": 840
+  },
+  "close_ups": [
+    {
+      "t_s": 448.4,
+      "spot": null,
+      "result": "the spot could not be followed to this frame"
+    },
+    {
+      "t_s": 447.38,
+      "spot": [
+        825,
+        840
+      ],
+      "crop": [
+        600,
+        288,
+        1000,
+        1000
+      ],
+      "box": [
+        200,
+        325,
+        840,
+        945
+      ],
+      "name": "open button",
+      "confidence": 0.797,
+      "fill": 0.486,
+      "why": "Circular gray button clearly visible with outer edge followed by magenta outline; finger occludes right side but the segmented shape is unmistakably the button, not hand/mat/shadow.",
+      "result": "kept"
+    }
+  ]
+}

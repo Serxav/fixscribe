@@ -1,0 +1,352 @@
+{
+  "title": "Disassemble Dell Latitude 7455 - Cover, Battery, SSD and Wi-Fi",
+  "device": "Dell Latitude 7455 laptop",
+  "summary": "Open the Dell Latitude 7455 by removing the 7-screw bottom cover, disconnecting and removing the 54Wh battery, then accessing the 2230 SSD shield and Wi-Fi cover for inspection.",
+  "difficulty": "medium",
+  "estimated_minutes": 15,
+  "tools": [
+    "Phillips screwdriver",
+    "thin plastic pry tool",
+    "anti-static gloves"
+  ],
+  "parts": [
+    "back cover",
+    "battery",
+    "SSD shield",
+    "SSD",
+    "Wi-Fi shield",
+    "cooling assembly"
+  ],
+  "warnings": [
+    "Power off and unplug the laptop before opening.",
+    "Disconnect the battery before touching other components.",
+    "Keep tiny screws sorted by size and location."
+  ],
+  "steps": [
+    {
+      "source_index": null,
+      "title": "Unscrew seven bottom cover screws",
+      "instruction": "Undo the seven Phillips-head screws around the bottom cover, leaving the two captive screws at the top edge in place.",
+      "start_s": 1.8,
+      "end_s": 20.0,
+      "target_part": "bottom cover screws",
+      "sam_concept": "back cover",
+      "action": "unscrew",
+      "removes": [
+        "back cover screws"
+      ],
+      "screw_count": 7,
+      "fastener_s": 12.0,
+      "fastener_where": "around perimeter of bottom cover",
+      "warnings": [
+        "Do not force the two captive screws out; they stay in the cover."
+      ],
+      "evidence": [
+        {
+          "t_s": 6.0,
+          "source": "audio",
+          "text": "To open this this compact device you have to undo seven Phillips head screws."
+        },
+        {
+          "t_s": 12.0,
+          "source": "video",
+          "text": "Bottom of closed laptop showing screws around edge"
+        }
+      ],
+      "confidence": 0.95
+    },
+    {
+      "source_index": null,
+      "title": "Pry off bottom cover",
+      "instruction": "Pry the sides and front with a thin plastic tool, release the back last, then lift the bottom cover off.",
+      "start_s": 20.0,
+      "end_s": 39.0,
+      "target_part": "back cover",
+      "sam_concept": "back cover",
+      "action": "pry",
+      "removes": [
+        "back cover"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Use plastic tool only to avoid bending the thin cover or breaking clips."
+      ],
+      "evidence": [
+        {
+          "t_s": 23.0,
+          "source": "audio",
+          "text": "Pry the sides and the front with a thin plastic tool the back should be last."
+        },
+        {
+          "t_s": 30.0,
+          "source": "video",
+          "text": "Blue plastic tool inserted along side and front edge of bottom cover"
+        }
+      ],
+      "confidence": 0.92
+    },
+    {
+      "source_index": null,
+      "title": "Disconnect battery cable",
+      "instruction": "Unplug the battery connector from the main board.",
+      "start_s": 39.0,
+      "end_s": 47.0,
+      "target_part": "battery connector",
+      "sam_concept": "battery cable",
+      "action": "disconnect",
+      "removes": [
+        "battery connector"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Always disconnect battery first to avoid short circuit on the board."
+      ],
+      "evidence": [
+        {
+          "t_s": 43.0,
+          "source": "audio",
+          "text": "this machine has a 54 watt hour battery to take it out unplug the connector from the main board"
+        }
+      ],
+      "confidence": 0.94
+    },
+    {
+      "source_index": null,
+      "title": "Unscrew battery",
+      "instruction": "Undo the five Phillips-head screws securing the battery to the base.",
+      "start_s": 47.0,
+      "end_s": 82.0,
+      "target_part": "battery screws",
+      "sam_concept": "laptop battery",
+      "action": "unscrew",
+      "removes": [
+        "battery screws"
+      ],
+      "screw_count": 5,
+      "fastener_s": 60.0,
+      "fastener_where": "five points securing battery to base",
+      "warnings": [
+        "Keep battery screws sorted; do not puncture the battery pack."
+      ],
+      "evidence": [
+        {
+          "t_s": 49.0,
+          "source": "audio",
+          "text": "and undo the five Phillips head screws that secure the unit to the base."
+        },
+        {
+          "t_s": 60.0,
+          "source": "video",
+          "text": "Screwdriver turning screws securing black battery pack"
+        }
+      ],
+      "confidence": 0.93
+    },
+    {
+      "source_index": null,
+      "title": "Remove battery",
+      "instruction": "Lift the 54Wh battery pack out of the chassis.",
+      "start_s": 82.0,
+      "end_s": 89.0,
+      "target_part": "battery",
+      "sam_concept": "laptop battery",
+      "action": "remove",
+      "removes": [
+        "battery"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Lift by edges; do not bend the battery."
+      ],
+      "evidence": [
+        {
+          "t_s": 84.0,
+          "source": "video",
+          "text": "Hands lifting black Dell 54Wh battery pack out of chassis"
+        }
+      ],
+      "confidence": 0.9
+    },
+    {
+      "source_index": null,
+      "title": "Inspect soldered memory",
+      "instruction": "Inspect the soldered LPDDR5X memory on the board.",
+      "start_s": 89.0,
+      "end_s": 99.0,
+      "target_part": "soldered memory",
+      "sam_concept": "memory chip",
+      "action": "inspect",
+      "removes": [],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [],
+      "evidence": [
+        {
+          "t_s": 92.0,
+          "source": "audio",
+          "text": "The memory is solid. You get 16 or 32 gigabytes of LPDDR5X 8448 megahertz RAM."
+        }
+      ],
+      "confidence": 0.88
+    },
+    {
+      "source_index": null,
+      "title": "Unscrew SSD shield",
+      "instruction": "Undo the single screw holding the SSD metal plate.",
+      "start_s": 99.0,
+      "end_s": 122.0,
+      "target_part": "SSD metal cover",
+      "sam_concept": "metal shield",
+      "action": "unscrew",
+      "removes": [
+        "SSD shield screw"
+      ],
+      "screw_count": 1,
+      "fastener_s": 115.0,
+      "fastener_where": "single screw on SSD metal plate",
+      "warnings": [
+        "Hold the small shield to prevent it springing away."
+      ],
+      "evidence": [
+        {
+          "t_s": 105.0,
+          "source": "audio",
+          "text": "For storage there is just one M.2 slot compatible with the shortest 2230 Gen 4 SSDs. The NVMe is covered covered by a metal plate that is held in place by a single screw."
+        },
+        {
+          "t_s": 115.0,
+          "source": "video",
+          "text": "Screwdriver on small metal SSD cover on right side of board"
+        }
+      ],
+      "confidence": 0.92
+    },
+    {
+      "source_index": null,
+      "title": "Remove SSD shield",
+      "instruction": "Pull the SSD shroud forward and lift it off to expose the thermal pad inside.",
+      "start_s": 122.0,
+      "end_s": 135.0,
+      "target_part": "SSD metal cover",
+      "sam_concept": "metal shield",
+      "action": "remove",
+      "removes": [
+        "SSD shield"
+      ],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [
+        "Pull forward, not up, to avoid damaging the M.2 slot."
+      ],
+      "evidence": [
+        {
+          "t_s": 124.0,
+          "source": "audio",
+          "text": "After undoing it you have to pull the shroud forward."
+        },
+        {
+          "t_s": 130.0,
+          "source": "audio",
+          "text": "The metal cap houses a thermal pad on the on the inside."
+        }
+      ],
+      "confidence": 0.9
+    },
+    {
+      "source_index": null,
+      "title": "Locate Wi-Fi card",
+      "instruction": "Locate the Wi-Fi card close to the cooling fan.",
+      "start_s": 147.0,
+      "end_s": 155.0,
+      "target_part": "Wi-Fi card",
+      "sam_concept": "wireless card",
+      "action": "inspect",
+      "removes": [],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [],
+      "evidence": [
+        {
+          "t_s": 149.0,
+          "source": "audio",
+          "text": "The Wi-Fi card is placed close to the cooling fan."
+        },
+        {
+          "t_s": 152.0,
+          "source": "video",
+          "text": "Finger pointing to small metal Wi-Fi cover near fan"
+        }
+      ],
+      "confidence": 0.89
+    },
+    {
+      "source_index": null,
+      "title": "Remove Wi-Fi cover",
+      "instruction": "Undo the screw and slide the small Wi-Fi plate to the left to remove it.",
+      "start_s": 155.0,
+      "end_s": 175.0,
+      "target_part": "Wi-Fi card cover",
+      "sam_concept": "metal cover",
+      "action": "remove",
+      "removes": [
+        "Wi-Fi shield"
+      ],
+      "screw_count": 1,
+      "fastener_s": 158.0,
+      "fastener_where": "on small Wi-Fi cover plate",
+      "warnings": [
+        "Slide left gently; do not pull antenna wires."
+      ],
+      "evidence": [
+        {
+          "t_s": 157.0,
+          "source": "audio",
+          "text": "The removal of the metal cover here is similar to the one of the SSD but this time around you have to slide the small plate to the left"
+        },
+        {
+          "t_s": 161.0,
+          "source": "audio",
+          "text": "there is also a small cooling pad beneath it"
+        }
+      ],
+      "confidence": 0.88
+    },
+    {
+      "source_index": null,
+      "title": "Inspect thermal system",
+      "instruction": "Inspect the fan, single long heat pipe, heatsink and heat spreader.",
+      "start_s": 176.0,
+      "end_s": 191.0,
+      "target_part": "thermal system",
+      "sam_concept": "cooling fan",
+      "action": "inspect",
+      "removes": [],
+      "screw_count": 0,
+      "fastener_s": 0.0,
+      "fastener_where": "",
+      "warnings": [],
+      "evidence": [
+        {
+          "t_s": 180.0,
+          "source": "audio",
+          "text": "The thermal system is as as simple as it gets one fan a single long heat pipe one heat sink and a large heat heat spreader"
+        },
+        {
+          "t_s": 186.0,
+          "source": "video",
+          "text": "Close-up of fan, long heat pipe and heatsink across board"
+        }
+      ],
+      "confidence": 0.9
+    }
+  ]
+}

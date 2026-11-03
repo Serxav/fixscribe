@@ -1,0 +1,845 @@
+{
+  "title": "Make a Bench Seat Cushion",
+  "device": "bench seat cushion",
+  "summary": "Build a bench cushion by cutting foam to the wood board size, layering board, foam, batting and faux leather, stapling centers, folding square corners, stapling them, then re-tensioning, stapling all around and trimming excess.",
+  "difficulty": "easy",
+  "estimated_minutes": 45,
+  "mode": "narrated",
+  "language": "de",
+  "duration_s": 493.566667,
+  "tools": [
+    "long cake knife",
+    "staple gun with 8mm staples",
+    "carpet knife"
+  ],
+  "parts": [
+    "wooden board",
+    "foam pad",
+    "batting layer",
+    "faux leather cover",
+    "staple"
+  ],
+  "warnings": [
+    "Clear the work area before starting.",
+    "Get help before lifting heavy panels.",
+    "Keep small fasteners away from children.",
+    "Sharp knives can cut skin.",
+    "Staple gun can cause injury if fired at fingers."
+  ],
+  "steps": [
+    {
+      "index": 1,
+      "title": "Cut foam to board size",
+      "instruction": "Place the wooden board on the foam and cut the foam to size with a cake knife, staying square.",
+      "start_s": 67.8,
+      "end_s": 108.23,
+      "keyframe_s": 108.23,
+      "target_part": "foam pad",
+      "sam_concept": "foam pad",
+      "action": "other",
+      "removes": [
+        "foam pad"
+      ],
+      "depends_on": [],
+      "screws": null,
+      "clip": "steps/01.mp4",
+      "image": "steps/01.jpg",
+      "overlay": "steps/01_overlay.jpg",
+      "warnings": [
+        "Keep fingers clear of the long blade and cut vertically to stay square."
+      ],
+      "notes": [],
+      "motion": {
+        "index": 1,
+        "clip": "steps/01_motion.mp4",
+        "clip_reverse": "steps/01_motion_rev.mp4",
+        "cutout": "steps/01_cutout.png",
+        "cutout_box": {
+          "x": 0.13472222222222222,
+          "y": 0.1482084690553746,
+          "w": 0.7194444444444444,
+          "h": 0.8517915309446255
+        },
+        "outline": "M175 252 L135 373 L154 998 L404 998 L414 977 L838 904 L851 845 L407 912 L286 391 L214 274 Z M206 169 L206 171 L203 174 L203 176 L201 178 L201 189 L204 192 L206 192 L210 195 L212 195 L215 199 L218 199 L228 205 L231 205 L232 207 L240 207 L240 204 L239 202 L240 194 L239 192 L239 186 L238 184 L238 181 L235 176 L235 163 L233 163 L232 161 L231 161 L229 163 L218 163 L217 164 L212 164 Z M347 150 L343 150 L342 148 L340 150 L325 150 L324 151 L311 151 L310 153 L303 153 L301 155 L288 155 L286 156 L274 156 L271 158 L281 158 L282 156 L285 158 L294 158 L296 156 L310 156 L311 155 L312 156 L315 155 L336 155 L338 153 L344 153 L347 151 Z",
+        "part": "foam pad",
+        "fasteners_tracked": 0,
+        "frames": 75,
+        "start_s": 87.78,
+        "end_s": 92.78,
+        "voice": true
+      },
+      "evidence": [
+        {
+          "t_s": 72.0,
+          "source": "audio",
+          "text": "lege ich das Brett, welches später die Bank sein soll, einfach auf das Polster drauf"
+        },
+        {
+          "t_s": 90.0,
+          "source": "video",
+          "text": "person cuts white foam along edge of wooden board with long knife"
+        }
+      ],
+      "confidence": 0.736,
+      "review": "auto",
+      "source_index": 1
+    },
+    {
+      "index": 2,
+      "title": "Layer wood foam batting and leather",
+      "instruction": "Stack wood board on foam pad over batting and faux leather with overhang on all sides.",
+      "start_s": 108.2,
+      "end_s": 150.1,
+      "keyframe_s": 146.23,
+      "target_part": "wooden board",
+      "sam_concept": "wooden board",
+      "action": "place",
+      "removes": [
+        "wooden board",
+        "foam pad",
+        "batting layer",
+        "faux leather cover"
+      ],
+      "depends_on": [],
+      "screws": null,
+      "clip": "steps/02.mp4",
+      "image": "steps/02.jpg",
+      "overlay": "steps/02_overlay.jpg",
+      "warnings": [],
+      "notes": [],
+      "motion": null,
+      "evidence": [
+        {
+          "t_s": 115.0,
+          "source": "audio",
+          "text": "die oberste Schicht ist die Holzplatte, billigste Holzplatte aus dem Baumarkt"
+        },
+        {
+          "t_s": 125.0,
+          "source": "video",
+          "text": "wood board sits on foam pad over white batting and beige faux leather spread on rug"
+        }
+      ],
+      "confidence": 0.528,
+      "review": "auto",
+      "source_index": 2
+    },
+    {
+      "index": 3,
+      "title": "Staple center of cover",
+      "instruction": "Pull batting then faux leather tight at center and staple twice to the board.",
+      "start_s": 186.5,
+      "end_s": 228.5,
+      "keyframe_s": 206.23,
+      "target_part": "faux leather cover",
+      "sam_concept": "leather cover",
+      "action": "attach",
+      "removes": [
+        "faux leather cover",
+        "batting layer"
+      ],
+      "depends_on": [],
+      "screws": {
+        "count": 2,
+        "boxes": [
+          {
+            "number": 1,
+            "x": 0.445,
+            "y": 0.531,
+            "w": 0.056,
+            "h": 0.056
+          }
+        ],
+        "kind": "screw",
+        "seen_s": null,
+        "where": ""
+      },
+      "clip": "steps/03.mp4",
+      "image": "steps/03.jpg",
+      "overlay": "steps/03_overlay.jpg",
+      "warnings": [
+        "Keep hands away from staple gun nose when firing."
+      ],
+      "notes": [],
+      "motion": null,
+      "evidence": [
+        {
+          "t_s": 180.0,
+          "source": "audio",
+          "text": "was wichtig ist wenn wir rangehen erstmal die Mitte fixieren"
+        },
+        {
+          "t_s": 198.0,
+          "source": "audio",
+          "text": "zweimal reintackern eins und und zwei, das reicht schon"
+        }
+      ],
+      "confidence": 0.54,
+      "review": "auto",
+      "source_index": 3
+    },
+    {
+      "index": 4,
+      "title": "Staple opposite side center",
+      "instruction": "Pull the faux leather tight at the center of the opposite side and staple it to the board.",
+      "start_s": 231.6,
+      "end_s": 238.4,
+      "keyframe_s": 234.07,
+      "target_part": "faux leather cover",
+      "sam_concept": "leather cover",
+      "action": "attach",
+      "removes": [
+        "faux leather cover"
+      ],
+      "depends_on": [],
+      "screws": null,
+      "clip": "steps/04.mp4",
+      "image": "steps/04.jpg",
+      "overlay": "steps/04_overlay.jpg",
+      "warnings": [
+        "Keep fingers clear of the staple gun to avoid injury."
+      ],
+      "notes": [],
+      "motion": null,
+      "evidence": [
+        {
+          "t_s": 232.0,
+          "source": "audio",
+          "text": "Und genau das gleiche noch einmal hier"
+        }
+      ],
+      "confidence": 0.85,
+      "review": "auto",
+      "source_index": 4
+    },
+    {
+      "index": 5,
+      "title": "Fold corners square",
+      "instruction": "Fold the corner batting over the wood edge and tuck the leather into a square gift-wrap fold.",
+      "start_s": 284.0,
+      "end_s": 357.3,
+      "keyframe_s": 351.23,
+      "target_part": "leather corner",
+      "sam_concept": "leather cover",
+      "action": "place",
+      "removes": [
+        "faux leather cover"
+      ],
+      "depends_on": [],
+      "screws": null,
+      "clip": "steps/05.mp4",
+      "image": "steps/05.jpg",
+      "overlay": "steps/05_overlay.jpg",
+      "warnings": [
+        "Do not cut the leather at the edge that must protect the wood corner."
+      ],
+      "notes": [],
+      "motion": {
+        "index": 5,
+        "clip": "steps/05_motion.mp4",
+        "clip_reverse": "steps/05_motion_rev.mp4",
+        "cutout": "steps/05_cutout.png",
+        "cutout_box": {
+          "x": 0.3375,
+          "y": 0.19832402234636873,
+          "w": 0.6361111111111111,
+          "h": 0.4748603351955307
+        },
+        "outline": "M939 214 L924 198 L831 233 L522 430 L442 394 L400 398 L415 404 L386 413 L371 440 L383 446 L357 462 L368 479 L353 483 L344 532 L354 542 L339 570 L344 644 L386 672 L407 659 L422 669 L643 655 L928 479 L972 416 L960 408 Z M586 668 L592 668 L590 666 L588 666 Z M612 668 L619 668 L618 668 L617 666 L615 666 L614 668 Z",
+        "part": "leather side panel",
+        "fasteners_tracked": 0,
+        "frames": 75,
+        "start_s": 347.8,
+        "end_s": 352.8,
+        "voice": true
+      },
+      "evidence": [
+        {
+          "t_s": 300.0,
+          "source": "audio",
+          "text": "dann kann ich das hier ordentlich hier rüberziehen"
+        },
+        {
+          "t_s": 310.0,
+          "source": "audio",
+          "text": "lege diesen überstehenden Ding hier schön längs rein"
+        }
+      ],
+      "confidence": 0.516,
+      "review": "auto",
+      "source_index": 5
+    },
+    {
+      "index": 6,
+      "title": "Staple corner fold",
+      "instruction": "Hold the folded corner tight and drive two staples to fix it.",
+      "start_s": 359.5,
+      "end_s": 394.57,
+      "keyframe_s": 394.57,
+      "target_part": "leather corner",
+      "sam_concept": "leather cover",
+      "action": "attach",
+      "removes": [
+        "faux leather cover"
+      ],
+      "depends_on": [],
+      "screws": {
+        "count": 2,
+        "boxes": [
+          {
+            "number": 1,
+            "x": 0.528,
+            "y": 0.677,
+            "w": 0.056,
+            "h": 0.056
+          },
+          {
+            "number": 2,
+            "x": 0.541,
+            "y": 0.64,
+            "w": 0.056,
+            "h": 0.056
+          }
+        ],
+        "kind": "screw",
+        "seen_s": null,
+        "where": ""
+      },
+      "clip": "steps/06.mp4",
+      "image": "steps/06.jpg",
+      "overlay": "steps/06_overlay.jpg",
+      "warnings": [
+        "Hold fabric taut but keep fingers clear of stapling point."
+      ],
+      "notes": [],
+      "motion": {
+        "index": 6,
+        "clip": "steps/06_motion.mp4",
+        "clip_reverse": "steps/06_motion_rev.mp4",
+        "cutout": "steps/06_cutout.png",
+        "cutout_box": {
+          "x": 0.13472222222222222,
+          "y": 0.0,
+          "w": 0.8138888888888889,
+          "h": 0.6708333333333333
+        },
+        "outline": "M135 0 L322 342 L443 622 L476 669 L525 633 L588 654 L918 481 L933 435 L947 442 L817 254 L596 4 Z",
+        "part": "leather corner",
+        "fasteners_tracked": 0,
+        "frames": 75,
+        "start_s": 373.01,
+        "end_s": 378.01,
+        "voice": true
+      },
+      "evidence": [
+        {
+          "t_s": 363.0,
+          "source": "audio",
+          "text": "so die tacker ich jetzt nicht die tackere ich mir jetzt hier fest"
+        },
+        {
+          "t_s": 372.0,
+          "source": "audio",
+          "text": "einmal tackern zweimal tackern dann hebt es"
+        }
+      ],
+      "confidence": 0.54,
+      "review": "auto",
+      "source_index": 6
+    },
+    {
+      "index": 7,
+      "title": "Tension staple and trim excess",
+      "instruction": "Re-tension the cover all around, staple evenly, and trim overlapping bulges with a carpet knife.",
+      "start_s": 396.0,
+      "end_s": 456.3,
+      "keyframe_s": 413.87,
+      "target_part": "faux leather cover",
+      "sam_concept": "leather cover",
+      "action": "other",
+      "removes": [
+        "faux leather cover"
+      ],
+      "depends_on": [],
+      "screws": {
+        "count": 10,
+        "boxes": [],
+        "kind": "screw",
+        "seen_s": 430.0,
+        "where": "along sides of wooden board"
+      },
+      "clip": "steps/07.mp4",
+      "image": "steps/07.jpg",
+      "overlay": "steps/07_overlay.jpg",
+      "warnings": [
+        "Cut away from the finished front to avoid tearing through; blade is very sharp."
+      ],
+      "notes": [],
+      "motion": null,
+      "evidence": [
+        {
+          "t_s": 406.0,
+          "source": "audio",
+          "text": "trotzdem werde ich jetzt alles alles schön nachspannen"
+        },
+        {
+          "t_s": 412.0,
+          "source": "audio",
+          "text": "die schneide ich jetzt mit dem Teppichmesser mir so raus wie ich es nicht brauche"
+        }
+      ],
+      "confidence": 0.492,
+      "review": "needs_review",
+      "source_index": 7
+    }
+  ],
+  "reassembly": [
+    {
+      "index": 1,
+      "source_step": 7,
+      "action": "unscrew",
+      "instruction": "Unscrew the faux leather cover. 10 screws.",
+      "parts": [
+        "faux leather cover"
+      ],
+      "screws": {
+        "count": 10,
+        "boxes": [],
+        "kind": "screw",
+        "seen_s": 430.0,
+        "where": "along sides of wooden board"
+      },
+      "warnings": []
+    },
+    {
+      "index": 2,
+      "source_step": 6,
+      "action": "detach",
+      "instruction": "Detach the faux leather cover. 2 screws (positions 1, 2 on the screw map).",
+      "parts": [
+        "faux leather cover"
+      ],
+      "screws": {
+        "count": 2,
+        "boxes": [
+          {
+            "number": 1,
+            "x": 0.528,
+            "y": 0.677,
+            "w": 0.056,
+            "h": 0.056
+          },
+          {
+            "number": 2,
+            "x": 0.541,
+            "y": 0.64,
+            "w": 0.056,
+            "h": 0.056
+          }
+        ],
+        "kind": "screw",
+        "seen_s": null,
+        "where": ""
+      },
+      "warnings": []
+    },
+    {
+      "index": 3,
+      "source_step": 5,
+      "action": "remove",
+      "instruction": "Remove the faux leather cover.",
+      "parts": [
+        "faux leather cover"
+      ],
+      "screws": null,
+      "warnings": []
+    },
+    {
+      "index": 4,
+      "source_step": 4,
+      "action": "detach",
+      "instruction": "Detach the faux leather cover.",
+      "parts": [
+        "faux leather cover"
+      ],
+      "screws": null,
+      "warnings": []
+    },
+    {
+      "index": 5,
+      "source_step": 3,
+      "action": "detach",
+      "instruction": "Detach the faux leather cover, the batting layer. 2 screws (1 on the screw map: position 1).",
+      "parts": [
+        "faux leather cover",
+        "batting layer"
+      ],
+      "screws": {
+        "count": 2,
+        "boxes": [
+          {
+            "number": 1,
+            "x": 0.445,
+            "y": 0.531,
+            "w": 0.056,
+            "h": 0.056
+          }
+        ],
+        "kind": "screw",
+        "seen_s": null,
+        "where": ""
+      },
+      "warnings": [
+        "2 screws counted but 1 located on the screw map."
+      ]
+    },
+    {
+      "index": 6,
+      "source_step": 2,
+      "action": "remove",
+      "instruction": "Remove the wooden board, the foam pad, the batting layer, the faux leather cover.",
+      "parts": [
+        "wooden board",
+        "foam pad",
+        "batting layer",
+        "faux leather cover"
+      ],
+      "screws": null,
+      "warnings": []
+    }
+  ],
+  "checks": [
+    "Low confidence, please review steps: 7.",
+    "Step 2: The wooden board could not be proven on any frame of this step.",
+    "Step 3: The leather cover could not be proven on any frame of this step.",
+    "Step 3: 0 of 2 screws put in are clearly visible in the video; the count comes from the analysis.",
+    "Step 4: The leather cover could not be proven on any frame of this step.",
+    "Step 6: 0 of 2 screws put in are clearly visible in the video; the count comes from the analysis.",
+    "Step 7: The leather cover could not be proven on any frame of this step.",
+    "Step 7: 0 of 10 screws put in are clearly visible in the video; the count comes from the analysis.",
+    "Step 3: 2 screws counted but 1 located on the screw map.",
+    "The screws count comes from the video analysis only; it has not been verified on the images yet."
+  ],
+  "inspector_log": [],
+  "identity": {
+    "object_name": "bench seat cushion",
+    "category": "furniture",
+    "brand": "",
+    "model": "",
+    "task": "assemble",
+    "problem": "",
+    "hazards": [
+      "sharp_edges"
+    ],
+    "skill": "beginner",
+    "language": "de",
+    "evidence": [
+      "Technician says he needs upholstery for a bench and pallet couch",
+      "Frames show wooden board laid on foam, batting and faux leather",
+      "Frames show hand stapler tacking the cover under the board"
+    ],
+    "confidence": 0.9
+  },
+  "safety": {
+    "level": "caution",
+    "reasons": [
+      "Hazards: sharp edges, heavy part."
+    ],
+    "prechecks": [
+      "Clear the work area before starting.",
+      "Get help before lifting heavy panels.",
+      "Keep small fasteners away from children."
+    ],
+    "blocked": []
+  },
+  "proof": {
+    "steps": [
+      {
+        "index": 1,
+        "claims": [
+          {
+            "field": "boundaries",
+            "status": "verified",
+            "sources": [
+              "scene change at 68.0 s",
+              "scene change at 108.3 s",
+              "frame by frame review: 67.8–104.9 s"
+            ]
+          },
+          {
+            "field": "instruction",
+            "status": "verified",
+            "sources": [
+              "voice 72.0 s: 'lege ich das Brett, welches später die Bank sein soll, einfach auf das Polster drauf'",
+              "video 90.0 s: person cuts white foam along edge of wooden board with long knife",
+              "voice 68.9 s: 'So, zum zuschneiden von der Polsterung ähm lege ich das Brett, welches später di'",
+              "voice 108.1 s: 'So, ähm kurz zu dem dem Aufbau, jetzt hier die oberste Schicht ist die Holzplatt'",
+              "frame by frame review: the frames show this"
+            ]
+          },
+          {
+            "field": "part",
+            "status": "verified",
+            "sources": [
+              "SAM: part 'foam pad' found (confidence 0.94)"
+            ]
+          }
+        ],
+        "score": 1.0
+      },
+      {
+        "index": 2,
+        "claims": [
+          {
+            "field": "boundaries",
+            "status": "verified",
+            "sources": [
+              "frame by frame review: 108.2–150.1 s"
+            ]
+          },
+          {
+            "field": "instruction",
+            "status": "verified",
+            "sources": [
+              "voice 115.0 s: 'die oberste Schicht ist die Holzplatte, billigste Holzplatte aus dem Baumarkt'",
+              "video 125.0 s: wood board sits on foam pad over white batting and beige faux leather spread on rug",
+              "voice 108.1 s: 'So, ähm kurz zu dem dem Aufbau, jetzt hier die oberste Schicht ist die Holzplatt'",
+              "frame by frame review: the frames show this"
+            ]
+          },
+          {
+            "field": "part",
+            "status": "unverified",
+            "sources": [
+              "SAM: no part found"
+            ]
+          }
+        ],
+        "score": 0.6666666666666666
+      },
+      {
+        "index": 3,
+        "claims": [
+          {
+            "field": "boundaries",
+            "status": "verified",
+            "sources": [
+              "frame by frame review: 186.5–228.5 s"
+            ]
+          },
+          {
+            "field": "instruction",
+            "status": "verified",
+            "sources": [
+              "voice 180.0 s: 'was wichtig ist wenn wir rangehen erstmal die Mitte fixieren'",
+              "voice 198.0 s: 'zweimal reintackern eins und und zwei, das reicht schon'",
+              "voice 108.1 s: 'So, ähm kurz zu dem dem Aufbau, jetzt hier die oberste Schicht ist die Holzplatt'",
+              "frame by frame review: the frames show this"
+            ]
+          },
+          {
+            "field": "fastener_count",
+            "status": "supported",
+            "sources": [
+              "SAM: 0 screws removed (before/after stills)",
+              "Muse Spark saw the tool stop at 1 spots: too small for SAM to cut"
+            ]
+          },
+          {
+            "field": "part",
+            "status": "unverified",
+            "sources": [
+              "SAM: no part found"
+            ]
+          }
+        ],
+        "score": 0.625
+      },
+      {
+        "index": 4,
+        "claims": [
+          {
+            "field": "boundaries",
+            "status": "verified",
+            "sources": [
+              "timecode re-check: 230.6–248.0 s",
+              "frame by frame review: 231.6–238.4 s"
+            ]
+          },
+          {
+            "field": "instruction",
+            "status": "verified",
+            "sources": [
+              "voice 232.0 s: 'Und genau das gleiche noch einmal hier'",
+              "voice 230.6 s: 'Und genau das gleiche noch einmal hier'",
+              "frame by frame review: the frames show this"
+            ]
+          },
+          {
+            "field": "part",
+            "status": "unverified",
+            "sources": [
+              "SAM: no part found"
+            ]
+          }
+        ],
+        "score": 0.6666666666666666
+      },
+      {
+        "index": 5,
+        "claims": [
+          {
+            "field": "boundaries",
+            "status": "verified",
+            "sources": [
+              "frame by frame review: 284.0–357.3 s"
+            ]
+          },
+          {
+            "field": "instruction",
+            "status": "verified",
+            "sources": [
+              "voice 300.0 s: 'dann kann ich das hier ordentlich hier rüberziehen'",
+              "voice 310.0 s: 'lege diesen überstehenden Ding hier schön längs rein'",
+              "voice 275.0 s: 'Da das Ganze recht wichtig ist und nicht ganz einfach ist wie ich immer finde, z'",
+              "voice 320.1 s: 'so und hier versuche ich nachher eine schöne Kante zu haben reinlegen man könnte'",
+              "frame by frame review: the frames show this"
+            ]
+          },
+          {
+            "field": "part",
+            "status": "verified",
+            "sources": [
+              "SAM: part 'leather side panel' found (confidence 0.65)"
+            ]
+          }
+        ],
+        "score": 1.0
+      },
+      {
+        "index": 6,
+        "claims": [
+          {
+            "field": "boundaries",
+            "status": "verified",
+            "sources": [
+              "scene change at 394.7 s",
+              "frame by frame review: 359.5–392.1 s"
+            ]
+          },
+          {
+            "field": "instruction",
+            "status": "verified",
+            "sources": [
+              "voice 363.0 s: 'so die tacker ich jetzt nicht die tackere ich mir jetzt hier fest'",
+              "voice 372.0 s: 'einmal tackern zweimal tackern dann hebt es'",
+              "voice 359.6 s: 'so die tacker ich jetzt nicht die tackere ich mir jetzt hier fest'",
+              "voice 366.2 s: 'festhalten'",
+              "frame by frame review: the frames show this"
+            ]
+          },
+          {
+            "field": "fastener_count",
+            "status": "supported",
+            "sources": [
+              "SAM: 0 screws removed (before/after stills)",
+              "Muse Spark saw the tool stop at 2 spots: too small for SAM to cut"
+            ]
+          },
+          {
+            "field": "part",
+            "status": "verified",
+            "sources": [
+              "SAM: part 'leather corner' found (confidence 0.96)"
+            ]
+          }
+        ],
+        "score": 0.875
+      },
+      {
+        "index": 7,
+        "claims": [
+          {
+            "field": "boundaries",
+            "status": "verified",
+            "sources": [
+              "scene change at 457.1 s",
+              "frame by frame review: 396.0–456.3 s"
+            ]
+          },
+          {
+            "field": "instruction",
+            "status": "verified",
+            "sources": [
+              "voice 406.0 s: 'trotzdem werde ich jetzt alles alles schön nachspannen'",
+              "voice 412.0 s: 'die schneide ich jetzt mit dem Teppichmesser mir so raus wie ich es nicht brauche'",
+              "voice 394.9 s: 'So, nachdem ich jetzt alle Ecken gemacht habe, von vorne sieht es so aus geht so'",
+              "voice 405.0 s: 'trotzdem werde ich jetzt alles alles schön nachspannen was gleichmäßig fest ist '",
+              "frame by frame review: the frames show this"
+            ]
+          },
+          {
+            "field": "fastener_count",
+            "status": "unverified",
+            "sources": [
+              "SAM: 0 screws removed (before/after stills)"
+            ]
+          },
+          {
+            "field": "part",
+            "status": "unverified",
+            "sources": [
+              "SAM: no part found"
+            ]
+          }
+        ],
+        "score": 0.5
+      }
+    ],
+    "score": 0.762
+  },
+  "direction": "assemble",
+  "narration": {
+    "language": "de",
+    "intro": "Du baust das Sitzkissen für die Bank neu auf. Räume den Arbeitsbereich frei, hole dir Hilfe für schwere Platten, halte kleine Schrauben von Kindern fern und lege dir Kuchenmesser, Tacker und Teppichmesser bereit.",
+    "outro_disassemble": "Dein neu aufgebautes Bankpolster sitzt straff und sieht großartig aus.",
+    "outro_assemble": "Alles ist sauber zerlegt und bereit für den nächsten Bezug, gut gemacht.",
+    "steps": [
+      {
+        "index": 1,
+        "disassemble": "Lege die Holzplatte auf den Schaumstoff und schneide ihn mit dem Kuchenmesser ohne Schrauben exakt gerade zu. Halte die Finger von der langen Klinge fern und schneide senkrecht, damit die Kante gerade bleibt.",
+        "assemble": "Lege das zugeschnittene Schaumstoffstück wieder von der Holzplatte weg."
+      },
+      {
+        "index": 2,
+        "disassemble": "Schichte Holzplatte, Schaumstoff, Wattevlies und Kunstleder ohne Schrauben mit Überstand an allen Seiten übereinander. Richte alles sauber mittig aus.",
+        "assemble": "Nimm Holzplatte, Schaumstoff, Wattevlies und Kunstleder wieder auseinander."
+      },
+      {
+        "index": 3,
+        "disassemble": "Ziehe Wattevlies und dann Kunstleder in der Mitte straff und befestige sie mit zwei Schrauben am Brett. Halte die Hände beim Tackern vom Gerätekopf fern.",
+        "assemble": "Entferne die zwei Schrauben und löse Kunstleder und Wattevlies wieder vom Brett."
+      },
+      {
+        "index": 4,
+        "disassemble": "Ziehe das Kunstleder an der gegenüberliegenden Mitte straff und hefte es ohne zusätzliche Schrauben mit dem Tacker am Brett fest. Halte die Finger vom Tacker fern, um Verletzungen zu vermeiden.",
+        "assemble": "Löse das Kunstleder an der gegenüberliegenden Seite wieder vom Brett."
+      },
+      {
+        "index": 5,
+        "disassemble": "Falte das Wattevlies über die Holzkante und lege das Kunstleder ohne Schrauben in einer eckigen Geschenkfalte um. Schneide das Leder an der Kante nicht ein, damit es die Holzecke schützt.",
+        "assemble": "Öffne die Eckfalte und nimm das Kunstleder wieder vom Wattevlies weg."
+      },
+      {
+        "index": 6,
+        "disassemble": "Halte die gefaltete Ecke straff und fixiere sie mit zwei Schrauben. Halte den Stoff gespannt, aber die Finger weg von der Tackerstelle.",
+        "assemble": "Entferne die zwei Schrauben und löse die Eckfalte des Kunstleders."
+      },
+      {
+        "index": 7,
+        "disassemble": "Spanne den Bezug rundum nach und befestige ihn gleichmäßig mit zehn Schrauben, dann schneide Überstände mit dem Teppichmesser ab. Schneide immer von der fertigen Vorderseite weg, die Klinge ist sehr scharf.",
+        "assemble": "Entferne die zehn Schrauben und löse den Bezug rundum, lege abgeschnittene Überstände zurück."
+      }
+    ]
+  }
+}

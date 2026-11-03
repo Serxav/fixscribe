@@ -1,0 +1,124 @@
+{
+  "part": "new string",
+  "tries": [
+    {
+      "t_s": 164.76,
+      "box": [
+        40,
+        130,
+        390,
+        270
+      ],
+      "confidence": 0.461,
+      "fill": 0.453,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 195.41,
+      "box": [
+        130,
+        210,
+        412,
+        262
+      ],
+      "confidence": 0.436,
+      "fill": 0.469,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 192.62,
+      "box": [
+        150,
+        235,
+        420,
+        255
+      ],
+      "confidence": 0.318,
+      "fill": 0.196,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 164.76,
+      "check": "last look, blur forgiven",
+      "box": [
+        160,
+        235,
+        405,
+        325
+      ],
+      "confidence": 0.855,
+      "fill": 0.578,
+      "why": "The magenta shape outlines a fingertip/finger, clearly a hand, not a thin harp string. It covers mostly skin/nail rather than the part.",
+      "result": "Spark rejected the cut-out"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    617,
+    1000
+  ],
+  "review": {
+    "confidence": 0.9,
+    "end_s": 192.6,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      12,
+      11,
+      10
+    ],
+    "points": [],
+    "start_s": 164.8,
+    "work_frame": 1,
+    "work_x": 370,
+    "work_y": 250
+  },
+  "close_ups": [
+    {
+      "t_s": 195.41,
+      "spot": [
+        226,
+        250
+      ],
+      "crop": [
+        102,
+        30,
+        349,
+        469
+      ],
+      "box": [
+        275,
+        468,
+        590,
+        492
+      ],
+      "name": "harp string",
+      "confidence": 0.001,
+      "fill": 0.239,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 164.76,
+      "spot": [
+        228,
+        250
+      ],
+      "crop": [
+        104,
+        30,
+        351,
+        469
+      ],
+      "box": [
+        490,
+        460,
+        620,
+        540
+      ],
+      "name": "tuning pin",
+      "result": "another part is under the tool"
+    }
+  ]
+}

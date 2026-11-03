@@ -1,0 +1,81 @@
+{
+  "steps": [
+    {
+      "index": 1,
+      "clip": "steps/01_motion.mp4",
+      "clip_reverse": "steps/01_motion_rev.mp4",
+      "cutout": "steps/01_cutout.png",
+      "cutout_box": {
+        "x": 0.0,
+        "y": 0.0,
+        "w": 0.7138888888888889,
+        "h": 1.0
+      },
+      "outline": "M0 0 L0 266 L525 995 L672 998 L712 894 L704 771 L604 310 L654 0 L507 0 L489 224 L460 254 L489 266 L499 414 L396 239 L428 227 L372 204 L269 37 L294 20 Z M469 30 L446 27 L438 20 L428 30 L397 34 L406 47 L407 59 L403 67 L431 69 L436 84 L400 91 L390 81 L388 94 L394 103 L403 94 L407 99 L403 103 L408 101 L410 111 L389 123 L401 123 L404 128 L401 140 L419 165 L419 148 L424 143 L421 138 L425 131 L431 143 L456 148 L458 143 L443 128 L446 121 L456 121 L428 116 L418 101 L421 96 L439 101 L456 94 L454 67 L481 62 Z M332 67 L335 67 L336 69 L343 69 L349 79 L354 79 L356 81 L360 81 L361 84 L358 89 L354 89 L350 94 L344 94 L343 91 L342 91 L340 94 L336 94 L338 96 L346 96 L347 94 L351 94 L353 96 L365 96 L367 94 L371 94 L371 84 L369 84 L368 81 L365 81 L362 76 L362 71 L361 69 L351 69 L349 64 L344 67 L342 62 L336 62 Z",
+      "part": "harp body",
+      "fasteners_tracked": 0,
+      "frames": 75,
+      "start_s": 11.7,
+      "end_s": 16.7,
+      "voice": true
+    },
+    {
+      "index": 3,
+      "clip": "steps/03_motion.mp4",
+      "clip_reverse": "steps/03_motion_rev.mp4",
+      "cutout": "steps/03_cutout.png",
+      "cutout_box": {
+        "x": 0.0,
+        "y": 0.0,
+        "w": 0.7125,
+        "h": 1.0
+      },
+      "outline": "M0 0 L0 266 L206 547 L235 547 L335 466 L379 419 L400 379 L450 347 L447 325 L246 0 Z M610 384 L557 441 L503 480 L471 557 L346 739 L531 998 L669 998 L710 916 L711 850 L701 761 L674 645 L675 621 L664 608 Z M518 0 L500 108 L494 209 L508 195 L515 170 L524 103 L536 86 L553 108 L558 133 L557 182 L546 222 L546 236 L585 227 L606 209 L612 195 L632 89 L654 0 Z",
+      "part": "harp body",
+      "fasteners_tracked": 0,
+      "frames": 75,
+      "start_s": 69.5,
+      "end_s": 74.5,
+      "voice": true
+    },
+    {
+      "index": 7,
+      "clip": "steps/07_motion.mp4",
+      "clip_reverse": "steps/07_motion_rev.mp4",
+      "cutout": "steps/07_cutout.png",
+      "cutout_box": {
+        "x": 0.24583333333333332,
+        "y": 0.5467980295566502,
+        "w": 0.03194444444444444,
+        "h": 0.14039408866995073
+      },
+      "outline": "M261 547 L261 552 L257 564 L256 576 L253 586 L250 591 L246 608 L250 623 L253 643 L261 672 L264 677 L264 680 L268 685 L268 665 L269 663 L269 655 L274 638 L276 633 L276 626 L275 623 L275 596 L274 594 L272 574 L269 567 L269 562 L267 552 L264 547 Z",
+      "part": "new wire",
+      "fasteners_tracked": 0,
+      "frames": 75,
+      "start_s": 148.28,
+      "end_s": 153.28,
+      "voice": true
+    },
+    {
+      "index": 8,
+      "clip": "steps/08_motion.mp4",
+      "clip_reverse": "steps/08_motion_rev.mp4",
+      "cutout": "steps/08_cutout.png",
+      "cutout_box": {
+        "x": 0.0,
+        "y": 0.0,
+        "w": 1.0,
+        "h": 1.0
+      },
+      "outline": "M533 0 L502 178 L510 338 L440 282 L306 283 L136 436 L121 486 L56 469 L23 485 L12 553 L537 999 L794 999 L811 940 L831 999 L998 999 L998 886 L924 731 L945 706 L914 707 L915 671 L884 661 L897 640 L836 571 L757 372 L759 165 L819 0 Z M150 0 L0 0 L0 317 L23 307 L45 285 L68 246 L68 233 L81 222 L121 149 L140 132 L193 124 L254 106 L243 88 Z",
+      "part": "harp body",
+      "fasteners_tracked": 0,
+      "frames": 69,
+      "start_s": 154.4,
+      "end_s": 159.0,
+      "voice": true
+    }
+  ],
+  "notes": []
+}

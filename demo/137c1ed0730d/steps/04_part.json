@@ -1,0 +1,149 @@
+{
+  "part": "battery screws",
+  "tries": [
+    {
+      "t_s": 76.02,
+      "box": [
+        210,
+        847,
+        242,
+        881
+      ],
+      "confidence": 0.758,
+      "fill": 0.536,
+      "why": "Magenta shape does not show a Phillips screw head; it covers dark plastic/shadow beside the screwdriver shaft, while the actual screw being touched is under the tool tip to the right outside the magenta.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 46.23,
+      "box": [
+        217,
+        865,
+        239,
+        888
+      ],
+      "confidence": 0.727,
+      "fill": 0.446,
+      "why": "Magenta shape encloses dark plastic edge/gap with no visible Phillips screw head, so it is not clearly battery screws.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 82.34,
+      "box": [
+        248,
+        802,
+        270,
+        826
+      ],
+      "confidence": 0.883,
+      "fill": 0.54,
+      "why": "Magenta shape is a blurry overexposed white blob on the black edge, not a clearly identifiable Phillips-head battery screw. A clear Phillips screw is visible below outside the green frame, so the boxed shape is not clearly the part.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 76.02,
+      "check": "last look, blur forgiven",
+      "box": [
+        210,
+        860,
+        246,
+        894
+      ],
+      "confidence": 0.684,
+      "fill": 0.734,
+      "why": "Magenta shape is left of the screwdriver tip engagement point and covers chassis plastic, not a Phillips screw head; no screw head cross visible inside the shape.",
+      "result": "Spark rejected the cut-out"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.78,
+    "end_s": 79.2,
+    "fastener_frame": 1,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      1,
+      12,
+      8
+    ],
+    "points": [
+      {
+        "x": 195,
+        "y": 470
+      },
+      {
+        "x": 560,
+        "y": 460
+      },
+      {
+        "x": 770,
+        "y": 460
+      },
+      {
+        "x": 255,
+        "y": 745
+      },
+      {
+        "x": 740,
+        "y": 740
+      }
+    ],
+    "start_s": 69.4,
+    "work_frame": 10,
+    "work_x": 228,
+    "work_y": 877
+  },
+  "close_ups": [
+    {
+      "t_s": 46.23,
+      "spot": [
+        228,
+        876
+      ],
+      "crop": [
+        28,
+        288,
+        428,
+        1000
+      ],
+      "box": [
+        375,
+        740,
+        525,
+        810
+      ],
+      "name": "plastic frame",
+      "result": "another part is under the tool"
+    },
+    {
+      "t_s": 76.02,
+      "spot": [
+        228,
+        877
+      ],
+      "crop": [
+        28,
+        288,
+        428,
+        1000
+      ],
+      "box": [
+        480,
+        795,
+        615,
+        865
+      ],
+      "name": "battery screw",
+      "confidence": 0.727,
+      "fill": 0.376,
+      "why": "No Phillips screw head is clearly visible; magenta outline covers black plastic bracket and tool area, not a battery screw.",
+      "result": "Spark rejected the cut-out"
+    }
+  ]
+}

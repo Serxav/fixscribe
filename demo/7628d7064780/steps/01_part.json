@@ -1,0 +1,78 @@
+{
+  "part": "upper shell",
+  "tries": [
+    {
+      "t_s": 34.91,
+      "box": [
+        146,
+        15,
+        967,
+        997
+      ],
+      "confidence": 0.988,
+      "fill": 0.924,
+      "why": "The magenta outline clearly traces the gray PS1 top cover with round disc lid, SONY text and PlayStation logo, held by hands on sides, matching upper shell on the object.",
+      "result": "kept"
+    },
+    {
+      "t_s": 34.91,
+      "zoom": "whole frame",
+      "box": [
+        161,
+        15,
+        940,
+        997
+      ],
+      "confidence": 0.945,
+      "fill": 0.953,
+      "why": "Magenta outline traces the gray top cover of the PlayStation One seen from above, including disc lid with SONY logo, held at sides. Clearly the upper shell on the object, not hand/tool/mat.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    14,
+    0,
+    997,
+    1000
+  ],
+  "review": {
+    "confidence": 0.85,
+    "end_s": 42.9,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      7,
+      8,
+      9
+    ],
+    "points": [],
+    "start_s": 34.9,
+    "work_frame": 3,
+    "work_x": 155,
+    "work_y": 568
+  },
+  "close_ups": [
+    {
+      "t_s": 38.99,
+      "spot": [
+        133,
+        514
+      ],
+      "crop": [
+        0,
+        164,
+        393,
+        863
+      ],
+      "box": [
+        329,
+        0,
+        497,
+        1000
+      ],
+      "name": "upper shell",
+      "result": "the part is bigger than the close-up"
+    }
+  ]
+}

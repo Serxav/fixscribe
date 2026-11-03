@@ -1,0 +1,109 @@
+{
+  "part": "card cover",
+  "tries": [
+    {
+      "t_s": 160.93,
+      "box": [
+        471,
+        351,
+        544,
+        445
+      ],
+      "confidence": 0.594,
+      "fill": 0.626,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 156.9,
+      "box": [
+        395,
+        415,
+        505,
+        515
+      ],
+      "confidence": 0.416,
+      "fill": 0.405,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 158.05,
+      "box": [
+        420,
+        340,
+        505,
+        475
+      ],
+      "confidence": 0.781,
+      "fill": 0.596,
+      "why": "Magenta outline traces the copper metallic Wi-Fi card cover with white QR label and screw hole, clearly visible on the motherboard at the expected x=440 y=460 location.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.85,
+    "end_s": 168.3,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      3,
+      4,
+      10
+    ],
+    "points": [],
+    "start_s": 154.0,
+    "work_frame": 6,
+    "work_x": 440,
+    "work_y": 460
+  },
+  "close_ups": [
+    {
+      "t_s": 156.9,
+      "spot": [
+        439,
+        459
+      ],
+      "crop": [
+        239,
+        103,
+        639,
+        814
+      ],
+      "box": [
+        425,
+        525,
+        615,
+        575
+      ],
+      "name": "white antenna wire",
+      "result": "another part is under the tool"
+    },
+    {
+      "t_s": 160.93,
+      "spot": [
+        440,
+        460
+      ],
+      "crop": [
+        240,
+        104,
+        640,
+        815
+      ],
+      "box": [
+        440,
+        460,
+        580,
+        505
+      ],
+      "name": "antenna cable",
+      "result": "another part is under the tool"
+    }
+  ]
+}

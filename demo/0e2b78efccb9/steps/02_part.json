@@ -1,0 +1,113 @@
+{
+  "part": "old string",
+  "tries": [
+    {
+      "t_s": 61.73,
+      "box": [
+        278,
+        343,
+        421,
+        438
+      ],
+      "result": "another part, away from the spot being worked on"
+    },
+    {
+      "t_s": 62.7,
+      "box": [
+        28,
+        300,
+        86,
+        688
+      ],
+      "result": "another part, away from the spot being worked on"
+    },
+    {
+      "t_s": 65.56,
+      "box": [
+        124,
+        356,
+        263,
+        556
+      ],
+      "result": "another part, away from the spot being worked on"
+    },
+    {
+      "t_s": 61.73,
+      "check": "last look, blur forgiven",
+      "box": [
+        285,
+        343,
+        451,
+        428
+      ],
+      "result": "another part, away from the spot being worked on"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.85,
+    "end_s": 65.6,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      7,
+      9,
+      6
+    ],
+    "points": [],
+    "start_s": 58.9,
+    "work_frame": 6,
+    "work_x": 515,
+    "work_y": 550
+  },
+  "close_ups": [
+    {
+      "t_s": 62.7,
+      "spot": [
+        514,
+        550
+      ],
+      "crop": [
+        314,
+        194,
+        714,
+        905
+      ],
+      "box": [
+        120,
+        380,
+        835,
+        960
+      ],
+      "name": "wooden soundboard",
+      "result": "another part is under the tool"
+    },
+    {
+      "t_s": 61.73,
+      "spot": [
+        515,
+        550
+      ],
+      "crop": [
+        315,
+        194,
+        715,
+        905
+      ],
+      "box": [
+        410,
+        420,
+        545,
+        505
+      ],
+      "name": "wooden soundboard",
+      "result": "another part is under the tool"
+    }
+  ]
+}

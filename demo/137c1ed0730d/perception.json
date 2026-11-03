@@ -1,0 +1,452 @@
+{
+  "steps": [
+    {
+      "index": 1,
+      "part": {
+        "concept": "cover screws",
+        "box": {
+          "x": 0.893,
+          "y": 0.906,
+          "w": 0.016,
+          "h": 0.025
+        },
+        "confidence": 0.816,
+        "t_s": 19.25,
+        "area": {
+          "x": 0.0,
+          "y": 0.0,
+          "w": 1.0,
+          "h": 1.0
+        }
+      },
+      "review": {
+        "matches": false,
+        "instruction": "Display the bottom cover without unscrewing.",
+        "start_s": 3.0,
+        "end_s": 19.2,
+        "confidence": 0.9
+      },
+      "screws_before": 3,
+      "screws_after": 4,
+      "removed": [
+        {
+          "id": "S1",
+          "number": 1,
+          "box": {
+            "x": 0.094,
+            "y": 0.43,
+            "w": 0.056,
+            "h": 0.056
+          },
+          "confidence": null,
+          "pointed": true,
+          "tracked": false
+        },
+        {
+          "id": "S2",
+          "number": 2,
+          "box": {
+            "x": 0.835,
+            "y": 0.43,
+            "w": 0.056,
+            "h": 0.056
+          },
+          "confidence": null,
+          "pointed": true,
+          "tracked": false
+        },
+        {
+          "id": "S3",
+          "number": 3,
+          "box": {
+            "x": 0.055,
+            "y": 0.77,
+            "w": 0.056,
+            "h": 0.056
+          },
+          "confidence": null,
+          "pointed": true,
+          "tracked": false
+        },
+        {
+          "id": "S4",
+          "number": 4,
+          "box": {
+            "x": 0.867,
+            "y": 0.767,
+            "w": 0.056,
+            "h": 0.056
+          },
+          "confidence": null,
+          "pointed": true,
+          "tracked": false
+        }
+      ],
+      "overlay": "steps/01_overlay.jpg",
+      "sam_calls": 29,
+      "notes": [
+        "0 of 7 screws taken out are clearly visible in the video; the count comes from the analysis."
+      ]
+    },
+    {
+      "index": 2,
+      "part": {
+        "concept": "back cover",
+        "box": {
+          "x": 0.04,
+          "y": 0.03,
+          "w": 0.908,
+          "h": 0.908
+        },
+        "confidence": 0.805,
+        "t_s": 28.69,
+        "area": {
+          "x": 0.0,
+          "y": 0.0,
+          "w": 1.0,
+          "h": 1.0
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 20.8,
+        "end_s": 40.0,
+        "confidence": 0.9
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/02_overlay.jpg",
+      "sam_calls": 1,
+      "notes": []
+    },
+    {
+      "index": 3,
+      "part": null,
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 44.2,
+        "end_s": 45.0,
+        "confidence": 0.72
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/03_overlay.jpg",
+      "sam_calls": 6,
+      "notes": [
+        "The battery connector could not be proven on any frame of this step."
+      ]
+    },
+    {
+      "index": 4,
+      "part": null,
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 69.4,
+        "end_s": 79.2,
+        "confidence": 0.78
+      },
+      "screws_before": 16,
+      "screws_after": 16,
+      "removed": [
+        {
+          "id": "S5",
+          "number": 1,
+          "box": {
+            "x": 0.167,
+            "y": 0.442,
+            "w": 0.056,
+            "h": 0.056
+          },
+          "confidence": null,
+          "pointed": true,
+          "tracked": false
+        },
+        {
+          "id": "S6",
+          "number": 2,
+          "box": {
+            "x": 0.532,
+            "y": 0.432,
+            "w": 0.056,
+            "h": 0.056
+          },
+          "confidence": null,
+          "pointed": true,
+          "tracked": false
+        },
+        {
+          "id": "S7",
+          "number": 3,
+          "box": {
+            "x": 0.742,
+            "y": 0.432,
+            "w": 0.056,
+            "h": 0.056
+          },
+          "confidence": null,
+          "pointed": true,
+          "tracked": false
+        },
+        {
+          "id": "S8",
+          "number": 4,
+          "box": {
+            "x": 0.227,
+            "y": 0.717,
+            "w": 0.056,
+            "h": 0.056
+          },
+          "confidence": null,
+          "pointed": true,
+          "tracked": false
+        },
+        {
+          "id": "S9",
+          "number": 5,
+          "box": {
+            "x": 0.712,
+            "y": 0.712,
+            "w": 0.056,
+            "h": 0.056
+          },
+          "confidence": null,
+          "pointed": true,
+          "tracked": false
+        }
+      ],
+      "overlay": "steps/04_overlay.jpg",
+      "sam_calls": 16,
+      "notes": [
+        "The battery screws could not be proven on any frame of this step.",
+        "0 of 5 screws taken out are clearly visible in the video; the count comes from the analysis."
+      ]
+    },
+    {
+      "index": 5,
+      "part": {
+        "concept": "battery",
+        "box": {
+          "x": 0.113,
+          "y": 0.465,
+          "w": 0.779,
+          "h": 0.37
+        },
+        "confidence": 0.98,
+        "t_s": 83.83,
+        "area": {
+          "x": 0.0,
+          "y": 0.0,
+          "w": 1.0,
+          "h": 1.0
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 83.2,
+        "end_s": 84.9,
+        "confidence": 0.95
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/05_overlay.jpg",
+      "sam_calls": 1,
+      "notes": []
+    },
+    {
+      "index": 6,
+      "part": null,
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 92.2,
+        "end_s": 99.2,
+        "confidence": 0.9
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/06_overlay.jpg",
+      "sam_calls": 3,
+      "notes": [
+        "The soldered memory could not be proven on any frame of this step."
+      ]
+    },
+    {
+      "index": 7,
+      "part": {
+        "concept": "metal cover",
+        "box": {
+          "x": 0.788,
+          "y": 0.264,
+          "w": 0.094,
+          "h": 0.151
+        },
+        "confidence": 0.93,
+        "t_s": 98.1,
+        "area": {
+          "x": 0.6,
+          "y": 0.069,
+          "w": 0.4,
+          "h": 0.711
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 113.6,
+        "end_s": 120.3,
+        "confidence": 0.9
+      },
+      "screws_before": 16,
+      "screws_after": 16,
+      "removed": [
+        {
+          "id": "S10",
+          "number": 1,
+          "box": {
+            "x": 0.802,
+            "y": 0.407,
+            "w": 0.056,
+            "h": 0.056
+          },
+          "confidence": null,
+          "pointed": true,
+          "tracked": false
+        }
+      ],
+      "overlay": "steps/07_overlay.jpg",
+      "sam_calls": 13,
+      "notes": [
+        "0 of 1 screws taken out are clearly visible in the video; the count comes from the analysis."
+      ]
+    },
+    {
+      "index": 8,
+      "part": {
+        "concept": "metal cover",
+        "box": {
+          "x": 0.79,
+          "y": 0.256,
+          "w": 0.087,
+          "h": 0.174
+        },
+        "confidence": 0.914,
+        "t_s": 120.36999999999999,
+        "area": {
+          "x": 0.0,
+          "y": 0.0,
+          "w": 1.0,
+          "h": 1.0
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 127.4,
+        "end_s": 132.0,
+        "confidence": 0.88
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/08_overlay.jpg",
+      "sam_calls": 2,
+      "notes": []
+    },
+    {
+      "index": 9,
+      "part": null,
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 148.9,
+        "end_s": 148.9,
+        "confidence": 0.85
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/09_overlay.jpg",
+      "sam_calls": 3,
+      "notes": [
+        "The wi-fi card could not be proven on any frame of this step."
+      ]
+    },
+    {
+      "index": 10,
+      "part": {
+        "concept": "card cover",
+        "box": {
+          "x": 0.42,
+          "y": 0.34,
+          "w": 0.085,
+          "h": 0.135
+        },
+        "confidence": 0.781,
+        "t_s": 158.05,
+        "area": {
+          "x": 0.0,
+          "y": 0.0,
+          "w": 1.0,
+          "h": 1.0
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 154.0,
+        "end_s": 168.3,
+        "confidence": 0.85
+      },
+      "screws_before": 8,
+      "screws_after": 11,
+      "removed": [],
+      "overlay": "steps/10_overlay.jpg",
+      "sam_calls": 14,
+      "notes": [
+        "0 of 1 screws taken out are clearly visible in the video; the count comes from the analysis."
+      ]
+    },
+    {
+      "index": 11,
+      "part": {
+        "concept": "thermal system",
+        "box": {
+          "x": 0.05,
+          "y": 0.115,
+          "w": 0.91,
+          "h": 0.76
+        },
+        "confidence": 0.793,
+        "t_s": 186.48000000000002,
+        "area": {
+          "x": 0.0,
+          "y": 0.0,
+          "w": 1.0,
+          "h": 1.0
+        }
+      },
+      "review": {
+        "matches": true,
+        "instruction": "",
+        "start_s": 176.3,
+        "end_s": 189.2,
+        "confidence": 0.95
+      },
+      "screws_before": 0,
+      "screws_after": 0,
+      "removed": [],
+      "overlay": "steps/11_overlay.jpg",
+      "sam_calls": 1,
+      "notes": []
+    }
+  ],
+  "sam_calls": 89
+}

@@ -1,0 +1,96 @@
+{
+  "part": "cover screws",
+  "tries": [
+    {
+      "t_s": 19.25,
+      "box": [
+        873,
+        908,
+        888,
+        931
+      ],
+      "confidence": 0.492,
+      "fill": 0.472,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 10.38,
+      "box": [
+        74,
+        908,
+        92,
+        933
+      ],
+      "confidence": 0.82,
+      "fill": 0.528,
+      "why": "Visible object is a dark empty hole in white plastic with no Phillips screw head; magenta outline is offset and covers mostly white cover, not clearly a screw.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 11.92,
+      "box": [
+        873,
+        908,
+        887,
+        930
+      ],
+      "confidence": 0.512,
+      "fill": 0.511,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 19.25,
+      "check": "last look, blur forgiven",
+      "box": [
+        893,
+        906,
+        909,
+        931
+      ],
+      "confidence": 0.816,
+      "fill": 0.621,
+      "why": "Circular screw seat on light bottom cover with dark center consistent with cover screw/hole, near cover edge. Shape tightly follows screw area, not hand/tool/mat/reflection. Blur is expected and not disqualifying.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.9,
+    "end_s": 19.2,
+    "fastener_frame": 11,
+    "instruction": "Display the bottom cover without unscrewing.",
+    "matches": false,
+    "part_frames": [
+      11,
+      6,
+      7
+    ],
+    "points": [
+      {
+        "x": 122,
+        "y": 458
+      },
+      {
+        "x": 863,
+        "y": 458
+      },
+      {
+        "x": 83,
+        "y": 798
+      },
+      {
+        "x": 895,
+        "y": 795
+      }
+    ],
+    "start_s": 3.0,
+    "work_frame": 0,
+    "work_x": 0,
+    "work_y": 0
+  }
+}

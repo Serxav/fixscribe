@@ -1,0 +1,317 @@
+{
+  "steps": [
+    {
+      "index": 1,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "frame by frame review: 10.4–18.5 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "rewritten from the frame by frame review: Leave the harp resting on the ground."
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'harp body' found (confidence 0.96)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 2,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "pause at 56.4 s",
+            "pause at 67.7 s",
+            "frame by frame review: 58.9–65.6 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 57.5 s: 'The first thing I'm going to do is to pull the pull the old string off'",
+            "voice 63.0 s: 'I'm going to try and save this string because it's long enough to use use further up that octave so it can go into into my string bag.'",
+            "voice 56.8 s: 'The first thing I'm going to do is to pull the pull the old string off'",
+            "voice 62.0 s: 'I'm going to try and save this string because it's long enough to use use furthe'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "unverified",
+          "sources": [
+            "SAM: no part found"
+          ]
+        }
+      ],
+      "score": 0.6666666666666666
+    },
+    {
+      "index": 3,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "frame by frame review: 69.8–74.7 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 70.5 s: 'Then I'll turn the harp down onto its right side.'",
+            "voice 77.0 s: 'and this will give me access to all the the things I need the pin at the top the shoe at the bottom and inside the back of the harp'",
+            "voice 69.5 s: 'Then I'll turn the harp down onto its right side.'",
+            "voice 74.4 s: 'and this will give me access to all the the things I need the pin at the top the'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'harp body' found (confidence 0.84)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 4,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "pause at 88.1 s",
+            "frame by frame review: 90.7–107.2 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 89.5 s: 'so I feed the wire into the harp off the reel I don't cut it to to length first'",
+            "voice 97.0 s: 'so you see how this works you just poke it into the front'",
+            "voice 104.0 s: 'and then grab it through the hole at the back.'",
+            "voice 88.1 s: 'so I feed the wire into the harp off the reel I don't cut it to to length first'",
+            "voice 95.6 s: 'so you see how this works you just poke it into the front'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "unverified",
+          "sources": [
+            "SAM: no part found"
+          ]
+        }
+      ],
+      "score": 0.6666666666666666
+    },
+    {
+      "index": 5,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "timecode re-check: 109.1–129.0 s",
+            "frame by frame review: 110.2–130.3 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 113.0 s: 'and so here's the wire that's inside the harp I can tie the toggle to it because it's 0.6 that's thick enough to use a very simplest knots you just go round the toggle once and then you fold the wire back over itself in a hairpin'",
+            "voice 109.1 s: 'and so here's the wire that's inside the harp I can tie the toggle to it because'",
+            "voice 126.5 s: 'and then to make sure it's doesn't fall off when we're putting it in use the pli'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "unverified",
+          "sources": [
+            "SAM: no part found"
+          ]
+        }
+      ],
+      "score": 0.6666666666666666
+    },
+    {
+      "index": 6,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "timecode re-check: 127.5–142.5 s",
+            "frame by frame review: 129.2–142.3 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 130.0 s: 'and then to make sure it's doesn't fall off when we're putting it in use the pliers to pull it nice and tight so there's my toggle knot and then all I do pull it through'",
+            "voice 126.5 s: 'and then to make sure it's doesn't fall off when we're putting it in use the pli'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "unverified",
+          "sources": [
+            "SAM: no part found"
+          ]
+        }
+      ],
+      "score": 0.6666666666666666
+    },
+    {
+      "index": 7,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "scene change at 154.4 s",
+            "timecode re-check: 143.4–154.4 s",
+            "frame by frame review: 147.2–153.3 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 144.5 s: 'I can cut it to length I don't know a few five centimeters above the pin'",
+            "voice 150.0 s: 'just snap it off with the pliers make a little hook and then I'll turn the harp up'",
+            "voice 143.4 s: 'I can cut it to length I don't know a few five centimeters above the pin'",
+            "voice 148.9 s: 'just snap it off with the pliers make a little hook and then I'll turn the harp '",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'new wire' found (confidence 0.90)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 8,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "scene change at 154.4 s",
+            "frame by frame review: 154.2–155.2 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 154.8 s: 'and then I'll turn the harp up'",
+            "video 157.0 s: Hands lift and turn harp upright",
+            "voice 148.9 s: 'just snap it off with the pliers make a little hook and then I'll turn the harp '",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'harp body' found (confidence 0.85)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 9,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "pause at 161.9 s",
+            "timecode re-check: 159.3–161.9 s",
+            "frame by frame review: 158.4–163.2 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 160.0 s: 'you can hook the hook onto the pin'",
+            "voice 159.3 s: 'you can hook the hook onto the pin'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "unverified",
+          "sources": [
+            "SAM: no part found"
+          ]
+        }
+      ],
+      "score": 0.6666666666666666
+    },
+    {
+      "index": 10,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "scene change at 165.1 s",
+            "frame by frame review: 164.8–192.6 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 165.5 s: 'and then you can wind it up'",
+            "voice 194.0 s: 'that's it'",
+            "voice 163.9 s: 'and then you can wind it up'",
+            "voice 193.8 s: 'that's it'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "unverified",
+          "sources": [
+            "SAM: no part found"
+          ]
+        }
+      ],
+      "score": 0.6666666666666666
+    }
+  ],
+  "score": 0.8
+}

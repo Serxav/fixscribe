@@ -1,0 +1,91 @@
+{
+  "category": "electronics",
+  "object_name": "Dell Latitude 7455 laptop",
+  "suggestions": [
+    {
+      "field": "parts",
+      "value": "ssd shield",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "ssd",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "wi-fi shield",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "cooling assembly",
+      "seen_in": "guide parts"
+    },
+    {
+      "field": "parts",
+      "value": "bottom cover screw",
+      "seen_in": "step 1: Display the bottom cover"
+    },
+    {
+      "field": "parts",
+      "value": "back cover screw",
+      "seen_in": "step 1: Display the bottom cover"
+    },
+    {
+      "field": "parts",
+      "value": "battery connector",
+      "seen_in": "step 3: Disconnect battery cable"
+    },
+    {
+      "field": "parts",
+      "value": "battery screw",
+      "seen_in": "step 4: Unscrew battery"
+    },
+    {
+      "field": "parts",
+      "value": "soldered memory",
+      "seen_in": "step 6: Inspect soldered memory"
+    },
+    {
+      "field": "parts",
+      "value": "ssd metal cover",
+      "seen_in": "step 7: Unscrew SSD shield"
+    },
+    {
+      "field": "parts",
+      "value": "ssd shield screw",
+      "seen_in": "step 7: Unscrew SSD shield"
+    },
+    {
+      "field": "parts",
+      "value": "wi-fi card",
+      "seen_in": "step 9: Locate Wi-Fi card"
+    },
+    {
+      "field": "parts",
+      "value": "wi-fi card cover",
+      "seen_in": "step 10: Remove Wi-Fi cover"
+    },
+    {
+      "field": "parts",
+      "value": "wi-fi cover",
+      "seen_in": "step 10: Remove Wi-Fi cover"
+    },
+    {
+      "field": "parts",
+      "value": "thermal system",
+      "seen_in": "step 11: Inspect thermal system"
+    },
+    {
+      "field": "tools",
+      "value": "thin plastic pry tool",
+      "seen_in": "guide tools"
+    },
+    {
+      "field": "tools",
+      "value": "anti-static gloves",
+      "seen_in": "guide tools"
+    }
+  ]
+}

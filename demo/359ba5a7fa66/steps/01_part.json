@@ -1,0 +1,85 @@
+{
+  "part": "foam pad",
+  "tries": [
+    {
+      "t_s": 90.28,
+      "box": [
+        124,
+        528,
+        855,
+        1000
+      ],
+      "confidence": 0.945,
+      "fill": 0.362,
+      "why": "Magenta outline encloses the clearly visible white foam pad protruding from under the wooden board at the cut line where the knife/hand touches, not a tool, hand, or table.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    288,
+    0,
+    948,
+    1000
+  ],
+  "review": {
+    "confidence": 0.93,
+    "end_s": 104.9,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      5,
+      10,
+      9
+    ],
+    "points": [],
+    "start_s": 67.8,
+    "work_frame": 7,
+    "work_x": 405,
+    "work_y": 720
+  },
+  "close_ups": [
+    {
+      "t_s": 82.75,
+      "spot": [
+        555,
+        718
+      ],
+      "crop": [
+        423,
+        483,
+        687,
+        952
+      ],
+      "box": [
+        302,
+        0,
+        1000,
+        925
+      ],
+      "name": "wooden board",
+      "result": "another part is under the tool"
+    },
+    {
+      "t_s": 90.28,
+      "spot": [
+        555,
+        720
+      ],
+      "crop": [
+        423,
+        485,
+        687,
+        954
+      ],
+      "box": [
+        0,
+        100,
+        510,
+        1000
+      ],
+      "name": "foam pad",
+      "result": "the part is bigger than the close-up"
+    }
+  ]
+}

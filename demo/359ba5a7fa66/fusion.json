@@ -1,0 +1,82 @@
+{
+  "candidates": 45,
+  "steps": [
+    {
+      "index": 1,
+      "start_s": 68.0,
+      "end_s": 108.2667,
+      "start_source": "scene",
+      "end_source": "scene",
+      "start_shift_s": -1.0,
+      "end_shift_s": 1.2667,
+      "agreement": 0.8,
+      "confidence": 0.736
+    },
+    {
+      "index": 2,
+      "start_s": 108.1,
+      "end_s": 150.0,
+      "start_source": "spark",
+      "end_source": "spark",
+      "start_shift_s": 0.0,
+      "end_shift_s": 0.0,
+      "agreement": 0.6,
+      "confidence": 0.528
+    },
+    {
+      "index": 3,
+      "start_s": 150.0,
+      "end_s": 230.0,
+      "start_source": "spark",
+      "end_source": "spark",
+      "start_shift_s": 0.0,
+      "end_shift_s": 0.0,
+      "agreement": 0.6,
+      "confidence": 0.54
+    },
+    {
+      "index": 4,
+      "start_s": 230.6,
+      "end_s": 248.0,
+      "start_source": "spark",
+      "end_source": "spark",
+      "start_shift_s": 0.0,
+      "end_shift_s": 0.0,
+      "agreement": 0.6,
+      "confidence": 0.51
+    },
+    {
+      "index": 5,
+      "start_s": 275.0,
+      "end_s": 359.0,
+      "start_source": "spark",
+      "end_source": "spark",
+      "start_shift_s": 0.0,
+      "end_shift_s": 0.0,
+      "agreement": 0.6,
+      "confidence": 0.516
+    },
+    {
+      "index": 6,
+      "start_s": 359.6,
+      "end_s": 394.6667,
+      "start_source": "spark",
+      "end_source": "scene",
+      "start_shift_s": 0.0,
+      "end_shift_s": 1.2667,
+      "agreement": 0.6,
+      "confidence": 0.54
+    },
+    {
+      "index": 7,
+      "start_s": 394.9,
+      "end_s": 457.0667,
+      "start_source": "spark",
+      "end_source": "scene",
+      "start_shift_s": 0.0,
+      "end_shift_s": 1.0667,
+      "agreement": 0.6,
+      "confidence": 0.492
+    }
+  ]
+}

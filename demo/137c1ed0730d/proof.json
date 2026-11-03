@@ -1,0 +1,375 @@
+{
+  "steps": [
+    {
+      "index": 1,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "scene change at 1.1 s",
+            "frame by frame review: 3.0–19.2 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "rewritten from the frame by frame review: Display the bottom cover without unscrewing."
+          ]
+        },
+        {
+          "field": "fastener_count",
+          "status": "supported",
+          "sources": [
+            "SAM: 0 screws removed (before/after stills)",
+            "Muse Spark saw the tool stop at 4 spots: too small for SAM to cut"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'cover screws' found (confidence 0.82)"
+          ]
+        }
+      ],
+      "score": 0.875
+    },
+    {
+      "index": 2,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "scene change at 38.7 s",
+            "frame by frame review: 20.8–40.0 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 23.0 s: 'Pry the sides and the front with a thin plastic tool the back should be last.'",
+            "video 30.0 s: Blue plastic tool inserted along side and front edge of bottom cover",
+            "voice 1.8 s: 'Hello. This is Nick from Laptop Media and today we will show you how to open the'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'back cover' found (confidence 0.81)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 3,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "scene change at 38.7 s",
+            "pause at 46.3 s",
+            "frame by frame review: 44.2–45.0 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 43.0 s: 'this machine has a 54 watt hour battery to take it out unplug the connector from the main board'",
+            "voice 39.8 s: 'this machine has a 54 watt hour battery to take it out unplug the connector from'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "unverified",
+          "sources": [
+            "SAM: no part found"
+          ]
+        }
+      ],
+      "score": 0.6666666666666666
+    },
+    {
+      "index": 4,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "pause at 46.3 s",
+            "frame by frame review: 69.4–79.2 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 49.0 s: 'and undo the five Phillips head screws that secure the unit to the base.'",
+            "video 60.0 s: Screwdriver turning screws securing black battery pack",
+            "voice 39.8 s: 'this machine has a 54 watt hour battery to take it out unplug the connector from'",
+            "voice 51.3 s: 'The capacity is enough for around 16 hours of video playback. The result is grea'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "fastener_count",
+          "status": "supported",
+          "sources": [
+            "SAM: 0 screws removed (before/after stills)",
+            "Muse Spark saw the tool stop at 5 spots: too small for SAM to cut"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "unverified",
+          "sources": [
+            "SAM: no part found"
+          ]
+        }
+      ],
+      "score": 0.625
+    },
+    {
+      "index": 5,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "timecode re-check: 82.6–85.0 s",
+            "frame by frame review: 83.2–84.9 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "video 84.0 s: Hands lifting black Dell 54Wh battery pack out of chassis",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'battery' found (confidence 0.98)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 6,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "timecode re-check: 89.0–99.0 s",
+            "frame by frame review: 92.2–99.2 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 92.0 s: 'The memory is solid. You get 16 or 32 gigabytes of LPDDR5X 8448 megahertz RAM.'",
+            "voice 89.7 s: 'The memory is solid. You get 16 or 32 gigabytes of LPDDR5X 8448 megahertz RAM.'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "unverified",
+          "sources": [
+            "SAM: no part found"
+          ]
+        }
+      ],
+      "score": 0.6666666666666666
+    },
+    {
+      "index": 7,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "pause at 121.3 s",
+            "frame by frame review: 113.6–120.3 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 105.0 s: 'For storage there is just one M.2 slot compatible with the shortest 2230 Gen 4 SSDs. The NVMe is covered covered by a metal plate that is held in place by a single screw.'",
+            "video 115.0 s: Screwdriver on small metal SSD cover on right side of board",
+            "voice 99.2 s: 'For storage there is just one M.2 slot compatible with the shortest 2230 Gen 4 S'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "fastener_count",
+          "status": "supported",
+          "sources": [
+            "SAM: 0 screws removed (before/after stills)",
+            "Muse Spark saw the tool stop at 1 spots: too small for SAM to cut"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'metal cover' found (confidence 0.93)"
+          ]
+        }
+      ],
+      "score": 0.875
+    },
+    {
+      "index": 8,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "pause at 121.3 s",
+            "frame by frame review: 127.4–132.0 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 124.0 s: 'After undoing it you have to pull the shroud forward.'",
+            "voice 130.0 s: 'The metal cap houses a thermal pad on the on the inside.'",
+            "voice 122.5 s: 'After undoing it you have to pull the shroud forward.'",
+            "voice 129.3 s: 'The metal cap houses a thermal pad on the on the inside.'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'metal cover' found (confidence 0.91)"
+          ]
+        }
+      ],
+      "score": 1.0
+    },
+    {
+      "index": 9,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "supported",
+          "sources": [
+            "pause at 145.7 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 149.0 s: 'The Wi-Fi card is placed close to the cooling fan.'",
+            "video 152.0 s: Finger pointing to small metal Wi-Fi cover near fan",
+            "voice 147.7 s: 'The Wi-Fi card is placed close to the cooling fan.'",
+            "voice 151.1 s: 'The removal of the metal cover here is similar to the one of the SSD but this ti'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "unverified",
+          "sources": [
+            "SAM: no part found"
+          ]
+        }
+      ],
+      "score": 0.5
+    },
+    {
+      "index": 10,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "pause at 175.1 s",
+            "timecode re-check: 153.0–168.3 s",
+            "frame by frame review: 154.0–168.3 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 157.0 s: 'The removal of the metal cover here is similar to the one of the SSD but this time around you have to slide the small plate to the left'",
+            "voice 161.0 s: 'there is also a small cooling pad beneath it'",
+            "voice 151.1 s: 'The removal of the metal cover here is similar to the one of the SSD but this ti'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "fastener_count",
+          "status": "supported",
+          "sources": [
+            "SAM: 0 screws removed (before/after stills)",
+            "timecode re-check counted 1"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'card cover' found (confidence 0.78)"
+          ]
+        }
+      ],
+      "score": 0.875
+    },
+    {
+      "index": 11,
+      "claims": [
+        {
+          "field": "boundaries",
+          "status": "verified",
+          "sources": [
+            "timecode re-check: 176.0–189.2 s",
+            "frame by frame review: 176.3–189.2 s"
+          ]
+        },
+        {
+          "field": "instruction",
+          "status": "verified",
+          "sources": [
+            "voice 180.0 s: 'The thermal system is as as simple as it gets one fan a single long heat pipe one heat sink and a large heat heat spreader'",
+            "video 186.0 s: Close-up of fan, long heat pipe and heatsink across board",
+            "voice 176.2 s: 'The thermal system is as as simple as it gets one fan a single long heat pipe on'",
+            "frame by frame review: the frames show this"
+          ]
+        },
+        {
+          "field": "part",
+          "status": "verified",
+          "sources": [
+            "SAM: part 'thermal system' found (confidence 0.79)"
+          ]
+        }
+      ],
+      "score": 1.0
+    }
+  ],
+  "score": 0.826
+}

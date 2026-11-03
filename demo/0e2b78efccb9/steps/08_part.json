@@ -1,0 +1,100 @@
+{
+  "part": "harp body",
+  "tries": [
+    {
+      "t_s": 155.21,
+      "box": [
+        0,
+        0,
+        725,
+        1000
+      ],
+      "confidence": 0.855,
+      "fill": 0.355,
+      "why": "magenta line tightly follows the wooden harp structure in the center, which is clearly the harp body; black background is excluded, hand is only occluding part of it",
+      "result": "kept"
+    },
+    {
+      "t_s": 155.21,
+      "zoom": "whole frame",
+      "box": [
+        0,
+        0,
+        330,
+        1000
+      ],
+      "confidence": 0.938,
+      "fill": 0.462,
+      "why": "Magenta outline follows/encloses the hand, wrist and sleeve in the center rather than the wooden harp structure with tuning pins; covers mostly hand, not clearly harp body.",
+      "result": "Spark rejected the cut-out"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    470,
+    1000
+  ],
+  "review": {
+    "confidence": 0.85,
+    "end_s": 155.2,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      10,
+      11,
+      12
+    ],
+    "points": [],
+    "start_s": 154.2,
+    "work_frame": 4,
+    "work_x": 225,
+    "work_y": 475
+  },
+  "close_ups": [
+    {
+      "t_s": 159.21,
+      "spot": [
+        249,
+        368
+      ],
+      "crop": [
+        155,
+        200,
+        343,
+        535
+      ],
+      "box": [
+        442,
+        510,
+        572,
+        570
+      ],
+      "name": "bridge pin",
+      "result": "another part is under the tool"
+    },
+    {
+      "t_s": 155.21,
+      "spot": [
+        105,
+        475
+      ],
+      "crop": [
+        10,
+        307,
+        199,
+        642
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "person's thumb",
+        "visible": false,
+        "x_max": 590,
+        "x_min": 155,
+        "y_max": 675,
+        "y_min": 235
+      }
+    }
+  ]
+}

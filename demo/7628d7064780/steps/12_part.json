@@ -1,0 +1,100 @@
+{
+  "part": "open button",
+  "tries": [
+    {
+      "t_s": 374.44,
+      "box": [
+        230,
+        0,
+        720,
+        710
+      ],
+      "confidence": 0.863,
+      "fill": 0.469,
+      "why": "Magenta traces a large ribbed grey plastic housing/mechanism held in hands, not a small open-button cap. Too large and complex to clearly be the open button.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 376.76,
+      "box": [
+        347,
+        103,
+        769,
+        831
+      ],
+      "confidence": 0.969,
+      "fill": 0.665,
+      "why": "Gray plastic button mechanism with return spring held between fingers; magenta outline tightly follows the plastic part edges, not hand/mat/tool, consistent with open button to be reinserted.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    82,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.85,
+    "end_s": 376.8,
+    "fastener_frame": 0,
+    "instruction": "Fit the open button into its slider housing.",
+    "matches": false,
+    "part_frames": [
+      12,
+      8,
+      7
+    ],
+    "points": [],
+    "start_s": 373.2,
+    "work_frame": 10,
+    "work_x": 600,
+    "work_y": 650
+  },
+  "close_ups": [
+    {
+      "t_s": 376.76,
+      "spot": [
+        655,
+        903
+      ],
+      "crop": [
+        471,
+        347,
+        838,
+        1000
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "dark background",
+        "visible": false,
+        "x_max": 560,
+        "x_min": 460,
+        "y_max": 900,
+        "y_min": 800
+      }
+    },
+    {
+      "t_s": 374.44,
+      "spot": [
+        632,
+        650
+      ],
+      "crop": [
+        448,
+        323,
+        815,
+        976
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "human finger",
+        "visible": false,
+        "x_max": 600,
+        "x_min": 435,
+        "y_max": 585,
+        "y_min": 385
+      }
+    }
+  ]
+}

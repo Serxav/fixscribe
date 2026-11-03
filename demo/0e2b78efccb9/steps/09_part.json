@@ -1,0 +1,75 @@
+{
+  "part": "new string",
+  "tries": [
+    {
+      "t_s": 160.88,
+      "box": [
+        301,
+        309,
+        336,
+        354
+      ],
+      "confidence": 0.664,
+      "fill": 0.607,
+      "why": "Magenta shape outlines the shiny fingertip/nail highlight, not a thin new string. It covers mostly skin, no clearly visible string inside.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 160.88,
+      "check": "last look, blur forgiven",
+      "box": [
+        305,
+        290,
+        340,
+        360
+      ],
+      "confidence": 0.707,
+      "fill": 0.599,
+      "why": "Magenta shape is a rounded blob outlining the thumb nail/fingertip skin, not a thin string. It covers mostly hand, which is explicitly listed as false.",
+      "result": "Spark rejected the cut-out"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    724,
+    1000
+  ],
+  "review": {
+    "confidence": 0.75,
+    "end_s": 163.2,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [],
+    "points": [],
+    "start_s": 158.4,
+    "work_frame": 7,
+    "work_x": 315,
+    "work_y": 335
+  },
+  "close_ups": [
+    {
+      "t_s": 160.88,
+      "spot": [
+        228,
+        335
+      ],
+      "crop": [
+        83,
+        77,
+        372,
+        592
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "tuning pin",
+        "visible": false,
+        "x_max": 545,
+        "x_min": 465,
+        "y_max": 515,
+        "y_min": 440
+      }
+    }
+  ]
+}

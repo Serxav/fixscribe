@@ -1,0 +1,55 @@
+{
+  "steps": [
+    {
+      "index": 1,
+      "start_s": 34.3,
+      "end_s": 42.1,
+      "instruction": "Lift off the upper shell and set aside the lower half.",
+      "action": "remove",
+      "removes": [
+        "upper shell"
+      ],
+      "screw_count": 0,
+      "warnings": [],
+      "confidence": 0.85
+    },
+    {
+      "index": 13,
+      "start_s": 373.0,
+      "end_s": 394.0,
+      "instruction": "Reattach the slider spring and reinsert the slider assembly into position.",
+      "action": "place",
+      "removes": [],
+      "screw_count": 0,
+      "warnings": [
+        "Small spring is under tension and can slip or launch - secure it carefully to avoid loss or injury."
+      ],
+      "confidence": 0.9
+    },
+    {
+      "index": 10,
+      "start_s": 314.7,
+      "end_s": 321.4,
+      "instruction": "Pop the open button out of the shell.",
+      "action": "remove",
+      "removes": [
+        "open button"
+      ],
+      "screw_count": 0,
+      "warnings": [],
+      "confidence": 0.9
+    },
+    {
+      "index": 15,
+      "start_s": 438.0,
+      "end_s": 448.0,
+      "instruction": "Flip the shell over and press the Power and Open buttons to verify smooth return.",
+      "action": "flip",
+      "removes": [],
+      "screw_count": 0,
+      "warnings": [],
+      "confidence": 0.9
+    }
+  ],
+  "skipped": []
+}

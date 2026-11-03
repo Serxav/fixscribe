@@ -1,0 +1,53 @@
+{
+  "steps": [
+    {
+      "index": 1,
+      "keyframe_s": 108.23,
+      "image": "steps/01.jpg",
+      "clip": "steps/01.mp4",
+      "still": "stills/01.png"
+    },
+    {
+      "index": 2,
+      "keyframe_s": 146.23,
+      "image": "steps/02.jpg",
+      "clip": "steps/02.mp4",
+      "still": "stills/02.png"
+    },
+    {
+      "index": 3,
+      "keyframe_s": 206.23,
+      "image": "steps/03.jpg",
+      "clip": "steps/03.mp4",
+      "still": "stills/03.png"
+    },
+    {
+      "index": 4,
+      "keyframe_s": 234.07,
+      "image": "steps/04.jpg",
+      "clip": "steps/04.mp4",
+      "still": "stills/04.png"
+    },
+    {
+      "index": 5,
+      "keyframe_s": 351.23,
+      "image": "steps/05.jpg",
+      "clip": "steps/05.mp4",
+      "still": "stills/05.png"
+    },
+    {
+      "index": 6,
+      "keyframe_s": 394.57,
+      "image": "steps/06.jpg",
+      "clip": "steps/06.mp4",
+      "still": "stills/06.png"
+    },
+    {
+      "index": 7,
+      "keyframe_s": 413.87,
+      "image": "steps/07.jpg",
+      "clip": "steps/07.mp4",
+      "still": "stills/07.png"
+    }
+  ]
+}

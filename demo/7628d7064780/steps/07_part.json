@@ -1,0 +1,86 @@
+{
+  "part": "slider screws",
+  "tries": [],
+  "zoom": [
+    174,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.92,
+    "end_s": 218.2,
+    "fastener_frame": 5,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      5,
+      6,
+      4
+    ],
+    "points": [
+      {
+        "x": 340,
+        "y": 287
+      },
+      {
+        "x": 610,
+        "y": 778
+      }
+    ],
+    "start_s": 204.0,
+    "work_frame": 6,
+    "work_x": 618,
+    "work_y": 759
+  },
+  "close_ups": [
+    {
+      "t_s": 201.83,
+      "spot": [
+        676,
+        677
+      ],
+      "crop": [
+        510,
+        383,
+        841,
+        970
+      ],
+      "box": [
+        505,
+        434,
+        624,
+        554
+      ],
+      "name": "slider screw",
+      "confidence": 0.832,
+      "fill": 0.663,
+      "why": "Magenta shape covers mostly gray plastic housing to the right of the screw, not the Phillips screw itself which is largely left/outside of the outline.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 204.02,
+      "spot": [
+        684,
+        759
+      ],
+      "crop": [
+        518,
+        412,
+        849,
+        1000
+      ],
+      "box": [
+        471,
+        512,
+        592,
+        630
+      ],
+      "name": "slider screw",
+      "confidence": 0.863,
+      "fill": 0.601,
+      "why": "Clearly visible metallic Phillips-head screw seated in plastic recess, magenta outline traces the screw head.",
+      "result": "kept"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "part": "slider assembly",
+  "tries": [
+    {
+      "t_s": 220.94,
+      "box": [
+        205,
+        30,
+        830,
+        670
+      ],
+      "confidence": 0.93,
+      "fill": 0.79,
+      "why": "Magenta outline tightly follows a plastic mechanical carriage with guide holes and central metal spring latch being pulled by fingers at the expected touch point, matching a spring-loaded slider assembly being removed from the shell, not a tool, hand, mat, or empty space.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    274,
+    69,
+    755,
+    1000
+  ],
+  "review": {
+    "confidence": 0.85,
+    "end_s": 225.2,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      5,
+      6,
+      2
+    ],
+    "points": [],
+    "start_s": 217.0,
+    "work_frame": 2,
+    "work_x": 830,
+    "work_y": 350
+  },
+  "close_ups": [
+    {
+      "t_s": 232.82,
+      "spot": null,
+      "result": "the spot could not be followed to this frame"
+    },
+    {
+      "t_s": 220.94,
+      "spot": [
+        673,
+        394
+      ],
+      "crop": [
+        576,
+        222,
+        769,
+        565
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "human finger",
+        "visible": false,
+        "x_max": 1000,
+        "x_min": 270,
+        "y_max": 1000,
+        "y_min": 0
+      }
+    }
+  ]
+}

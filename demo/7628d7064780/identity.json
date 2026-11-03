@@ -1,0 +1,23 @@
+{
+  "object_name": "Sony PlayStation One",
+  "category": "electronics",
+  "brand": "Sony",
+  "model": "PlayStation One",
+  "task": "repair",
+  "problem": "open and power buttons stuck, squeaking, hard to press and not returning",
+  "hazards": [
+    "mains_voltage",
+    "sharp_edges",
+    "spring_tension",
+    "chemicals"
+  ],
+  "skill": "beginner",
+  "language": "en",
+  "evidence": [
+    "technician says 'fix stuck and squeaking buttons on the original Sony PlayStation One'",
+    "technician says to remove six screws on bottom of shell",
+    "close-up shows underside of round grey plastic button with spring post",
+    "top shell underside shows open-button slider with metal spring"
+  ],
+  "confidence": 0.95
+}

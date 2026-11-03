@@ -1,0 +1,115 @@
+{
+  "candidates": 19,
+  "steps": [
+    {
+      "index": 1,
+      "start_s": 11.7,
+      "end_s": 16.7,
+      "start_source": "spark",
+      "end_source": "spark",
+      "start_shift_s": 0.0,
+      "end_shift_s": 0.0,
+      "agreement": 0.6,
+      "confidence": 0.57
+    },
+    {
+      "index": 2,
+      "start_s": 56.4,
+      "end_s": 67.7334,
+      "start_source": "pause",
+      "end_source": "pause",
+      "start_shift_s": -0.4,
+      "end_shift_s": -0.2666,
+      "agreement": 0.8,
+      "confidence": 0.76
+    },
+    {
+      "index": 3,
+      "start_s": 69.5,
+      "end_s": 84.0,
+      "start_source": "spark",
+      "end_source": "spark",
+      "start_shift_s": 0.0,
+      "end_shift_s": 0.0,
+      "agreement": 0.6,
+      "confidence": 0.558
+    },
+    {
+      "index": 4,
+      "start_s": 88.1333,
+      "end_s": 106.0,
+      "start_source": "pause",
+      "end_source": "spark",
+      "start_shift_s": 0.0333,
+      "end_shift_s": 0.0,
+      "agreement": 0.8,
+      "confidence": 0.736
+    },
+    {
+      "index": 5,
+      "start_s": 109.1,
+      "end_s": 127.0,
+      "start_source": "spark",
+      "end_source": "spark",
+      "start_shift_s": 0.0,
+      "end_shift_s": 0.0,
+      "agreement": 0.6,
+      "confidence": 0.54
+    },
+    {
+      "index": 6,
+      "start_s": 127.5,
+      "end_s": 142.5,
+      "start_source": "spark",
+      "end_source": "spark",
+      "start_shift_s": 0.0,
+      "end_shift_s": 0.0,
+      "agreement": 0.6,
+      "confidence": 0.54
+    },
+    {
+      "index": 7,
+      "start_s": 143.4,
+      "end_s": 154.4,
+      "start_source": "spark",
+      "end_source": "scene",
+      "start_shift_s": 0.0,
+      "end_shift_s": 0.4,
+      "agreement": 0.6,
+      "confidence": 0.546
+    },
+    {
+      "index": 8,
+      "start_s": 154.4,
+      "end_s": 159.0,
+      "start_source": "scene",
+      "end_source": "spark",
+      "start_shift_s": 0.3,
+      "end_shift_s": 0.0,
+      "agreement": 0.8,
+      "confidence": 0.72
+    },
+    {
+      "index": 9,
+      "start_s": 159.3,
+      "end_s": 161.8667,
+      "start_source": "spark",
+      "end_source": "pause",
+      "start_shift_s": 0.0,
+      "end_shift_s": -1.1333,
+      "agreement": 0.6,
+      "confidence": 0.552
+    },
+    {
+      "index": 10,
+      "start_s": 165.0667,
+      "end_s": 194.5,
+      "start_source": "scene",
+      "end_source": "spark",
+      "start_shift_s": 1.1667,
+      "end_shift_s": 0.0,
+      "agreement": 0.8,
+      "confidence": 0.744
+    }
+  ]
+}

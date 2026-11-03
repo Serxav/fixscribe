@@ -1,0 +1,122 @@
+{
+  "part": "new wire",
+  "tries": [
+    {
+      "t_s": 94.48,
+      "box": [
+        280,
+        615,
+        300,
+        695
+      ],
+      "confidence": 0.543,
+      "fill": 0.656,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 107.24,
+      "box": [
+        0,
+        380,
+        700,
+        979
+      ],
+      "confidence": 0.391,
+      "fill": 0.002,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 98.28,
+      "box": [
+        420,
+        435,
+        610,
+        1000
+      ],
+      "confidence": 0.535,
+      "fill": 0.026,
+      "result": "weak cut-out"
+    },
+    {
+      "t_s": 94.48,
+      "check": "last look, blur forgiven",
+      "box": [
+        270,
+        585,
+        287,
+        660
+      ],
+      "confidence": 0.586,
+      "fill": 0.922,
+      "result": "weak cut-out"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.85,
+    "end_s": 107.2,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      12,
+      7,
+      5
+    ],
+    "points": [],
+    "start_s": 90.7,
+    "work_frame": 5,
+    "work_x": 220,
+    "work_y": 560
+  },
+  "close_ups": [
+    {
+      "t_s": 107.24,
+      "spot": [
+        219,
+        560
+      ],
+      "crop": [
+        19,
+        204,
+        419,
+        915
+      ],
+      "box": [
+        45,
+        0,
+        950,
+        1000
+      ],
+      "name": "wooden frame",
+      "result": "another part is under the tool"
+    },
+    {
+      "t_s": 94.48,
+      "spot": [
+        220,
+        560
+      ],
+      "crop": [
+        20,
+        204,
+        420,
+        915
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "hand palm",
+        "visible": false,
+        "x_max": 550,
+        "x_min": 450,
+        "y_max": 510,
+        "y_min": 410
+      }
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "part": "open button",
+  "tries": [
+    {
+      "t_s": 331.58,
+      "box": [
+        370,
+        340,
+        955,
+        725
+      ],
+      "confidence": 0.84,
+      "fill": 0.277,
+      "why": "The magenta outline does not isolate only the grey plastic open button - it includes/overlaps the white grease applicator tool tip on the right side, so it is not a clean exact shape of the part. In doubt, false.",
+      "result": "Spark rejected the cut-out"
+    },
+    {
+      "t_s": 339.4,
+      "box": [
+        0,
+        70,
+        650,
+        740
+      ],
+      "confidence": 0.984,
+      "fill": 0.627,
+      "why": "Gray plastic button with central hollow shaft held in fingers matches open button shaft described for lubrication, magenta line follows its perimeter exactly.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    370,
+    86,
+    731,
+    768
+  ],
+  "review": {
+    "confidence": 0.9,
+    "end_s": 354.6,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      5,
+      1,
+      6
+    ],
+    "points": [],
+    "start_s": 328.1,
+    "work_frame": 3,
+    "work_x": 775,
+    "work_y": 390
+  },
+  "close_ups": [
+    {
+      "t_s": 339.4,
+      "spot": null,
+      "result": "the spot could not be followed to this frame"
+    },
+    {
+      "t_s": 331.58,
+      "spot": [
+        649,
+        351
+      ],
+      "crop": [
+        576,
+        222,
+        721,
+        479
+      ],
+      "box": [
+        150,
+        340,
+        970,
+        1000
+      ],
+      "name": "open button",
+      "confidence": 0.691,
+      "fill": 0.097,
+      "result": "weak cut-out"
+    }
+  ]
+}

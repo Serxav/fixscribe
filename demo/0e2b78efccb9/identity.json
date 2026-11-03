@@ -1,0 +1,22 @@
+{
+  "object_name": "harp",
+  "category": "other",
+  "brand": "",
+  "model": "",
+  "task": "repair",
+  "problem": "string needs replacement",
+  "hazards": [
+    "sharp_edges",
+    "spring_tension",
+    "heavy_part"
+  ],
+  "skill": "intermediate",
+  "language": "en",
+  "evidence": [
+    "wooden harp body and strings visible in all frames",
+    "technician says 'To replace a string, I'll work with the harp lying on its back'",
+    "mentions tuning key, pliers, toggle and 0.6mm brass wire",
+    "hands handling pins at neck and soundboard"
+  ],
+  "confidence": 0.96
+}

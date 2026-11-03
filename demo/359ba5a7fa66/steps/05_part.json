@@ -1,0 +1,53 @@
+{
+  "part": "leather corner",
+  "tries": [],
+  "zoom": [
+    0,
+    0,
+    672,
+    1000
+  ],
+  "review": {
+    "confidence": 0.92,
+    "end_s": 357.3,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      11,
+      12,
+      8
+    ],
+    "points": [],
+    "start_s": 284.0,
+    "work_frame": 11,
+    "work_x": 630,
+    "work_y": 730
+  },
+  "close_ups": [
+    {
+      "t_s": 350.3,
+      "spot": [
+        423,
+        730
+      ],
+      "crop": [
+        288,
+        491,
+        557,
+        968
+      ],
+      "box": [
+        340,
+        380,
+        700,
+        680
+      ],
+      "name": "leather side panel",
+      "confidence": 0.648,
+      "fill": 0.599,
+      "why": "Inside magenta is beige grained leather on the cushion side, clearly the leather side panel, not a tool, hand, mat or shadow.",
+      "result": "kept"
+    }
+  ]
+}

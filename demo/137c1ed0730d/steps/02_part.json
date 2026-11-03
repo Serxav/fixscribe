@@ -1,0 +1,117 @@
+{
+  "part": "back cover",
+  "tries": [
+    {
+      "t_s": 28.69,
+      "box": [
+        40,
+        32,
+        968,
+        973
+      ],
+      "result": "unusable box"
+    },
+    {
+      "t_s": 19.24,
+      "box": [
+        38,
+        27,
+        946,
+        975
+      ],
+      "result": "unusable box"
+    },
+    {
+      "t_s": 24.61,
+      "box": [
+        38,
+        25,
+        967,
+        976
+      ],
+      "result": "unusable box"
+    },
+    {
+      "t_s": 28.69,
+      "check": "last look, blur forgiven",
+      "box": [
+        40,
+        30,
+        948,
+        938
+      ],
+      "confidence": 0.805,
+      "fill": 0.823,
+      "why": "Magenta outline traces the perimeter of the silver laptop bottom cover with vent grille, matching the back cover part and the touch location on the side; hands/tool are adjacent but shape is mostly the cover.",
+      "result": "kept"
+    }
+  ],
+  "zoom": [
+    0,
+    0,
+    1000,
+    1000
+  ],
+  "review": {
+    "confidence": 0.9,
+    "end_s": 40.0,
+    "fastener_frame": 0,
+    "instruction": "",
+    "matches": true,
+    "part_frames": [
+      1,
+      4
+    ],
+    "points": [],
+    "start_s": 20.8,
+    "work_frame": 6,
+    "work_x": 65,
+    "work_y": 450
+  },
+  "close_ups": [
+    {
+      "t_s": 19.24,
+      "spot": [
+        65,
+        451
+      ],
+      "crop": [
+        0,
+        95,
+        400,
+        806
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "white background",
+        "visible": false,
+        "x_max": 195,
+        "x_min": 125,
+        "y_max": 500,
+        "y_min": 435
+      }
+    },
+    {
+      "t_s": 28.69,
+      "spot": [
+        65,
+        450
+      ],
+      "crop": [
+        0,
+        94,
+        400,
+        805
+      ],
+      "result": "Spark sees no clear part under the tool",
+      "answer": {
+        "name": "white table",
+        "visible": false,
+        "x_max": 200,
+        "x_min": 120,
+        "y_max": 570,
+        "y_min": 500
+      }
+    }
+  ]
+}
