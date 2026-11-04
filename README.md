@@ -6,6 +6,10 @@ follow, then coaches the next person live through their camera.**
 Built on the Meta Model API (Muse Spark, SAM 3.1, Muse Voice, Muse Wonder) for the Meta Global AI
 Developer Hackathon, Indie track · theme: Build for Your World.
 
+**For judges, nothing to install:** [four sample guides](demo/README.md) FixScribe wrote from
+openly licensed repair videos, and [the live coach following one of them](demo/README.md#the-live-coach-on-the-dell-guide).
+To run it yourself, see [Run it](#run-it): a sample guide opens with no key.
+
 ## The problem
 
 Most instructions are written by someone who already knows how, so they skip the step where you
