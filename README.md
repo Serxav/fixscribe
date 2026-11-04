@@ -57,12 +57,12 @@ Every wait ends by itself. All timings and every button: [docs/TRY_IT.md](docs/T
 
 ## The problem
 
-**Where it started: "Which screw went where?"** While building FixScribe I took my own Xiaomi
-phone apart, the battery and the camera module, to try it on a real repair. Taking it apart was the
-easy half. Putting it back means remembering which screw came out of which hole, in what order, and
-which connector goes first, and there was no stand to hold the phone and film at the same time.
-That is the gap FixScribe fills: the video you already have becomes the order of work, with every
-fastener counted back in.
+**Where it started: "Which step am I on, and what is this part?"** While building FixScribe I took
+my own Xiaomi phone apart, the battery and the camera module, to try it on a real repair. With both
+hands busy, I could not scroll a video or a manual to find which step I was on, what the part in
+front of me was called and what came next. FixScribe answers exactly that: the guide names and cuts
+out the part of every step, and the live coach looks through the camera, says which step you are on,
+marks the parts and tells you what comes next, hands-free.
 
 ## What it does
 
