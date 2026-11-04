@@ -58,6 +58,6 @@ app.include_router(tray_routes.router)
 app.include_router(console_routes.router)
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])  # uptime monitors often send HEAD
 def health() -> dict[str, str]:
     return {"status": "ok"}
