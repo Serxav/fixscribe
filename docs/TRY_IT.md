@@ -12,6 +12,17 @@ to try), narrated or silent. It becomes a guide in **about 20 minutes** for a 45
 **one video is processed at a time**: if another one is running, yours waits for it and then starts
 by itself. Details in [section 4](#4-your-own-repair-video).
 
+## Three ways to try it
+
+| Way | What you need | What you get |
+|---|---|---|
+| **The live app** (above) | a phone or computer | the four finished guides, the live coach with camera and voice, your own video up to 2 minutes |
+| **On your own computer** | Python 3.12 and ffmpeg, or Docker; a Meta Model API key; about 5 minutes to set up ([Run it locally](../README.md#run-it-locally)) | everything, with videos up to 10 minutes, no waiting for other people's videos, and Meta's own voice (MMS-TTS) reading the steps |
+| **Without running anything** | a browser | the [3-minute film](https://www.youtube.com/watch?v=bpZMs6h1uUo) and [demo/](../demo/README.md): every photo, cut-out, clip and proof of the four guides, plus recorded clips of the live coach |
+
+On your own computer the camera works at `http://127.0.0.1:8000` on that computer. From a phone,
+the camera needs https, so for the coach on a phone use the live app.
+
 ## How long things take (it is slow, not stuck)
 
 Measured on the live app on 2026-11-04. Every wait ends by itself: nothing needs a

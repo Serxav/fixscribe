@@ -41,6 +41,11 @@ open. One video is processed at a time: if another judge's video is running, you
 **Waiting for another video to finish…** and starts by itself after it. Longer videos, up to
 10 minutes, work when FixScribe runs on your own computer ([Run it locally](#run-it-locally)).
 
+**Another way to try it: on your own computer.** With Python 3.12 and ffmpeg (or Docker) and a Meta
+Model API key it takes about 5 minutes to set up ([Run it locally](#run-it-locally)), takes videos up
+to 10 minutes and never waits for anyone else's. All three ways to try it, side by side:
+[docs/TRY_IT.md](docs/TRY_IT.md#three-ways-to-try-it).
+
 ### Four finished guides, open in the app
 
 | Object | Guide FixScribe wrote | Open |
@@ -177,10 +182,14 @@ once while the rest wait in line; per-visitor limits can be turned on from the h
 
 ## Run it locally
 
+Needs Python 3.12, ffmpeg (`brew install ffmpeg` on a Mac, `sudo apt install ffmpeg` on Linux) and a
+Meta Model API key.
+
 ```bash
 python3.12 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 cp .env.example .env            # then add your Meta key
+.venv/bin/python -m scripts.get_voice   # optional: Meta's MMS-TTS voice, else the device's voice
 .venv/bin/uvicorn app.main:app --reload
 ```
 
@@ -196,6 +205,12 @@ coach (button "Use this guide's video") needs a Meta key; the camera needs https
 ```bash
 .venv/bin/pytest -q             # tests, Meta mocked
 .venv/bin/ruff check .          # lint
+```
+
+**Or with Docker** (ffmpeg and the voice model are inside the image), after `cp .env.example .env`
+and adding the key:
+
+```bash
 docker build -t fixscribe . && docker run --env-file .env -p 8000:8000 fixscribe
 ```
 

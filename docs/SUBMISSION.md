@@ -60,6 +60,8 @@ https://github.com/Serxav/fixscribe/tree/main/demo · Demo film: https://www.you
 **How to try it** (step by step in `docs/TRY_IT.md`): open the live app on a phone or computer. The
 landing lists four finished guides (laptop, game console, harp, seat cushion), each with its live coach,
 and turns your own repair video (up to 2 minutes on the live app) into a guide in about 20 minutes.
+It also runs on your own computer in about 5 minutes (README, "Run it locally"), with videos up to
+10 minutes.
 
 **Waiting times on the live app (slow, not stuck):** the app opens at once, 10 to 20 s per coach answer, up to about 1 minute for part marks, 5 to 10 s per question. A new guide from a 45 s video takes about 20
 minutes. The server is shared: several coaches at once take turns, so they can be a little slower; one coach per judge at a time works best.
