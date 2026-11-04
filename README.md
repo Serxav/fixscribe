@@ -253,5 +253,10 @@ other AI coding assistants. Every Muse Code task, review and report is kept in [
 ## License and credits
 
 MIT. See [LICENSE](LICENSE).
+
+**Text-to-speech:** the narration of the demo film is an AI voice (Kokoro, open-source TTS), used only to record
+the film. Inside the app, the steps are read aloud by the device's own built-in voice (the browser's speech
+synthesis); no other TTS is used. Every other AI call goes to Meta models through the Meta Model API.
+
 The repair videos in `demo/` and in the film are from Wikimedia Commons under CC BY 3.0; each one is
 credited in [demo/README.md](demo/README.md).

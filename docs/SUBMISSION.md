@@ -68,3 +68,5 @@ four guides and recorded clips of the live coach.
 
 **Waiting times on the live app (slow, not stuck):** the app normally opens at once (about 1 minute if the free server fell asleep), then 10 to 20 s per coach answer, up to about 1 minute for part marks, 5 to 10 s per question. A new guide from a 45 s video takes about 20
 minutes on your computer. The server is shared: several coaches at once take turns, so they can be a little slower; one coach per judge at a time works best.
+
+**Text-to-speech:** the demo film's narration is an AI voice (Kokoro, open-source TTS); in the app the device's built-in voice reads the steps.
