@@ -24,14 +24,18 @@
   {% if sample %}
   <p class="sample-links" data-reveal style="--d:.09s">
     <a class="btn {{ 'btn-soft' if uploads else 'btn-primary' }} btn-lg" href="/guides/{{ sample }}">See a finished guide</a>
-    <a class="btn btn-soft btn-lg" href="/guides/{{ sample }}/live">Try the live coach</a>
+    {% if not uploads %}<a class="btn btn-soft btn-lg" href="/guides/{{ sample }}/live">Try the live coach</a>{% endif %}
   </p>
   <p class="note try-head" data-reveal style="--d:.1s">Try it in this order:</p>
   <ol class="try-order" aria-label="Try it in this order" data-reveal style="--d:.1s">
-    {% if uploads %}<li><b>Upload a video</b> of a repair or assembly, up to {{ max_minutes }} minutes. The progress page shows every stage; a 45-second video takes about 20 minutes, so open the next steps in another tab meanwhile.</li>{% endif %}
-    <li><b>See a finished guide.</b> Scroll its steps: each part outlined, the screws numbered, a clip of every step. <span class="muted">1 min</span></li>
-    <li><b>Try the live coach</b>, then tap <b>Use this guide's video</b>. No laptop needed: the guide's own video plays where your camera would be, and the coach follows it step by step and marks the parts. Ask it a question. <span class="muted">Answers take 10–20 s</span></li>
-    {% if uploads %}<li>When your guide is ready, open it and tap <b>Live coach</b>, then <b>Start the camera</b> and point it at your own object: the coach follows your hands through your guide. Tap 🎙️ to talk to it.</li>{% else %}<li>On the coach page, <b>Start the camera</b> and point it at a laptop, or tap 🎙️ and talk to it.</li>{% endif %}
+    {% if uploads %}
+    <li><b>Upload a video</b> of a repair or assembly, up to {{ max_minutes }} minutes. The progress page shows every stage; a 45-second video takes about 20 minutes.</li>
+    <li>Meanwhile, in another tab, <b>see a finished guide</b>: each part outlined, the screws numbered, a clip of every step.</li>
+    <li>When your guide is ready, open it and tap <b>Live coach</b>, then <b>Start the camera</b> and point it at your object: the coach follows you through your guide, step by step. Tap 🎙️ to talk to it. <span class="muted">Answers take 10–20 s</span></li>
+    {% else %}
+    <li><b>See a finished guide.</b> Scroll its steps: each part outlined, the screws numbered, a clip of every step.</li>
+    <li><b>Try the live coach</b>, then tap <b>Use this guide's video</b>: the coach follows it step by step and marks the parts. Ask it a question. <span class="muted">Answers take 10–20 s</span></li>
+    {% endif %}
   </ol>
   <p class="note try-more" data-reveal style="--d:.11s"><a href="https://github.com/Serxav/fixscribe/blob/main/docs/TRY_IT.md">Every step, the waiting times, and how to run it on your own computer</a></p>
   {% if samples|length > 1 %}

@@ -30,7 +30,8 @@ disassembly (LaptopMedia) and a PlayStation One button repair (Kytor Industries)
 | Watch what it does | [3-minute film](https://www.youtube.com/watch?v=bpZMs6h1uUo) | 3 min |
 | **Turn your own repair video into a guide** (start it first: it runs while you try the rest) | [live app](https://fixscribe-wpf3.onrender.com) → **Upload a video** (or **Record a video** on a phone) | about 20 min |
 | Read a finished guide: steps, cut-out parts, numbered screws, clips, the way back | [live app](https://fixscribe-wpf3.onrender.com) → **See a finished guide** | 1 min |
-| Let the live coach follow a repair video, then ask it a question (no laptop needed) | [live app](https://fixscribe-wpf3.onrender.com) → **Try the live coach** → **Use this guide's video** | 3 min |
+| When your guide is ready: the live coach follows you through it with your camera | your guide → **Live coach** → **Start the camera** | while you repair |
+| Let the live coach follow a finished guide's own video, then ask it a question | a finished guide → **Live coach** → **Use this guide's video** | 3 min |
 | Point your own phone camera at a laptop and talk to the coach | same page → **Start the camera** | 2 min |
 | Open the four guides it wrote: a laptop, a game console, a harp, a seat cushion | [the list below](#four-finished-guides-open-in-the-app) | 2 min |
 

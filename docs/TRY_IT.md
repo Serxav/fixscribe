@@ -69,7 +69,9 @@ changed."
 
 ### A2. The live coach with nothing to repair (3 minutes)
 
-1. On the landing tap **Try the live coach**.
+The coach is made for the guide of your own video (A4, step 4). To see it before yours is ready:
+
+1. Open a finished guide and tap **Live coach** (or **live coach** next to it in the landing's list).
 2. Tap **Nothing to repair right now? Use this guide's video**. The guide's own video plays where
    your camera would be.
 3. Watch the panel: the coach says which step it sees (**Step 1 of 11**), its state (**On track**,
@@ -87,9 +89,10 @@ A clip of this, recorded on 2026-11-04, is in [demo/](../demo/README.md#the-live
 
 ### A3. The live coach with your camera and voice
 
-1. On the coach page tap **Start the camera** and allow the camera.
-2. Point it at a laptop's underside or open back. The coach follows the Dell guide, so it shows
-   **Check this** or **Looking…** when the view does not match a step.
+1. On the coach page of a guide tap **Start the camera** and allow the camera.
+2. Point it at the object of that guide: your own object on your own guide (A4), or a laptop's
+   underside on the Dell guide. It shows **Check this** or **Looking…** when the view does not
+   match a step.
 3. Tap 🎙️ and allow the microphone. Say **"next"**, **"back"** or **"repeat"** (no AI needed), or ask
    a question out loud.
 

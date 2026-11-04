@@ -63,9 +63,9 @@ def test_landing_offers_the_sample_only_when_it_exists(tmp_path):
     settings = _settings(tmp_path)
     app.dependency_overrides[settings_dep] = lambda: settings
     try:
-        assert "Try the live coach" not in TestClient(app).get("/").text
+        assert "See a finished guide" not in TestClient(app).get("/").text
         demo.seed(settings, _source(tmp_path))
-        assert "/guides/sample/live" in TestClient(app).get("/").text
+        assert 'href="/guides/sample"' in TestClient(app).get("/").text
     finally:
         app.dependency_overrides.pop(settings_dep, None)
 
