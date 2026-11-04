@@ -35,7 +35,7 @@ class Settings:
         False  # [TRUST_PROXY] true behind the host's proxy: visitors by X-Forwarded-For
     )
     uploads: bool = True  # [UPLOADS] false on a server too small to turn videos into guides
-    demo_job: str = ""  # [DEMO_JOB] folder under demo/: a read-only sample guide for visitors
+    demo_job: str = ""  # [DEMO_JOB] folder(s) under demo/, comma-separated: read-only samples
     data_dir: Path = Path("data")  # [DATA_DIR]
     voice_model_dir: Path = Path("models/vits-mms-eng")  # [VOICE_MODEL_DIR]
 

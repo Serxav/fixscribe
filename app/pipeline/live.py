@@ -33,6 +33,7 @@ from app import artifacts, spark
 from app.agent.tools import full_mask
 from app.artifacts import ArtifactError
 from app.config import Settings
+from app.demo import is_sample
 from app.meta_client import BudgetExceeded, MetaError, make_client
 from app.pipeline.verify import TARGET_PROMPT, confirm
 from app.schemas import Guide, Step, Strict, _object
@@ -254,7 +255,7 @@ def _padded(box: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
 
 
 def _is_sample(job_dir: Path, settings: Settings) -> bool:
-    return bool(settings.demo_job) and job_dir.name == settings.demo_job
+    return is_sample(job_dir.name, settings.demo_job)
 
 
 def _coach_client(job_dir: Path, settings: Settings) -> Any:

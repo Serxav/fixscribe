@@ -56,6 +56,6 @@ states.
 https://github.com/Serxav/fixscribe/tree/main/demo · Demo film: https://www.youtube.com/watch?v=bpZMs6h1uUo
 
 **How to try it** (step by step in `docs/TRY_IT.md`): open the live app on a phone or computer. The
-Dell sample guide and its live coach are on the landing. The free server is too small to process
+landing lists four finished guides (laptop, game console, harp, seat cushion), each with its live coach. The free server is too small to process
 new videos, so making a guide from your own video runs locally (the README's "Run it locally"), and
 four finished guides are in `demo/`.

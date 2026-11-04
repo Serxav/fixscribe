@@ -9,7 +9,7 @@ SAM 3.1, Muse Voice and Muse Wonder through the Meta Model API.
 <p>
 <a href="https://www.youtube.com/watch?v=bpZMs6h1uUo"><b>▶ Watch the 3-minute film</b></a> ·
 <a href="https://fixscribe-wpf3.onrender.com"><b>Open the live app</b></a> ·
-<a href="demo/README.md"><b>See four finished guides</b></a> ·
+<a href="#four-finished-guides-open-in-the-app"><b>Open four finished guides</b></a> ·
 <a href="docs/TRY_IT.md"><b>Step-by-step for judges</b></a>
 </p>
 
@@ -31,7 +31,18 @@ disassembly (LaptopMedia) and a PlayStation One button repair (Kytor Industries)
 | Read a finished guide: steps, cut-out parts, numbered screws, clips, the way back | [live app](https://fixscribe-wpf3.onrender.com) → **See a finished guide** | 1 min |
 | Let the live coach follow a repair video, then ask it a question | [live app](https://fixscribe-wpf3.onrender.com) → **Try the live coach** → **Use this guide's video** | 3 min |
 | Point your own phone camera at a laptop and talk to the coach | same page → **Start the camera** | 2 min |
-| Browse four guides it wrote: a laptop, a game console, a harp, a seat cushion | [demo/](demo/README.md), no install | 2 min |
+| Open the four guides it wrote: a laptop, a game console, a harp, a seat cushion | [the list below](#four-finished-guides-open-in-the-app) | 2 min |
+
+### Four finished guides, open in the app
+
+| Object | Guide FixScribe wrote | Open |
+|---|---|---|
+| Laptop | Disassemble Dell Latitude 7455: cover, battery, SSD and Wi-Fi (11 steps) | [guide](https://fixscribe-wpf3.onrender.com/guides/137c1ed0730d) · [live coach](https://fixscribe-wpf3.onrender.com/guides/137c1ed0730d/live) |
+| Game console | Fix sticking power and open buttons on a PlayStation One (15 steps) | [guide](https://fixscribe-wpf3.onrender.com/guides/7628d7064780) · [live coach](https://fixscribe-wpf3.onrender.com/guides/7628d7064780/live) |
+| Harp | Replace a broken brass harp string (10 steps, no screws at all) | [guide](https://fixscribe-wpf3.onrender.com/guides/0e2b78efccb9) · [live coach](https://fixscribe-wpf3.onrender.com/guides/0e2b78efccb9/live) |
+| Furniture | Make a bench seat cushion, narrated in German (7 steps) | [guide](https://fixscribe-wpf3.onrender.com/guides/359ba5a7fa66) · [live coach](https://fixscribe-wpf3.onrender.com/guides/359ba5a7fa66/live) |
+
+Every file behind them (step photos, cut-outs, clips, proof) is also in [demo/](demo/README.md).
 
 The app runs on a free server: the first visit can take a minute to wake up. Every button is
 explained in [docs/TRY_IT.md](docs/TRY_IT.md).

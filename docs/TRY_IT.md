@@ -8,7 +8,9 @@ your computer (section 4). It runs on a free server: the **first visit can take 
 
 ## 1. A finished guide (1 minute)
 
-1. Open the address and tap **See a finished guide**. It is the guide FixScribe wrote from a
+1. Open the address. Under the two buttons, the landing lists **four finished guides** (a laptop, a
+   game console, a harp, a seat cushion); each opens in the app with its own live coach. Tap
+   **See a finished guide** for the first one. It is the guide FixScribe wrote from a
    Dell Latitude 7455 disassembly video ([source and licence](../demo/README.md)).
 2. Scroll the **Steps**. Each one has a photo where the part is outlined (SAM 3.1's cut-out of what
    Muse Spark pointed at) and the screws are circled and numbered in the order they come out.

@@ -35,6 +35,7 @@ def index(request: Request, settings: Settings = Depends(settings_dep)):  # noqa
         "index.html",
         {
             "sample": demo.ready_sample(settings),
+            "samples": demo.sample_cards(settings),
             "uploads": settings.uploads,
             "max_minutes": max(1, settings.max_video_seconds // 60),
         },

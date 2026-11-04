@@ -10,8 +10,10 @@ What to look at in each step photo: the **part outlined** is SAM 3.1's cut-out o
 pointed at, and the **numbered yellow circles** are the fastener map (screws, clips, staples) in the
 order they come out.
 
-To open one in the app: set `DEMO_JOB=<folder>` and start the server; the guide is at
-`/guides/<folder>`, read-only.
+**Open them in the live app:** [laptop](https://fixscribe-wpf3.onrender.com/guides/137c1ed0730d) · [game console](https://fixscribe-wpf3.onrender.com/guides/7628d7064780) ·
+[harp](https://fixscribe-wpf3.onrender.com/guides/0e2b78efccb9) · [seat cushion](https://fixscribe-wpf3.onrender.com/guides/359ba5a7fa66) (free server: the first visit can take a
+minute). To open them locally: `DEMO_JOB=137c1ed0730d,7628d7064780,0e2b78efccb9,359ba5a7fa66` and
+start the server; each guide is at `/guides/<folder>`, read-only.
 
 | Folder | Object | Guide FixScribe wrote | Steps | Put back | Meta cost |
 |---|---|---|---|---|---|

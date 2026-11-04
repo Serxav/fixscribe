@@ -11,6 +11,15 @@
     <a class="btn btn-primary btn-lg" href="/guides/{{ sample }}/live">Try the live coach</a>
     <a class="btn btn-soft btn-lg" href="/guides/{{ sample }}">See a finished guide</a>
   </p>
+  {% if samples|length > 1 %}
+  <nav class="sample-guides" id="guides" aria-label="Finished guides" data-reveal style="--d:.1s">
+    <p class="note">Finished guides FixScribe wrote from repair videos:</p>
+    <ul>
+      {% for s in samples %}<li><a href="/guides/{{ s.id }}"><b>{{ s.title }}</b></a> <span class="muted">· {{ s.steps }} steps · <a href="/guides/{{ s.id }}/live">live coach</a></span></li>
+      {% endfor %}
+    </ul>
+  </nav>
+  {% endif %}
   {% endif %}
   {% if uploads %}
   <form class="start" action="/upload" method="post" enctype="multipart/form-data" data-reveal style="--d:.12s">
@@ -28,7 +37,7 @@
   </form>
   {% else %}
   <div class="start" data-reveal style="--d:.12s">
-    <p class="note">This free demo server shows a finished guide and its live coach. Turning a new video into a guide needs more memory than it has: run FixScribe on your own computer (see the <a href="https://github.com/Serxav/fixscribe#run-it-locally">README</a>) or browse <a href="https://github.com/Serxav/fixscribe/tree/main/demo">four more guides</a>.</p>
+    <p class="note">This free demo server shows finished guides and their live coach. Turning a new video into a guide needs more memory than it has: run FixScribe on your own computer (see the <a href="https://github.com/Serxav/fixscribe#run-it-locally">README</a>){% if samples|length > 1 %} or open the finished guides above{% endif %}.</p>
   </div>
   {% endif %}
 </section>

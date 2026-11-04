@@ -11,7 +11,7 @@ services:
       - key: MODEL_API_KEY
         sync: false # typed in Render's panel, never in the repository
       - key: DEMO_JOB
-        value: 137c1ed0730d
+        value: 137c1ed0730d,7628d7064780,0e2b78efccb9,359ba5a7fa66
       - key: TRUST_PROXY
         value: "true"
       - key: BUDGET_USD
