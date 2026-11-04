@@ -123,6 +123,11 @@ cp .env.example .env            # then add your Meta key
 Open http://127.0.0.1:8000 on a computer or phone and upload a video. No key? `python scripts/demo_job.py`
 builds a guide with the real pipeline and a fake Meta client.
 
+**Open a sample guide in the app, no key needed:** start the server with
+`DEMO_JOB=137c1ed0730d .venv/bin/uvicorn app.main:app` and the landing links to the Dell laptop guide
+from [demo/](demo/README.md) (read-only). Any other folder in `demo/` works the same way. Its live
+coach (button "Use this guide's video") needs a Meta key; the camera needs https or 127.0.0.1.
+
 ```bash
 .venv/bin/pytest -q             # tests, Meta mocked
 .venv/bin/ruff check .          # lint

@@ -1,6 +1,6 @@
 # Submission text
 
-Fill the items in brackets before sending. Every number here comes from the README's evaluation.
+Every number here comes from the README's evaluation.
 
 **Name:** FixScribe
 
@@ -40,15 +40,20 @@ included: a job ends with a guide or a clear sentence, never a crash), and exams
 8.5-minute repair, 8 of 10 shown parts were surely right by eye, and no screw was confirmed in its
 720p footage. Typed questions to the coach on that guide (2026-11-02): 3 of 3 right, two pointing to
 the right step and second, one off-topic question refused. A rerun of the phone exam on 2026-11-02:
-marks right 89 %, the step's own part 10 of 11, median 20 s. [Add the numbers from the demo video.]
+marks right 89 %, the step's own part 10 of 11, median 20 s.
+Four sample guides made from openly licensed internet videos (a laptop, a game console, a harp, a
+seat cushion) are in `demo/`, 7 to 15 steps each.
 
 **Limits:** The coach reads a camera frame in about 8 s and marks take about 20 s; a typed question
 is answered in 2 to 4 s. Small screws need 1080p or
-better. Tried on few videos so far. [State whether real technicians have tried it. If none have, say
-so.]
+better. Tried on few videos so far, and no repair technician has tried it yet.
 
 **Built with:** All code written from Oct 26, 2026. Muse Code wrote the first version of several
 stages, with its tasks in `tasks/`; the rest was written with another coding agent, as each commit
 states.
 
-**Links:** [Deployed address] · [GitHub repository] · [Demo film]
+**Links:** Repository: https://github.com/Serxav/fixscribe · Sample guides, no install:
+https://github.com/Serxav/fixscribe/tree/main/demo · Demo film: (link added when uploaded)
+
+**How to try it:** the README's "Run it" section. With no key, `DEMO_JOB=137c1ed0730d` opens a
+sample guide in the app. With a Meta key, upload any repair video.
