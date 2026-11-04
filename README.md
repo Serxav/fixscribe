@@ -172,7 +172,7 @@ version of the pipeline.
 
 ## Built to survive real input
 
-964 tests, Meta always mocked. They include phone video as it really is (rotated, variable frame
+965 tests, Meta always mocked. They include phone video as it really is (rotated, variable frame
 rate, 10-bit HDR, 60 fps, too short, not a video) and model answers as they really come back
 (reversed or negative times, invented categories and hazards, runaway text, broken JSON): every job
 ends with a guide or one clear sentence, never a crash.
