@@ -17,6 +17,13 @@ There are three ways to try it. Each one is explained step by step below.
 It works on a phone (Safari on iPhone, Chrome on Android) or a computer. Nothing to install, no
 account. It runs on a server with 2 GB of memory that is always on, so it opens at once.
 
+**Meta credit for your tests: about €55 is left (2026-11-04).** It is shared by all the judges and
+pays for every AI call on the live app: guides from your videos, the live coach and questions. To
+protect it, the live app stops every Meta call once it has spent **$50 in all**; after that it
+answers that it reached its spend limit. A 45-second video costs about $0.80 and an hour of the
+coach a few dollars, so there is room for plenty of tests. If it does stop, way B (your own computer,
+your own key) and way C still work.
+
 **You can upload your own video.** MP4 or MOV, **up to 2 minutes** (30 to 60 seconds is the quickest
 to try), narrated or silent. It becomes a guide in **about 20 minutes** for a 45-second video, and
 **one video is processed at a time**: if another one is running, yours waits for it and then starts
@@ -213,7 +220,8 @@ a key too: `.venv/bin/pytest -q`.
 | The camera or microphone does not start | Allow them when asked. iPhone: tap **aA** in Safari's address bar → Website Settings → Camera / Microphone → Allow. On your own computer, use `http://127.0.0.1:8000`, not the computer's network address. |
 | "The coach is busy with other visitors" | Others are using the coach at the same moment. Wait a few seconds: it asks again by itself on the next frame. |
 | A step shows no part marks | Several coaches were marking parts at once and that step's turn came too late. The next step gets its marks. |
-| "reached its spend limit" | On the live app, the Meta credit set aside for the judges is used up: the [recorded clips](../demo/README.md) show the same thing. On your own computer, raise the limit in `.env` (B5). |
+| "reached its spend limit" or "spend already at budget" | On the live app, the $50 set aside for the judges' tests is used up: the [recorded clips](../demo/README.md) show the same thing. On your own computer, raise the limit in `.env` (B5). |
 | `ffmpeg` not found (B3b) | Install it (B1), or use Docker (B3a). |
 
-Every AI call goes to Meta models through the Meta Model API, with a spending cap on the server.
+Every AI call goes to Meta models through the Meta Model API. The live app stops all of them at $50
+in all, so the judges' tests never run past the credit.

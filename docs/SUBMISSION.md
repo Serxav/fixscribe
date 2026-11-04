@@ -68,5 +68,8 @@ B. On your own computer, with Docker or Python and a Meta key, in about 5 to 10 
 C. Without running anything: the 3-minute film and `demo/`, with every photo, cut-out and clip of the
 four guides and recorded clips of the live coach.
 
+**Meta credit for the judges' tests:** about €55 is left (2026-11-04). The live app stops every Meta
+call at $50 in all; a 45-second video costs about $0.80.
+
 **Waiting times on the live app (slow, not stuck):** the app opens at once, 10 to 20 s per coach answer, up to about 1 minute for part marks, 5 to 10 s per question. A new guide from a 45 s video takes about 20
 minutes. The server is shared: several coaches at once take turns, so they can be a little slower; one coach per judge at a time works best.

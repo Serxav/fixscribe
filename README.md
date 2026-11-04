@@ -57,6 +57,10 @@ to 10 minutes and never waits for anyone else's. All three ways to try it, side 
 
 Every file behind them (step photos, cut-outs, clips, proof) is also in [demo/](demo/README.md).
 
+**Meta credit for your tests:** about €55 is left (2026-11-04), shared by all the judges. The live
+app stops every Meta call at $50 in all, so it never runs past the credit; a 45-second video costs
+about $0.80.
+
 **It is slow, not stuck.** The app opens at once;
 the coach answers in 10 to 20 s, part marks take up to about 1 minute and a question 5 to 10 s.
 A new guide from your own 45 s video takes about 20 minutes. When several people use the coach at once they take turns, so it can

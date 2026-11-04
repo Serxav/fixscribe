@@ -14,7 +14,7 @@ services:
       - key: TRUST_PROXY
         value: "true"
       - key: BUDGET_USD
-        value: "30"
+        value: "50" # the live app stops every Meta call past $50 in all
       - key: JOB_BUDGET_USD
         value: "10"
       - key: DAILY_JOB_LIMIT
