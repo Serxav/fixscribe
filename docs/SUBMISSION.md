@@ -58,18 +58,17 @@ states.
 **Links:** Live app: https://fixscribe-wpf3.onrender.com · Repository: https://github.com/Serxav/fixscribe · Sample guides, no install:
 https://github.com/Serxav/fixscribe/tree/main/demo · Demo film: https://www.youtube.com/watch?v=bpZMs6h1uUo
 
-**How to try it** (three ways, each step by step in `docs/TRY_IT.md`):
-A. The live app, nothing to install: the landing says what to try in order. Open a finished guide
-(laptop, game console, harp, seat cushion), try its live coach with the guide's video or your own
-camera and voice, then record or upload your own repair video, up to 2 minutes: it becomes a guide
-in about 20 minutes.
-B. On your own computer, with Docker or Python and a Meta key, in about 5 to 10 minutes: videos up to
-10 minutes and nobody else's video ahead of yours.
+**How to try it** (step by step in `docs/TRY_IT.md`):
+A. The live app, nothing to install: open a finished guide (laptop, game console, harp, seat cushion),
+then its live coach with the guide's own video, or your own camera and voice.
+B. Your own video, on your computer: with Docker it is 4 commands and a Meta key, then upload a video
+up to 10 minutes; it becomes a guide in about 20 minutes. The free live server is too small to
+process new videos.
 C. Without running anything: the 3-minute film and `demo/`, with every photo, cut-out and clip of the
 four guides and recorded clips of the live coach.
 
 **Meta credit for the judges' tests:** about €55 is left (2026-11-04). The live app stops every Meta
-call at $50 in all; a 45-second video costs about $0.80.
+call at $50 in all.
 
-**Waiting times on the live app (slow, not stuck):** the app opens at once, 10 to 20 s per coach answer, up to about 1 minute for part marks, 5 to 10 s per question. A new guide from a 45 s video takes about 20
-minutes. The server is shared: several coaches at once take turns, so they can be a little slower; one coach per judge at a time works best.
+**Waiting times on the live app (slow, not stuck):** the free server sleeps when nobody uses it, so the first visit can take about 1 minute; then 10 to 20 s per coach answer, up to about 1 minute for part marks, 5 to 10 s per question. A new guide from a 45 s video takes about 20
+minutes on your computer. The server is shared: several coaches at once take turns, so they can be a little slower; one coach per judge at a time works best.

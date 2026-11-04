@@ -28,24 +28,23 @@ disassembly (LaptopMedia) and a PlayStation One button repair (Kytor Industries)
 | What | Where | Time |
 |---|---|---|
 | Watch what it does | [3-minute film](https://www.youtube.com/watch?v=bpZMs6h1uUo) | 3 min |
-| **Turn your own repair video into a guide** (start it first: it runs while you try the rest) | [live app](https://fixscribe-wpf3.onrender.com) → **Upload a video** (or **Record a video** on a phone) | about 20 min |
 | Read a finished guide: steps, cut-out parts, numbered screws, clips, the way back | [live app](https://fixscribe-wpf3.onrender.com) → **See a finished guide** | 1 min |
-| When your guide is ready: the live coach follows you through it with your camera | your guide → **Live coach** → **Start the camera** | while you repair |
-| Let the live coach follow a finished guide's own video, then ask it a question | a finished guide → **Live coach** → **Use this guide's video** | 3 min |
+| Let the live coach follow a finished guide's own video, then ask it a question | [live app](https://fixscribe-wpf3.onrender.com) → **Try the live coach** → **Use this guide's video** | 3 min |
 | Point your own phone camera at a laptop and talk to the coach | same page → **Start the camera** | 2 min |
 | Open the four guides it wrote: a laptop, a game console, a harp, a seat cushion | [the list below](#four-finished-guides-open-in-the-app) | 2 min |
+| **Turn your own repair video into a guide** | on your computer, 4 commands with Docker ([quick start](docs/TRY_IT.md#b-your-own-video-on-your-computer)) | about 10 min to set up, 20 min a video |
 
-**Your own video on the live app:** MP4 or MOV, **up to 2 minutes** (30 to 60 seconds is the
-quickest to try), narrated or silent, any object you take apart or put together. A 45-second video
-becomes a guide in about 20 minutes; the progress page shows every stage meanwhile, so leave it
-open. One video is processed at a time: if another judge's video is running, yours shows
-**Waiting for another video to finish…** and starts by itself after it. Longer videos, up to
-10 minutes, work when FixScribe runs on your own computer ([Run it locally](#run-it-locally)).
+**Your own video, on your computer.** The free live server is too small (512 MB) to turn a new video
+into a guide, so that part runs on your computer: install Docker, then
 
-**Another way to try it: on your own computer.** With Python 3.12 and ffmpeg (or Docker) and a Meta
-Model API key it takes about 5 minutes to set up ([step by step](docs/TRY_IT.md#b-on-your-own-computer)), takes videos up
-to 10 minutes and never waits for anyone else's. All three ways to try it, side by side:
-[docs/TRY_IT.md](docs/TRY_IT.md), each one step by step.
+```bash
+git clone https://github.com/Serxav/fixscribe.git && cd fixscribe
+cp .env.example .env          # open .env and paste your Meta key after MODEL_API_KEY=
+docker build -t fixscribe . && docker run --env-file .env -p 8000:8000 fixscribe
+```
+
+and open http://127.0.0.1:8000 → **Upload a video** (up to 10 minutes). A 45-second video becomes a
+guide in about 20 minutes. Every step, and the way without Docker: [docs/TRY_IT.md](docs/TRY_IT.md#b-your-own-video-on-your-computer).
 
 ### Four finished guides, open in the app
 
@@ -59,12 +58,11 @@ to 10 minutes and never waits for anyone else's. All three ways to try it, side 
 Every file behind them (step photos, cut-outs, clips, proof) is also in [demo/](demo/README.md).
 
 **Meta credit for your tests:** about €55 is left (2026-11-04), shared by all the judges. The live
-app stops every Meta call at $50 in all, so it never runs past the credit; a 45-second video costs
-about $0.80.
+app stops every Meta call at $50 in all, so it never runs past the credit.
 
-**It is slow, not stuck.** The app opens at once;
-the coach answers in 10 to 20 s, part marks take up to about 1 minute and a question 5 to 10 s.
-A new guide from your own 45 s video takes about 20 minutes. When several people use the coach at once they take turns, so it can
+**It is slow, not stuck.** The live app runs on a free server: if nobody opened it for 15 minutes,
+the first visit takes about 1 minute while it wakes up, then pages open at once. The coach answers
+in 10 to 20 s, part marks take up to about 1 minute and a question 5 to 10 s. When several people use the coach at once they take turns, so it can
 be a little slower: one coach per judge at a time works best. Every wait ends by itself. All timings and every button: [docs/TRY_IT.md](docs/TRY_IT.md#how-long-things-take-it-is-slow-not-stuck).
 
 ## See it move
@@ -186,6 +184,8 @@ once while the rest wait in line; per-visitor limits can be turned on from the h
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#limits-on-a-public-server).
 
 ## Run it locally
+
+The quickest way is Docker, above. Without Docker:
 
 Needs Python 3.12, ffmpeg (`brew install ffmpeg` on a Mac, `sudo apt install ffmpeg` on Linux) and a
 Meta Model API key.

@@ -203,7 +203,7 @@ def test_uploads_off_hides_the_form_and_refuses(tmp_path, no_start):
         page = client.get("/")
         assert page.status_code == 200
         assert 'name="video"' not in page.text
-        assert "free demo server" in page.text
+        assert "runs on your computer" in page.text
         sent = client.post("/upload", files={"video": ("a.mp4", b"x" * 10, "video/mp4")})
         assert sent.status_code == 503
         assert "does not make new guides" in sent.text

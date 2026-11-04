@@ -4,9 +4,13 @@ There are three ways to try it. Each one is explained step by step below.
 
 | Way | What you need | What you get | Set-up |
 |---|---|---|---|
-| [**A. The live app**](#a-the-live-app) | a phone or computer | the four finished guides, the live coach with camera and voice, your own video up to 2 minutes | none |
-| [**B. On your own computer**](#b-on-your-own-computer) | Docker, or Python 3.12 and ffmpeg; a Meta Model API key | everything, with videos up to 10 minutes, no waiting for other people's videos, and Meta's MMS-TTS voice | about 5 to 10 minutes |
+| [**A. The live app**](#a-the-live-app) | a phone or computer | the four finished guides, and the live coach with the guide's video, your camera and your voice | none |
+| [**B. Your own video, on your computer**](#b-your-own-video-on-your-computer) | Docker and a Meta Model API key | a guide from your own video (up to 10 minutes), its live coach, and Meta's MMS-TTS voice | about 10 minutes |
 | [**C. Without running anything**](#c-without-running-anything) | a browser | the 3-minute film, and every photo, cut-out, clip and proof of the four guides, plus recorded clips of the live coach | none |
+
+The live app runs on a free server with 512 MB of memory: enough for the guides and the live coach,
+not for turning a new video into a guide (that needs about 690 MB). So your own video runs on your
+computer (B).
 
 ---
 
@@ -15,20 +19,13 @@ There are three ways to try it. Each one is explained step by step below.
 **Address: https://fixscribe-wpf3.onrender.com**
 
 It works on a phone (Safari on iPhone, Chrome on Android) or a computer. Nothing to install, no
-account. The first button on the landing is **Upload a video**: start your own video first
-([A4](#a4-your-own-repair-video)), since it takes about 20 minutes, and try A1 to A3 meanwhile in another tab. It runs on a server with 2 GB of memory that is always on, so it opens at once.
+account. **If nobody opened it in the last 15 minutes, the first visit takes about 1 minute** while
+the free server wakes up; after that pages open at once.
 
 **Meta credit for your tests: about €55 is left (2026-11-04).** It is shared by all the judges and
-pays for every AI call on the live app: guides from your videos, the live coach and questions. To
-protect it, the live app stops every Meta call once it has spent **$50 in all**; after that it
-answers that it reached its spend limit. A 45-second video costs about $0.80 and an hour of the
-coach a few dollars, so there is room for plenty of tests. If it does stop, way B (your own computer,
-your own key) and way C still work.
-
-**You can upload your own video.** MP4 or MOV, **up to 2 minutes** (30 to 60 seconds is the quickest
-to try), narrated or silent. It becomes a guide in **about 20 minutes** for a 45-second video, and
-**one video is processed at a time**: if another one is running, yours waits for it and then starts
-by itself. Steps in [A4](#a4-your-own-repair-video).
+pays for every AI call on the live app: the live coach and questions. To protect it, the live app
+stops every Meta call once it has spent **$50 in all**; after that it answers that it reached its
+spend limit. If it does stop, ways B and C still work.
 
 ### How long things take (it is slow, not stuck)
 
@@ -36,15 +33,15 @@ Measured on the live app on 2026-11-04. Every wait ends by itself: nothing needs
 
 | What | How long | What you see meanwhile |
 |---|---|---|
-| Opening the app | **at once** | |
+| Opening the app after 15 quiet minutes | **about 1 minute** | a loading page while the free server wakes up |
+| Opening the app otherwise | **at once** | |
 | Opening a guide, its photos and clips | under 1 s | |
 | The coach's first answer, and each new one | **10 to 20 s** | **Looking…**; with the guide's video, the video pauses until the answer comes |
 | The part marks on a new step | **up to about 1 minute** | the step and its instruction are already shown; the marks appear dashed, then solid (or go away if Spark does not confirm them) |
 | A typed or spoken question | **5 to 10 s** | **Thinking…**, then the answer and a button to that moment of the video |
 | The coach following a whole guide with its video | **about 15 to 20 minutes** for 11 steps | the step changes on its own; a 30× speed-up is in [demo/](../demo/README.md#the-live-coach-on-the-dell-guide) |
 | Several people using the coach at the same moment | **a little longer** | the server is shared, so coaches take turns: part marks are worked out one at a time, answers three at a time. A step whose marks waited too long shows none; the next step gets them |
-| Turning your video into a guide | **about 20 minutes** for a 45 s video | a progress page with every stage as it runs |
-| Two people uploading at the same moment | the second waits for the first, then about 20 more minutes | **Waiting for another video to finish…**, then the stages |
+| Turning your video into a guide (on your computer, B) | **about 20 minutes** for a 45 s video | a progress page with every stage as it runs |
 
 **One coach per judge at a time works best.** The live app runs on one server shared by everyone
 who opens it. When several coaches run at once they wait for each other instead of overloading it.
@@ -52,7 +49,7 @@ Close the coach tab when you are done, so the next person does not wait for it.
 
 ### A1. A finished guide (1 minute)
 
-1. Open the address. Under the upload buttons, the landing lists **four finished guides** (a laptop, a
+1. Open the address. Under the buttons, the landing lists **four finished guides** (a laptop, a
    game console, a harp, a seat cushion); each opens in the app with its own live coach. Tap
    **See a finished guide** for the first one. It is the guide FixScribe wrote from a
    Dell Latitude 7455 disassembly video ([source and licence](../demo/README.md)).
@@ -69,9 +66,10 @@ changed."
 
 ### A2. The live coach with nothing to repair (3 minutes)
 
-The coach is made for the guide of your own video (A4, step 4). To see it before yours is ready:
+The coach is made for following a guide while you repair. On the live app, try it with a finished
+guide's own video:
 
-1. Open a finished guide and tap **Live coach** (or **live coach** next to it in the landing's list).
+1. On the landing tap **Try the live coach** (or **live coach** next to any guide in the list).
 2. Tap **Nothing to repair right now? Use this guide's video**. The guide's own video plays where
    your camera would be.
 3. Watch the panel: the coach says which step it sees (**Step 1 of 11**), its state (**On track**,
@@ -90,34 +88,50 @@ A clip of this, recorded on 2026-11-04, is in [demo/](../demo/README.md#the-live
 ### A3. The live coach with your camera and voice
 
 1. On the coach page of a guide tap **Start the camera** and allow the camera.
-2. Point it at the object of that guide: your own object on your own guide (A4), or a laptop's
-   underside on the Dell guide. It shows **Check this** or **Looking…** when the view does not
+2. Point it at the object of that guide: a laptop's underside on the Dell guide, or your own object
+   on a guide made from your own video (B). It shows **Check this** or **Looking…** when the view does not
    match a step.
 3. Tap 🎙️ and allow the microphone. Say **"next"**, **"back"** or **"repeat"** (no AI needed), or ask
    a question out loud.
 
 ### A4. Your own repair video
 
-1. Film or pick a repair or assembly video: MP4 or MOV, **up to 2 minutes** (30 to 60 seconds is
-   the quickest). Good light, the part filling the frame, 1080p if screws matter. Narrated or
-   silent; saying "step" (or "paso") before each step cuts the steps exactly there.
-2. On the landing tap **Record a video** (phone camera) or **Upload a video** (a file).
-3. The progress page shows every stage as it runs: what it heard, the steps on the timeline, the
-   step cards. **Leave it open**: a 45-second video takes about 20 minutes. If another video is
-   running it shows **Waiting for another video to finish…** first.
-4. Then **Open the guide**: the same kind of guide as in A1, from your video. Its **Live coach**
-   button coaches that guide. **Agent console** shows Muse Wonder checking the guide with
-   SAM as a tool.
-
-Longer videos, up to 10 minutes, work on your own computer (B).
+On your computer: way B, just below.
 
 ---
 
-## B. On your own computer
+## B. Your own video, on your computer
 
 Everything runs on your machine; only the AI calls go to Meta's servers, paid by your own Meta key.
 Videos can be up to 10 minutes, nobody else's video is ahead of yours, and the steps are read aloud
 with Meta's MMS-TTS voice.
+
+### Quick start (Docker, about 10 minutes)
+
+1. Install **Docker Desktop** (docker.com) and start it.
+2. In a terminal:
+
+   ```bash
+   git clone https://github.com/Serxav/fixscribe.git && cd fixscribe
+   cp .env.example .env
+   ```
+
+3. Open the file `.env` in any text editor and paste your Meta Model API key after `MODEL_API_KEY=`
+   (no quotes, no spaces). Save it.
+4. Back in the terminal (the first build takes a few minutes):
+
+   ```bash
+   docker build -t fixscribe . && docker run --env-file .env -p 8000:8000 fixscribe
+   ```
+
+5. Open **http://127.0.0.1:8000**, tap **Upload a video** and pick a repair or assembly video, up to
+   10 minutes, narrated or silent. A 45-second video becomes a guide in about 20 minutes; the
+   progress page shows every stage, so leave it open.
+6. **Open the guide**, then **Live coach** → **Start the camera**, and point the camera at your object:
+   the coach follows you through your own guide. The camera works on this computer at
+   `http://127.0.0.1:8000`.
+
+The sections below give the same steps in more detail, and the way without Docker.
 
 ### B1. What you need
 
