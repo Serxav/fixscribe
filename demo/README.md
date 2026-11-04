@@ -11,8 +11,7 @@ pointed at, and the **numbered yellow circles** are the fastener map (screws, cl
 order they come out.
 
 **Open them in the live app:** [laptop](https://fixscribe-wpf3.onrender.com/guides/137c1ed0730d) · [game console](https://fixscribe-wpf3.onrender.com/guides/7628d7064780) ·
-[harp](https://fixscribe-wpf3.onrender.com/guides/0e2b78efccb9) · [seat cushion](https://fixscribe-wpf3.onrender.com/guides/359ba5a7fa66) (free server: the first visit can take a
-minute). To open them locally: `DEMO_JOB=137c1ed0730d,7628d7064780,0e2b78efccb9,359ba5a7fa66` and
+[harp](https://fixscribe-wpf3.onrender.com/guides/0e2b78efccb9) · [seat cushion](https://fixscribe-wpf3.onrender.com/guides/359ba5a7fa66). To open them locally: `DEMO_JOB=137c1ed0730d,7628d7064780,0e2b78efccb9,359ba5a7fa66` and
 start the server; each guide is at `/guides/<folder>`, read-only.
 
 | Folder | Object | Guide FixScribe wrote | Steps | Put back | Meta cost |

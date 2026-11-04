@@ -3,29 +3,34 @@
 **Address: https://fixscribe-wpf3.onrender.com**
 
 It works on a phone (Safari on iPhone, Chrome on Android) or a computer. Nothing to install, no
-account. It shows a finished guide and its live coach; making a guide from your own video runs on
-your computer (section 4). It runs on a free server with **only 512 MB of memory**, kept awake by a visit every 10 minutes,
-so it normally opens at once; several coaches at once take turns.
+account. It shows four finished guides with their live coach, and turns your own short repair video
+into a guide (section 4). It runs on a server with 2 GB of memory that is always on, so it opens at
+once.
+
+**You can upload your own video.** MP4 or MOV, **up to 2 minutes** (30 to 60 seconds is the quickest
+to try), narrated or silent. It becomes a guide in **about 20 minutes** for a 45-second video, and
+**one video is processed at a time**: if another one is running, yours waits for it and then starts
+by itself. Details in [section 4](#4-your-own-repair-video).
 
 ## How long things take (it is slow, not stuck)
 
-Measured on the live app's free server on 2026-11-04. Every wait ends by itself: nothing needs a
+Measured on the live app on 2026-11-04. Every wait ends by itself: nothing needs a
 reload.
 
 | What | How long | What you see meanwhile |
 |---|---|---|
-| Opening the app | **at once**; rarely about 1 minute | the server is kept awake; if it did fall asleep, a loading page while it wakes up |
+| Opening the app | **at once** | |
 | Opening a guide, its photos and clips | under 1 s | |
 | The coach's first answer, and each new one | **10 to 20 s** | **Looking…**; with the guide's video, the video pauses until the answer comes |
 | The part marks on a new step | **up to about 1 minute** | the step and its instruction are already shown; the marks appear dashed, then solid (or go away if Spark does not confirm them) |
 | A typed or spoken question | **5 to 10 s** | **Thinking…**, then the answer and a button to that moment of the video |
 | The coach following a whole guide with its video | **about 15 to 20 minutes** for 11 steps | the step changes on its own; a 30× speed-up is in [demo/](../demo/README.md#the-live-coach-on-the-dell-guide) |
-| Several people using the coach at the same moment | **a little longer** | the free server has 512 MB, so coaches take turns: part marks are worked out one at a time, answers three at a time. A step whose marks waited too long shows none; the next step gets them |
-| Turning a new video into a guide (on your computer) | **about 20 minutes** for a 45 s video, 14 to 30 minutes for 8.5 minutes | a progress page with every stage |
+| Several people using the coach at the same moment | **a little longer** | the server is shared, so coaches take turns: part marks are worked out one at a time, answers three at a time. A step whose marks waited too long shows none; the next step gets them |
+| Turning your video into a guide | **about 20 minutes** for a 45 s video | a progress page with every stage as it runs |
+| Two people uploading at the same moment | the second waits for the first, then about 20 more minutes | **Waiting for another video to finish…**, then the stages |
 
-**One coach per judge at a time works best.** The live app runs on a free server with **only 512 MB
-of memory**, shared by everyone who opens it. When several coaches run at once they wait for each
-other instead of crashing the server. Close the coach tab when you
+**One coach per judge at a time works best.** The live app runs on one server shared by everyone
+who opens it. When several coaches run at once they wait for each other instead of overloading it. Close the coach tab when you
 are done, so the next person does not wait for it.
 
 ## 1. A finished guide (1 minute)
@@ -52,7 +57,7 @@ This sample guide is read-only: buttons that would change it answer "The sample 
 3. Watch the panel: the coach says which step it sees (**Step 1 of 11**), its state (**On track**,
    **Step done**, **Check this**), and what comes next. The video **waits for the coach** at every frame: each answer takes 10 to 20 s.
 4. When a new step starts, the parts get marked on the picture: dashed while SAM 3.1 cuts them out,
-   solid once Spark has checked them. On this free server the marks take up to about a minute, and
+   solid once Spark has checked them. On the live app the marks take up to about a minute, and
    a mark Spark does not confirm is taken away rather than shown.
 5. Type a question in **Ask about this repair…**, for example `How many screws hold the battery?`.
    The answer names its step and has a button that plays that moment of the video.
@@ -71,14 +76,14 @@ A clip of this, recorded on 2026-11-04, is in [demo/](../demo/README.md#the-live
 
 ## 4. Your own repair video
 
-The free server behind the live app is too small to turn a new video into a guide (the pipeline
-needs more than its 512 MB), so the upload buttons are off there. To try it on your own video, run
-FixScribe on a computer with a Meta key ([Run it locally](../README.md#run-it-locally), about
-5 minutes to set up), or see [four guides it made](../demo/README.md) from real repair videos:
+On the landing tap **Record a video** (phone) or **Upload a video**. The live app takes
+videos **up to 2 minutes**; a 30 to 60 second clip is the quickest to try. One video is processed at
+a time: if someone else's is running, yours waits for its turn. Longer videos (up to 10 minutes) work
+when FixScribe runs on your own computer ([Run it locally](../README.md#run-it-locally)).
 
-1. Upload a repair or assembly video, up to 10 minutes. Good light, the part filling the frame,
-   1080p if screws matter. Narrated or silent; saying "step" (or "paso") before each step cuts the
-   steps exactly there.
+1. Film or pick a repair or assembly video. Good light, the part filling the frame, 1080p if screws
+   matter. Narrated or silent; saying "step" (or "paso") before each step cuts the steps exactly
+   there.
 2. The progress page shows every stage as it runs.
 3. Then **Open the guide**. **Agent console** shows Muse Wonder checking the guide with SAM as a tool.
 
@@ -87,7 +92,7 @@ FixScribe on a computer with a Meta key ([Run it locally](../README.md#run-it-lo
 | What you see | What to do |
 |---|---|
 | "Can't provide a secure connection" / "not secure" | Type the address exactly, starting with `https://`. Some school or office wifi blocks it: try mobile data. |
-| The page takes long to open | The free server is waking up: wait about a minute. |
+| The progress page stays on one stage for minutes | Normal: a 45 s video takes about 20 minutes in all. Leave the page open; it moves on by itself. |
 | The coach says **Looking…** for a while | Normal: an answer takes 10 to 20 s, the marks up to a minute. Keep the camera still. |
 | The camera or microphone does not start | Allow them when asked. iPhone: tap **aA** in Safari's address bar → Website Settings → Camera / Microphone → Allow. |
 | "The coach is busy with other visitors" | Others are using the coach at the same moment. Wait a few seconds: it asks again by itself on the next frame. |

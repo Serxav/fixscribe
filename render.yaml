@@ -1,11 +1,10 @@
-# Render Blueprint: the free web service the judges open (https, built from the Dockerfile).
-# The free instance has 512 MB: it shows the sample guide and its live coach, with the browser's
-# own voice; processing a new video needs more memory, so uploads are off (UPLOADS=false).
+# Render Blueprint: the web service the judges open (https, built from the Dockerfile).
+# Standard (2 GB): turning a video into a guide peaks at about 690 MB, more than the free 512 MB.
 services:
   - type: web
     name: fixscribe
     runtime: docker
-    plan: free
+    plan: standard
     healthCheckPath: /health
     envVars:
       - key: MODEL_API_KEY
@@ -33,6 +32,6 @@ services:
       - key: ENABLE_INSPECTOR
         value: "true"
       - key: UPLOADS
-        value: "false" # 512 MB is not enough to turn a video into a guide
+        value: "true"
       - key: VOICE_MODEL_DIR
         value: models/off

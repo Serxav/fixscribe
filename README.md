@@ -32,6 +32,14 @@ disassembly (LaptopMedia) and a PlayStation One button repair (Kytor Industries)
 | Let the live coach follow a repair video, then ask it a question | [live app](https://fixscribe-wpf3.onrender.com) → **Try the live coach** → **Use this guide's video** | 3 min |
 | Point your own phone camera at a laptop and talk to the coach | same page → **Start the camera** | 2 min |
 | Open the four guides it wrote: a laptop, a game console, a harp, a seat cushion | [the list below](#four-finished-guides-open-in-the-app) | 2 min |
+| **Turn your own repair video into a guide** | [live app](https://fixscribe-wpf3.onrender.com) → **Record a video** or **Upload a video** | about 20 min |
+
+**Your own video on the live app:** MP4 or MOV, **up to 2 minutes** (30 to 60 seconds is the
+quickest to try), narrated or silent, any object you take apart or put together. A 45-second video
+becomes a guide in about 20 minutes; the progress page shows every stage meanwhile, so leave it
+open. One video is processed at a time: if another judge's video is running, yours shows
+**Waiting for another video to finish…** and starts by itself after it. Longer videos, up to
+10 minutes, work when FixScribe runs on your own computer ([Run it locally](#run-it-locally)).
 
 ### Four finished guides, open in the app
 
@@ -44,9 +52,9 @@ disassembly (LaptopMedia) and a PlayStation One button repair (Kytor Industries)
 
 Every file behind them (step photos, cut-outs, clips, proof) is also in [demo/](demo/README.md).
 
-**It is slow, not stuck.** The free server is kept awake, so the app normally opens at once (rarely about 1 minute to wake up);
+**It is slow, not stuck.** The app opens at once;
 the coach answers in 10 to 20 s, part marks take up to about 1 minute and a question 5 to 10 s.
-When several people use the coach at once they take turns (the free server has only 512 MB of memory), so it can
+A new guide from your own 45 s video takes about 20 minutes. When several people use the coach at once they take turns, so it can
 be a little slower: one coach per judge at a time works best. Every wait ends by itself. All timings and every button: [docs/TRY_IT.md](docs/TRY_IT.md#how-long-things-take-it-is-slow-not-stuck).
 
 ## See it move

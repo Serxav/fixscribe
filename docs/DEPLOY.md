@@ -2,12 +2,11 @@
 
 The camera and microphone only work over https, so judges need a hosted address.
 
-**Free option used for the hackathon: Render.** `render.yaml` is a Blueprint: in Render, New →
-Blueprint → this repository, type the Meta key when asked for `MODEL_API_KEY`, and deploy. The free
-instance has 512 MB: a 45-second video ran it out of memory, so the Blueprint turns uploads off
-(`UPLOADS=false`) and serves the sample guide and its live coach with the browser's voice. It sleeps after 15 idle minutes and wakes in about a
-minute, so `.github/workflows/keep-awake.yml` visits `/health` every 10 minutes to keep it awake
-(a free workspace has 750 instance hours a month, enough for one service all month). With more memory, use the settings below.
+**Used for the hackathon: Render.** `render.yaml` is a Blueprint: in Render, New → Blueprint → this
+repository, type the Meta key when asked for `MODEL_API_KEY`, and deploy. It uses the Standard
+instance (2 GB): turning a 45-second video into a guide peaks at about 690 MB, which ran the free
+512 MB instance out of memory. On a free instance set `UPLOADS=false`: it then serves the sample
+guides and their live coach only, and `.github/workflows/keep-awake.yml` keeps it from sleeping.
 
 1. Connect this GitHub repository to a host that builds the `Dockerfile` and gives https.
 2. Use at least 4 GB of memory (a 720p video peaked at 1.1 GB on 6 steps; 1080p needs more) and a persistent volume mounted at `/srv/data`.
