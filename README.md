@@ -109,13 +109,13 @@ tells you what comes next, hands-free.
 Every call goes through one door, `app/meta_client.py`: retries, 429 backoff, a global and a per-job
 budget, and a spend log per stage.
 
-| Model | Job in FixScribe |
-|---|---|
-| `muse-spark-1.3` | identifies the object, category, task and hazards; watches the whole video with the transcript and writes the steps; re-reads unclear steps on timecoded clips; points at parts; checks every mark; follows the live camera; answers questions |
-| `sam-3.1` (images) | cuts out the part Spark points at; finds fastener candidates on the frame and on zoomed tiles |
-| `sam-3.1` (video) | follows each part and fastener through its step, so a fastener counts only if it appears or disappears where the step says |
-| `muse-voice-transcribe-1.0` | timestamped turns; the spoken "step" / "paso" become the step cuts; hears the user in the coach |
-| `muse-wonder-1.0` | optional agent (`ENABLE_INSPECTOR`): looks at frames, points with SAM, adds steps and asks the person when unsure. On one real 8.5-minute video it filed 15 steps with 5 SAM-proven parts in 13 turns, for $0.69 |
+| Model | Job in FixScribe | Called from |
+|---|---|---|
+| `muse-spark-1.3` | identifies the object, category, task and hazards; watches the whole video with the transcript and writes the steps; re-reads unclear steps on timecoded clips; points at parts; checks every mark; follows the live camera; answers questions | [`app/spark.py`](app/spark.py), used by [`identify`](app/pipeline/identify.py), [`analyze`](app/pipeline/analyze.py), [`refine`](app/pipeline/refine.py), [`live`](app/pipeline/live.py), [`ask`](app/pipeline/ask.py) |
+| `sam-3.1` (images) | cuts out the part Spark points at; finds fastener candidates on the frame and on zoomed tiles | [`perception`](app/pipeline/perception.py), [`fasteners`](app/pipeline/fasteners.py), [`locate`](app/pipeline/locate.py), [`live`](app/pipeline/live.py) |
+| `sam-3.1` (video) | follows each part and fastener through its step, so a fastener counts only if it appears or disappears where the step says | [`motion`](app/pipeline/motion.py), [`fasteners`](app/pipeline/fasteners.py), [`perception`](app/pipeline/perception.py) |
+| `muse-voice-transcribe-1.0` | timestamped turns; the spoken "step" / "paso" become the step cuts; hears the user in the coach | [`transcribe`](app/pipeline/transcribe.py), [`ask`](app/pipeline/ask.py) |
+| `muse-wonder-1.0` | optional agent (`ENABLE_INSPECTOR`): looks at frames, points with SAM, adds steps and asks the person when unsure. On one real 8.5-minute video it filed 15 steps with 5 SAM-proven parts in 13 turns, for $0.69 | [`app/agent/loop.py`](app/agent/loop.py), tools in [`app/agent/tools.py`](app/agent/tools.py) |
 
 Unexpected uses: **SAM 3.1 as a fastener counter** (candidates from SAM, followed over time by SAM
 video, confirmed by Spark by number, never by guessing coordinates); **voice turns as step cuts**
@@ -178,7 +178,7 @@ version of the pipeline.
 
 ## Built to survive real input
 
-965 tests, Meta always mocked. They include phone video as it really is (rotated, variable frame
+959 tests, Meta always mocked. They include phone video as it really is (rotated, variable frame
 rate, 10-bit HDR, 60 fps, too short, not a video) and model answers as they really come back
 (reversed or negative times, invented categories and hazards, runaway text, broken JSON): every job
 ends with a guide or one clear sentence, never a crash.

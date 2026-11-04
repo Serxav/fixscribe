@@ -33,7 +33,7 @@ plays that moment of the video.
   On one real 8.5-minute video it filed 15 steps and 5 SAM-proven parts in 13 turns for $0.69.
 
 **Technical depth:** Stages that resume after a failure, atomic job files, retries and 429 backoff,
-a per-job and global spend counter, 965 tests with Meta mocked (strange model answers and odd videos
+a per-job and global spend counter, 959 tests with Meta mocked (strange model answers and odd videos
 included: a job ends with a guide or a clear sentence, never a crash), and exams against answer keys.
 
 **Results (2026-11-01, two videos):** the coach is on the right step 88 % and 95 % of the time within
