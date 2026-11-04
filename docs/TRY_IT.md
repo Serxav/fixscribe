@@ -4,7 +4,8 @@
 
 It works on a phone (Safari on iPhone, Chrome on Android) or a computer. Nothing to install, no
 account. It shows a finished guide and its live coach; making a guide from your own video runs on
-your computer (section 4). It runs on a free server: the **first visit can take about a minute** while it wakes up.
+your computer (section 4). It runs on a free server with **only 512 MB of memory**: the **first visit can take about a minute**
+while it wakes up, and several coaches at once take turns.
 
 ## How long things take (it is slow, not stuck)
 
@@ -22,8 +23,9 @@ reload.
 | Several people using the coach at the same moment | **a little longer** | the free server has 512 MB, so coaches take turns: part marks are worked out one at a time, answers three at a time. A step whose marks waited too long shows none; the next step gets them |
 | Turning a new video into a guide (on your computer) | **about 20 minutes** for a 45 s video, 14 to 30 minutes for 8.5 minutes | a progress page with every stage |
 
-**One coach per judge at a time works best.** The server is shared and small: when several coaches
-run at once they wait for each other instead of crashing the server. Close the coach tab when you
+**One coach per judge at a time works best.** The live app runs on a free server with **only 512 MB
+of memory**, shared by everyone who opens it. When several coaches run at once they wait for each
+other instead of crashing the server. Close the coach tab when you
 are done, so the next person does not wait for it.
 
 ## 1. A finished guide (1 minute)
