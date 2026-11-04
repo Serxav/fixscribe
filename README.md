@@ -6,6 +6,10 @@ follow, then coaches the next person live through their camera.**
 Built on the Meta Model API (Muse Spark, SAM 3.1, Muse Voice, Muse Wonder) for the Meta Global AI
 Developer Hackathon, Indie track · theme: Build for Your World.
 
+**Try it live: https://fixscribe-wpf3.onrender.com** (free server: the first visit can take about a
+minute while it wakes up; the camera and microphone work over its https). Open the sample guide and
+its live coach, or upload a repair video of up to 2 minutes. **Step by step: [docs/TRY_IT.md](docs/TRY_IT.md).**
+
 **For judges, nothing to install:** [four sample guides](demo/README.md) FixScribe wrote from
 openly licensed repair videos, and [the live coach following one of them](demo/README.md#the-live-coach-on-the-dell-guide).
 To run it yourself, see [Run it](#run-it): a sample guide opens with no key.
@@ -163,8 +167,8 @@ every step photo, cut-out, clip and proof file.
 
 All code in this repository was written during the hackathon, from Oct 26, 2026. Muse Code (Meta's
 coding agent, running `muse-spark-1.3`) wrote the first version of several stages from small written
-tasks: 16 of the commits say "Written by Muse Code". From Oct 27 the code was written with another
-coding agent. Every Muse Code task, review and report is kept in [`tasks/`](tasks/).
+tasks: 16 of the commits say "Written by Muse Code". From Oct 27 the code was written with
+other AI coding assistants. Every Muse Code task, review and report is kept in [`tasks/`](tasks/).
 
 ## License
 

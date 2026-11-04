@@ -49,11 +49,13 @@ is answered in 2 to 4 s. Small screws need 1080p or
 better. Tried on few videos so far, and no repair technician has tried it yet.
 
 **Built with:** All code written from Oct 26, 2026. Muse Code wrote the first version of several
-stages, with its tasks in `tasks/`; the rest was written with another coding agent, as each commit
+stages, with its tasks in `tasks/`; the rest was written with other AI coding assistants, as each commit
 states.
 
-**Links:** Repository: https://github.com/Serxav/fixscribe · Sample guides, no install:
+**Links:** Live app: https://fixscribe-wpf3.onrender.com · Repository: https://github.com/Serxav/fixscribe · Sample guides, no install:
 https://github.com/Serxav/fixscribe/tree/main/demo · Demo film: (link added when uploaded)
 
-**How to try it:** the README's "Run it" section. With no key, `DEMO_JOB=137c1ed0730d` opens a
+**How to try it** (step by step in `docs/TRY_IT.md`): open the live app on a phone or computer: the Dell sample guide and its live coach
+are on the landing, and any repair video of up to 2 minutes can be uploaded. Or run it locally (the
+README's "Run it" section). With no key, `DEMO_JOB=137c1ed0730d` opens a
 sample guide in the app. With a Meta key, upload any repair video.

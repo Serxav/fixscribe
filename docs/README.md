@@ -7,6 +7,7 @@
 | [DESIGN.md](DESIGN.md) | The visual rules of the web app |
 | [DEPLOY.md](DEPLOY.md) | Hosting FixScribe for judges, the host variables, and the last-day runbook |
 | [DEMO_SCRIPT.md](DEMO_SCRIPT.md) | The demo film, scene by scene |
+| [TRY_IT.md](TRY_IT.md) | Step by step for judges: the live app, the coach, your own video |
 | [SUBMISSION.md](SUBMISSION.md) | The text sent to the hackathon |
 | [HACKATHON_BRIEF.md](HACKATHON_BRIEF.md) | What the judges score, given to every coding agent before a task |
 | [ENGINEERING_STANDARD.md](ENGINEERING_STANDARD.md) | The bar every change has to meet |
