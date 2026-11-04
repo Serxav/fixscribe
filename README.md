@@ -44,7 +44,7 @@ disassembly (LaptopMedia) and a PlayStation One button repair (Kytor Industries)
 
 Every file behind them (step photos, cut-outs, clips, proof) is also in [demo/](demo/README.md).
 
-**It is slow, not stuck.** On this free server the first visit can take about 1 minute to wake up,
+**It is slow, not stuck.** The free server is kept awake, so the app normally opens at once (rarely about 1 minute to wake up);
 the coach answers in 10 to 20 s, part marks take up to about 1 minute and a question 5 to 10 s.
 When several people use the coach at once they take turns (the free server has only 512 MB of memory), so it can
 be a little slower: one coach per judge at a time works best. Every wait ends by itself. All timings and every button: [docs/TRY_IT.md](docs/TRY_IT.md#how-long-things-take-it-is-slow-not-stuck).

@@ -4,8 +4,8 @@
 
 It works on a phone (Safari on iPhone, Chrome on Android) or a computer. Nothing to install, no
 account. It shows a finished guide and its live coach; making a guide from your own video runs on
-your computer (section 4). It runs on a free server with **only 512 MB of memory**: the **first visit can take about a minute**
-while it wakes up, and several coaches at once take turns.
+your computer (section 4). It runs on a free server with **only 512 MB of memory**, kept awake by a visit every 10 minutes,
+so it normally opens at once; several coaches at once take turns.
 
 ## How long things take (it is slow, not stuck)
 
@@ -14,7 +14,7 @@ reload.
 
 | What | How long | What you see meanwhile |
 |---|---|---|
-| First visit after a quiet spell | **about 1 minute** | a loading page: the free server is waking up |
+| Opening the app | **at once**; rarely about 1 minute | the server is kept awake; if it did fall asleep, a loading page while it wakes up |
 | Opening a guide, its photos and clips | under 1 s | |
 | The coach's first answer, and each new one | **10 to 20 s** | **Looking…**; with the guide's video, the video pauses until the answer comes |
 | The part marks on a new step | **up to about 1 minute** | the step and its instruction are already shown; the marks appear dashed, then solid (or go away if Spark does not confirm them) |

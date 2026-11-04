@@ -6,7 +6,8 @@ The camera and microphone only work over https, so judges need a hosted address.
 Blueprint → this repository, type the Meta key when asked for `MODEL_API_KEY`, and deploy. The free
 instance has 512 MB: a 45-second video ran it out of memory, so the Blueprint turns uploads off
 (`UPLOADS=false`) and serves the sample guide and its live coach with the browser's voice. It sleeps after 15 idle minutes and wakes in about a
-minute. With more memory, use the settings below.
+minute, so `.github/workflows/keep-awake.yml` visits `/health` every 10 minutes to keep it awake
+(a free workspace has 750 instance hours a month, enough for one service all month). With more memory, use the settings below.
 
 1. Connect this GitHub repository to a host that builds the `Dockerfile` and gives https.
 2. Use at least 4 GB of memory (a 720p video peaked at 1.1 GB on 6 steps; 1080p needs more) and a persistent volume mounted at `/srv/data`.

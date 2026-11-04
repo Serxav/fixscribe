@@ -62,6 +62,6 @@ landing lists four finished guides (laptop, game console, harp, seat cushion), e
 new videos, so making a guide from your own video runs locally (the README's "Run it locally"), and
 four finished guides are in `demo/`.
 
-**Waiting times on the free live server (slow, not stuck):** about 1 minute to wake up on the first
-visit, 10 to 20 s per coach answer, up to about 1 minute for part marks, 5 to 10 s per question. The free server has only 512 MB of
-memory, so several coaches at once take turns, so they can be a little slower; one coach per judge at a time works best.
+**Waiting times on the free live server (slow, not stuck):** the app normally opens at once (the server is kept
+awake; rarely about 1 minute to wake up), 10 to 20 s per coach answer, up to about 1 minute for part marks, 5 to 10 s per question. The free server has only 512 MB of
+memory: several coaches at once take turns, so they can be a little slower; one coach per judge at a time works best.
