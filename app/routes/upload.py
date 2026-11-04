@@ -51,7 +51,8 @@ def privacy(request: Request):
 
 @router.get("/terms", response_class=HTMLResponse)
 def terms(request: Request):
-    return templates.TemplateResponse(request, "terms.html", {})
+    max_minutes = max(1, get_settings().max_video_seconds // 60)
+    return templates.TemplateResponse(request, "terms.html", {"max_minutes": max_minutes})
 
 
 @router.post("/upload", dependencies=[Depends(limit("video"))])
