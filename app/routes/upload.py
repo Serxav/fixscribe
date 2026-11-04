@@ -14,6 +14,8 @@ from app.pipeline.runner import start_job
 
 ROOT = Path(__file__).resolve().parents[2]
 templates = Jinja2Templates(directory=str(ROOT / "web" / "templates"))
+# Where "Start a guide" leads: the upload buttons, or the sample guides on a server without uploads.
+templates.env.globals["start_href"] = lambda: "/#ready" if get_settings().uploads else "/#guides"
 
 MAX_UPLOAD_BYTES = 1024**3
 ALLOWED_EXTENSIONS = {".mp4", ".mov", ".m4v"}

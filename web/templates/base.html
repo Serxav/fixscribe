@@ -24,7 +24,7 @@
     <a class="brand" href="/" aria-label="FixScribe home"><span class="glyph" aria-hidden="true"></span>FixScribe</a>
     <div class="pills pills-right">
       <span class="crumb" id="crumb">{% block crumb %}{% endblock %}</span>
-      {% block end %}<a class="pill pill-dark" href="/#ready">Start a guide</a>{% endblock %}
+      {% block end %}<a class="pill pill-dark" href="{{ start_href() }}">Start a guide</a>{% endblock %}
     </div>
   </div>
 </header>
@@ -41,7 +41,7 @@
         <li><a href="/#how">How it works<span aria-hidden="true">→</span></a></li>
         <li><a href="/#agent">The agent<span aria-hidden="true">→</span></a></li>
         <li><a href="/#models">Meta models<span aria-hidden="true">→</span></a></li>
-        <li><a href="/#ready">Start a guide<span aria-hidden="true">→</span></a></li>
+        <li><a href="{{ start_href() }}">Start a guide<span aria-hidden="true">→</span></a></li>
       </ul>
     </div>
     <div class="footer-bottom">

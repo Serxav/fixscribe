@@ -222,3 +222,10 @@ def test_landing_states_the_server_video_cap(tmp_path, no_start):
         assert "up to 2 minutes" in TestClient(app).get("/").text
     finally:
         app.dependency_overrides.pop(settings_dep, None)
+
+
+def test_start_a_guide_leads_to_the_guides_when_uploads_are_off(monkeypatch, jobs_tmp):
+    monkeypatch.setenv("UPLOADS", "false")
+    assert 'href="/#guides">Start a guide' in TestClient(app).get("/").text
+    monkeypatch.setenv("UPLOADS", "true")
+    assert 'href="/#ready">Start a guide' in TestClient(app).get("/").text
