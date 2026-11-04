@@ -1,0 +1,36 @@
+# Render Blueprint: the free web service the judges open (https, built from the Dockerfile).
+# The free instance has 512 MB, so one video at a time, one step at a time, videos up to 2 minutes,
+# and the browser's own voice instead of the local MMS-TTS model.
+services:
+  - type: web
+    name: fixscribe
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: MODEL_API_KEY
+        sync: false # typed in Render's panel, never in the repository
+      - key: DEMO_JOB
+        value: 137c1ed0730d
+      - key: TRUST_PROXY
+        value: "true"
+      - key: BUDGET_USD
+        value: "30"
+      - key: JOB_BUDGET_USD
+        value: "2.5"
+      - key: DAILY_JOB_LIMIT
+        value: "30"
+      - key: MAX_RUNNING_JOBS
+        value: "1"
+      - key: PIPELINE_WORKERS
+        value: "1"
+      - key: MAX_VIDEO_SECONDS
+        value: "120"
+      - key: LIVE_BUDGET_USD
+        value: "15"
+      - key: LIVE_MAX_CALLS
+        value: "10000"
+      - key: ENABLE_INSPECTOR
+        value: "true"
+      - key: VOICE_MODEL_DIR
+        value: models/off

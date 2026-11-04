@@ -2,6 +2,12 @@
 
 The camera and microphone only work over https, so judges need a hosted address.
 
+**Free option used for the hackathon: Render.** `render.yaml` is a Blueprint: in Render, New →
+Blueprint → this repository, type the Meta key when asked for `MODEL_API_KEY`, and deploy. The free
+instance has 512 MB, so the Blueprint processes one video at a time, one step at a time, up to
+2 minutes long, and uses the browser's voice. It sleeps after 15 idle minutes and wakes in about a
+minute. With more memory, use the settings below.
+
 1. Connect this GitHub repository to a host that builds the `Dockerfile` and gives https.
 2. Use at least 4 GB of memory (a 720p video peaked at 1.1 GB on 6 steps; 1080p needs more) and a persistent volume mounted at `/srv/data`.
 3. Set these variables in the host's panel, never in the repository:
