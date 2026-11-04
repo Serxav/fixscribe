@@ -325,7 +325,7 @@
     if (!text || hearing) return;
     hearing = true;
     box.disabled = true;
-    $("live-hint").textContent = "Thinking…";
+    $("live-hint").textContent = "Thinking… (about 5–10 s)";
     var video = $("live-camera");
     var post = function (picture) {
       var form = new FormData();
@@ -481,7 +481,7 @@
     tour = true;
     tourGo();
     $("live-hold").classList.remove("hidden");
-    $("live-hint").textContent = "This is the guide's own video, not your camera. It waits for the coach at every step.";
+    $("live-hint").textContent = "This is the guide's own video, not your camera. It pauses while the coach thinks: about 10–20 s an answer, up to a minute for the part marks. It always goes on by itself.";
     begin();
   });
 

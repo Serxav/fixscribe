@@ -6,6 +6,21 @@ It works on a phone (Safari on iPhone, Chrome on Android) or a computer. Nothing
 account. It shows a finished guide and its live coach; making a guide from your own video runs on
 your computer (section 4). It runs on a free server: the **first visit can take about a minute** while it wakes up.
 
+## How long things take (it is slow, not stuck)
+
+Measured on the live app's free server on 2026-11-04. Every wait ends by itself: nothing needs a
+reload.
+
+| What | How long | What you see meanwhile |
+|---|---|---|
+| First visit after a quiet spell | **about 1 minute** | a loading page: the free server is waking up |
+| Opening a guide, its photos and clips | under 1 s | |
+| The coach's first answer, and each new one | **10 to 20 s** | **Looking…**; with the guide's video, the video pauses until the answer comes |
+| The part marks on a new step | **up to about 1 minute** | the step and its instruction are already shown; the marks appear dashed, then solid (or go away if Spark does not confirm them) |
+| A typed or spoken question | **5 to 10 s** | **Thinking…**, then the answer and a button to that moment of the video |
+| The coach following a whole guide with its video | **about 15 to 20 minutes** for 11 steps | the step changes on its own; a 30× speed-up is in [demo/](../demo/README.md#the-live-coach-on-the-dell-guide) |
+| Turning a new video into a guide (on your computer) | **about 20 minutes** for a 45 s video, 14 to 30 minutes for 8.5 minutes | a progress page with every stage |
+
 ## 1. A finished guide (1 minute)
 
 1. Open the address. Under the two buttons, the landing lists **four finished guides** (a laptop, a
@@ -65,7 +80,8 @@ FixScribe on a computer with a Meta key ([Run it locally](../README.md#run-it-lo
 | What you see | What to do |
 |---|---|
 | "Can't provide a secure connection" / "not secure" | Type the address exactly, starting with `https://`. Some school or office wifi blocks it: try mobile data. |
-| The page takes long to open | The free server is waking up. Wait a minute and reload. |
+| The page takes long to open | The free server is waking up: wait about a minute. |
+| The coach says **Looking…** for a while | Normal: an answer takes 10 to 20 s, the marks up to a minute. Keep the camera still. |
 | The camera or microphone does not start | Allow them when asked. iPhone: tap **aA** in Safari's address bar → Website Settings → Camera / Microphone → Allow. |
 | "reached its spend limit" | The Meta credit shared by all judges for this coach is used up. The [recorded clips](../demo/README.md) show the same thing. |
 

@@ -44,8 +44,9 @@ disassembly (LaptopMedia) and a PlayStation One button repair (Kytor Industries)
 
 Every file behind them (step photos, cut-outs, clips, proof) is also in [demo/](demo/README.md).
 
-The app runs on a free server: the first visit can take a minute to wake up. Every button is
-explained in [docs/TRY_IT.md](docs/TRY_IT.md).
+**It is slow, not stuck.** On this free server the first visit can take about 1 minute to wake up,
+the coach answers in 10 to 20 s, part marks take up to about 1 minute and a question 5 to 10 s.
+Every wait ends by itself. All timings and every button: [docs/TRY_IT.md](docs/TRY_IT.md#how-long-things-take-it-is-slow-not-stuck).
 
 ## See it move
 
