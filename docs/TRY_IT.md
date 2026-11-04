@@ -19,7 +19,12 @@ reload.
 | The part marks on a new step | **up to about 1 minute** | the step and its instruction are already shown; the marks appear dashed, then solid (or go away if Spark does not confirm them) |
 | A typed or spoken question | **5 to 10 s** | **Thinking…**, then the answer and a button to that moment of the video |
 | The coach following a whole guide with its video | **about 15 to 20 minutes** for 11 steps | the step changes on its own; a 30× speed-up is in [demo/](../demo/README.md#the-live-coach-on-the-dell-guide) |
+| Several people using the coach at the same moment | **a little longer** | the free server has 512 MB, so coaches take turns: part marks are worked out one at a time, answers three at a time. A step whose marks waited too long shows none; the next step gets them |
 | Turning a new video into a guide (on your computer) | **about 20 minutes** for a 45 s video, 14 to 30 minutes for 8.5 minutes | a progress page with every stage |
+
+**One coach per judge at a time works best.** The server is shared and small: when several coaches
+run at once they wait for each other instead of crashing the server. Close the coach tab when you
+are done, so the next person does not wait for it.
 
 ## 1. A finished guide (1 minute)
 
@@ -83,6 +88,8 @@ FixScribe on a computer with a Meta key ([Run it locally](../README.md#run-it-lo
 | The page takes long to open | The free server is waking up: wait about a minute. |
 | The coach says **Looking…** for a while | Normal: an answer takes 10 to 20 s, the marks up to a minute. Keep the camera still. |
 | The camera or microphone does not start | Allow them when asked. iPhone: tap **aA** in Safari's address bar → Website Settings → Camera / Microphone → Allow. |
+| "The coach is busy with other visitors" | Others are using the coach at the same moment. Wait a few seconds: it asks again by itself on the next frame. |
+| A step shows no part marks | Several coaches were marking parts at once and that step's turn came too late. The next step gets its marks. |
 | "reached its spend limit" | The Meta credit shared by all judges for this coach is used up. The [recorded clips](../demo/README.md) show the same thing. |
 
 Every AI call goes to Meta models through the Meta Model API, with a spending cap on the server.
