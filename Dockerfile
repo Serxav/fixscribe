@@ -7,7 +7,6 @@ RUN apt-get update \
 WORKDIR /srv
 COPY . .
 RUN pip install --no-cache-dir .
-RUN python -m scripts.get_voice
 # Hosts that run the container as a non-root user (for example user 1000) still need to write jobs here.
 RUN mkdir -p /srv/data && chmod 777 /srv/data
 

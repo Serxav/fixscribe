@@ -37,7 +37,6 @@ class Settings:
     uploads: bool = True  # [UPLOADS] false on a server too small to turn videos into guides
     demo_job: str = ""  # [DEMO_JOB] folder(s) under demo/, comma-separated: read-only samples
     data_dir: Path = Path("data")  # [DATA_DIR]
-    voice_model_dir: Path = Path("models/vits-mms-eng")  # [VOICE_MODEL_DIR]
 
     @property
     def jobs_dir(self) -> Path:
@@ -87,5 +86,4 @@ def get_settings() -> Settings:
         demo_job=env.get("DEMO_JOB", "").strip(),
         uploads=_parse_bool(env.get("UPLOADS", "true")),
         data_dir=data_dir,
-        voice_model_dir=Path(env.get("VOICE_MODEL_DIR", "models/vits-mms-eng")),
     )

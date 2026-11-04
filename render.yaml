@@ -34,5 +34,3 @@ services:
         value: "true"
       - key: UPLOADS
         value: "false"
-      - key: VOICE_MODEL_DIR
-        value: models/off

@@ -46,7 +46,6 @@ def test_visitors_can_use_the_sample_but_not_change_it():
     assert not write("GET", "/guides/sample", "sample")
     assert not write("POST", "/api/live/sample", "sample")
     assert not write("POST", "/api/live/sample/marks", "sample")
-    assert not write("POST", "/api/voice/sample", "sample")
     assert not write("POST", "/api/jobs/other/delete", "sample")
     assert not write("POST", "/api/jobs/sample/delete", "")
 

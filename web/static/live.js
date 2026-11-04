@@ -33,7 +33,7 @@
   var lastSaid = "";
   var micOn = false;
   var hearing = false;
-  var voice = window.FixVoice.player(jobId, lang, root.dataset.metaVoice === "yes");
+  var voice = window.FixVoice.player(lang);
   // The guide's own video standing in for a camera runs much faster than a person works, so it waits
   // for the coach: still while a frame is read, and on each new step until its parts are marked.
   var tour = false;

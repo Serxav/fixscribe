@@ -4,7 +4,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var video = $("film-video");
   var synth = window.speechSynthesis || null;
-  var voice = window.FixVoice.player(location.pathname.split("/")[2], data.language, !!data.meta_voice);
+  var voice = window.FixVoice.player(data.language);
   var mode = "apart";
   var index = -1;
   var playing = false;
@@ -20,7 +20,7 @@
     var label = $("film-voice-name");
     if (!label) return;
     var text = voice.label();
-    var chosen = !data.meta_voice && synth ? window.FixVoice.pick(synth, data.language) : null;
+    var chosen = synth ? window.FixVoice.pick(synth, data.language) : null;
     label.textContent = text + (chosen && window.FixVoice.score(chosen) < 20 ? " — for a more natural voice, install a Premium/Enhanced voice in your system settings (Spoken Content)." : "");
   }
 

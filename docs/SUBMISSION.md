@@ -31,7 +31,6 @@ plays that moment of the video.
 - `muse-voice-transcribe-1.0` times the narration, cuts the steps and hears the user in the coach.
 - `muse-wonder-1.0` is an optional agent that investigates a guide with SAM and frames as tools.
   On one real 8.5-minute video it filed 15 steps and 5 SAM-proven parts in 13 turns for $0.69.
-- MMS-TTS, Meta's open weights, runs locally for the voice.
 
 **Technical depth:** Stages that resume after a failure, atomic job files, retries and 429 backoff,
 a per-job and global spend counter, 965 tests with Meta mocked (strange model answers and odd videos

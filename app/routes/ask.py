@@ -4,10 +4,9 @@ import json
 from collections.abc import Iterator
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from starlette.concurrency import run_in_threadpool
 
-from app import voice
 from app.config import Settings
 from app.limits import limit
 from app.pipeline.ask import MAX_CLIP_BYTES, live_typed, live_voice
@@ -142,19 +141,3 @@ async def live_ask(
         if frame:
             await frame.close()
     return JSONResponse(heard.model_dump(mode="json"))
-
-
-@router.post("/api/voice/{job_id}", dependencies=[Depends(limit("coach"))])
-async def spoken_line(
-    job_id: str,
-    text: str = Form(...),  # noqa: B008
-    settings: Settings = Depends(settings_dep),  # noqa: B008
-):
-    folder, guide = load_guide(job_id, settings)  # only a finished guide has lines to read
-    if folder is None or guide is None:
-        return JSONResponse({"error": f"unknown job: {job_id}"}, status_code=404)
-    try:
-        path = await run_in_threadpool(voice.speak, folder, settings, text)
-    except voice.VoiceError as exc:
-        return JSONResponse({"error": str(exc)}, status_code=503)
-    return FileResponse(path, media_type="audio/wav")

@@ -5,7 +5,7 @@ There are three ways to try it. Each one is explained step by step below.
 | Way | What you need | What you get | Set-up |
 |---|---|---|---|
 | [**A. The live app**](#a-the-live-app) | a phone or computer | the four finished guides, and the live coach with the guide's video, your camera and your voice | none |
-| [**B. Your own video, on your computer**](#b-your-own-video-on-your-computer) | Docker, or Python 3.12 and ffmpeg; a Meta Model API key | a guide from your own video (up to 10 minutes), its live coach, and Meta's MMS-TTS voice | about 10 minutes |
+| [**B. Your own video, on your computer**](#b-your-own-video-on-your-computer) | Docker, or Python 3.12 and ffmpeg; a Meta Model API key | a guide from your own video (up to 10 minutes) and its live coach | about 10 minutes |
 | [**C. Without running anything**](#c-without-running-anything) | a browser | the 3-minute film, and every photo, cut-out, clip and proof of the four guides, plus recorded clips of the live coach | none |
 
 The live app runs on a free server with 512 MB of memory: enough for the guides and the live coach,
@@ -97,8 +97,7 @@ On your computer: way B, just below.
 ## B. Your own video, on your computer
 
 Everything runs on your machine; only the AI calls go to Meta's servers, paid by your own Meta key.
-Videos can be up to 10 minutes, nobody else's video is ahead of yours, and the steps are read aloud
-with Meta's MMS-TTS voice.
+Videos can be up to 10 minutes and nobody else's video is ahead of yours.
 
 ### Quick start (Docker, about 10 minutes)
 
@@ -144,7 +143,7 @@ The sections below give the same steps in more detail.
 ### B1. What you need
 
 - A **Meta Model API key** (from dev.meta.ai).
-- **Either Docker** (the easiest: ffmpeg and the voice are inside the image), **or Python 3.12** and
+- **Either Docker** (the easiest: ffmpeg is inside the image), **or Python 3.12** and
   **ffmpeg** (`brew install ffmpeg` on a Mac, `sudo apt install ffmpeg` on Ubuntu/Debian).
 - About 2 GB of free memory while a video is being turned into a guide.
 
@@ -175,7 +174,6 @@ line.
 ```bash
 python3.12 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
-.venv/bin/python -m scripts.get_voice      # optional: Meta's MMS-TTS voice, else the device's voice
 .venv/bin/uvicorn app.main:app
 ```
 

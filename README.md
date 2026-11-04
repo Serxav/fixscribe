@@ -116,7 +116,6 @@ budget, and a spend log per stage.
 | `sam-3.1` (video) | follows each part and fastener through its step, so a fastener counts only if it appears or disappears where the step says |
 | `muse-voice-transcribe-1.0` | timestamped turns; the spoken "step" / "paso" become the step cuts; hears the user in the coach |
 | `muse-wonder-1.0` | optional agent (`ENABLE_INSPECTOR`): looks at frames, points with SAM, adds steps and asks the person when unsure. On one real 8.5-minute video it filed 15 steps with 5 SAM-proven parts in 13 turns, for $0.69 |
-| MMS-TTS (Meta open weights, CC-BY-NC 4.0, local) | reads the film and the coach aloud; `python -m scripts.get_voice` installs it, otherwise the device voice is used |
 
 Unexpected uses: **SAM 3.1 as a fastener counter** (candidates from SAM, followed over time by SAM
 video, confirmed by Spark by number, never by guessing coordinates); **voice turns as step cuts**
@@ -203,7 +202,6 @@ Meta Model API key.
 python3.12 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 cp .env.example .env            # then add your Meta key
-.venv/bin/python -m scripts.get_voice   # optional: Meta's MMS-TTS voice, else the device's voice
 .venv/bin/uvicorn app.main:app --reload
 ```
 
@@ -221,7 +219,7 @@ coach (button "Use this guide's video") needs a Meta key; the camera needs https
 .venv/bin/ruff check .          # lint
 ```
 
-**Or with Docker** (ffmpeg and the voice model are inside the image), after `cp .env.example .env`
+**Or with Docker** (ffmpeg is inside the image), after `cp .env.example .env`
 and adding the key:
 
 ```bash
@@ -254,6 +252,6 @@ other AI coding assistants. Every Muse Code task, review and report is kept in [
 
 ## License and credits
 
-MIT. See [LICENSE](LICENSE). The MMS-TTS voice model is CC-BY-NC 4.0 and is downloaded separately.
+MIT. See [LICENSE](LICENSE).
 The repair videos in `demo/` and in the film are from Wikimedia Commons under CC BY 3.0; each one is
 credited in [demo/README.md](demo/README.md).

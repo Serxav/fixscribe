@@ -31,7 +31,7 @@ theme, "Build for Your World" or "Push the Frontier". Official rules were not li
 
 ## Rules that disqualify or hurt us
 - Only new work written from Oct 26, 2026. Never copy code from other projects.
-- Meta models only inside the product, always through `app/meta_client.py` (the voice is Meta's open-weights MMS-TTS, run locally in `app/voice.py`).
+- Meta models only inside the product, always through `app/meta_client.py`; the voice that reads steps aloud is the device's own, with no model.
 - No Streamlit. Web app = FastAPI + Jinja2 + Tailwind CDN + plain JavaScript.
 - Never invent endpoints, fields or model IDs. Never leak keys.
 

@@ -17,12 +17,9 @@ window.FixVoice = (function () {
     return voices.sort(function (a, b) { return score(b) - score(a); })[0] || null;
   }
 
-  var SILENCE = "data:audio/wav;base64,UklGRkwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSgAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA";
-
-  // Says lines one after another: Meta's voice from the server, the device voice if that fails.
-  function player(jobId, language, useMeta) {
+  // Says lines one after another with the device's own voice.
+  function player(language) {
     var synth = window.speechSynthesis || null;
-    var audio = new Audio();
     var queue = [];
     var busy = null;
     var turn = 0;
@@ -52,37 +49,19 @@ window.FixVoice = (function () {
       })(0);
     }
 
-    function meta(text, mine) {
-      var form = new FormData();
-      form.append("text", text);
-      fetch("/api/voice/" + jobId, { method: "POST", body: form })
-        .then(function (r) { if (!r.ok) throw new Error("no voice"); return r.blob(); })
-        .then(function (blob) {
-          if (mine !== turn) return;
-          var url = URL.createObjectURL(blob);
-          audio.onended = function () { URL.revokeObjectURL(url); finish(mine); };
-          audio.onerror = function () { URL.revokeObjectURL(url); device(text, mine); };
-          audio.src = url;
-          return audio.play();
-        })
-        .catch(function () { if (mine === turn) device(text, mine); });
-    }
-
     function next() {
       if (busy || !queue.length) return;
       busy = queue.shift();
-      if (useMeta) { meta(busy.text, turn); } else { device(busy.text, turn); }
+      device(busy.text, turn);
     }
 
     return {
-      ready: function () { return useMeta || !!synth; },
+      ready: function () { return !!synth; },
       label: function () {
-        if (useMeta) return "Voice: Meta MMS-TTS";
         var voice = pick(synth, language);
         return voice ? "Voice: " + voice.name : "";
       },
-      // Inside a tap: phones only let sound play later if it started from a tap.
-      unlock: function () { if (useMeta) { audio.src = SILENCE; audio.play().catch(function () {}); } },
+      unlock: function () {},
       speaking: function () { return !!busy || queue.length > 0; },
       say: function (text, done) { queue.push({ text: text, done: done }); next(); },
       // Stops at once; with finished, whoever waits on these lines is told they are over.
@@ -91,13 +70,11 @@ window.FixVoice = (function () {
         turn++;
         queue = [];
         busy = null;
-        audio.onended = audio.onerror = null;
-        audio.pause();
         if (synth) synth.cancel();
         waiting.forEach(function (item) { if (item.done) item.done(); });
       },
-      pause: function () { audio.pause(); if (synth) synth.pause(); },
-      resume: function () { if (busy && audio.src && audio.paused && !audio.ended) audio.play().catch(function () {}); if (synth) synth.resume(); }
+      pause: function () { if (synth) synth.pause(); },
+      resume: function () { if (synth) synth.resume(); }
     };
   }
 

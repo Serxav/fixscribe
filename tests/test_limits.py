@@ -127,7 +127,6 @@ def test_every_route_that_spends_credits_is_limited():
         "/api/live/{job_id}/marks",
         "/api/live/{job_id}/hear",
         "/api/live/{job_id}/ask",
-        "/api/voice/{job_id}",
         "/guides/{job_id}/steps/{index}/check",
         "/guides/{job_id}/steps/{index}/fasteners",
         "/guides/{job_id}/steps/{index}/fasteners/{number}/remove",
