@@ -166,7 +166,7 @@ There is no login: a job's link, 48 random bits, is its only key, and no route l
   run the server out of memory together; the others wait in line and their page says so
   (`run_slot`: one locked file per place, given back by the OS if a runner dies).
 - The agent's routes answer 403 when `ENABLE_INSPECTOR` is off.
-- The coach stops at `LIVE_BUDGET_USD` and `LIVE_MAX_CALLS` on the sample guide, and at $5 and 1000
+- The coach stops at `LIVE_BUDGET_USD` and `LIVE_MAX_CALLS` on the sample guide, and at $10 and 3000
   calls on any other. Camera frames and voice clips stay in a per-request folder deleted with the
   answer (`scratch_folder`).
 - Per visitor (`app/limits.py`, counted by address): videos a day, minutes of coach a day, questions

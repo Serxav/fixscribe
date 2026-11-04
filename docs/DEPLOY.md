@@ -16,11 +16,11 @@ guides and their live coach only, and `.github/workflows/keep-awake.yml` keeps i
 |---|---|---|
 | `MODEL_API_KEY` | your key | Meta calls |
 | `BUDGET_USD` | what is left of the credit, minus a margin (for example `80`) | the one hard ceiling: past it no call is sent |
-| `JOB_BUDGET_USD` | `2.5` | one 8.5-minute video cost $1.47; a lower cap cuts the guide short |
+| `JOB_BUDGET_USD` | `10` | one 8.5-minute video cost $1.47, a 45-second one $0.78; room for retries and the agent |
 | `DAILY_JOB_LIMIT` | `50` | judges may film as many repairs as they like |
 | `MAX_RUNNING_JOBS` | `2` | videos processed at once; more wait in line, so 4 GB is never run out |
-| `LIVE_BUDGET_USD` | `30` | the coach on the sample guide, shared by every judge; a judge's own guide stops at $5 |
-| `LIVE_MAX_CALLS` | `10000` | coach calls on the sample guide; a judge's own guide stops at 1000 (about an hour) |
+| `LIVE_BUDGET_USD` | `30` | the coach on the sample guide, shared by every judge; a judge's own guide stops at $10 |
+| `LIVE_MAX_CALLS` | `10000` | coach calls on the sample guide; a judge's own guide stops at 3000 |
 | `ENABLE_INSPECTOR` | `true` | judges can try the Muse Wonder agent (about $0.70 a run) |
 | `DEMO_JOB` | the folder in `demo/` | the sample guide on the landing |
 | `TRUST_PROXY` | `true` | the host's proxy adds the visitor's address; without it every visitor counts as one |

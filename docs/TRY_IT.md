@@ -169,13 +169,13 @@ defaults from `.env.example`:
 |---|---|---|
 | `MAX_VIDEO_SECONDS` | `600` | the longest video, 10 minutes |
 | `DAILY_JOB_LIMIT` | `20` | videos turned into guides a day |
-| `JOB_BUDGET_USD` | `2.5` | Meta spend for one video (a 45 s video used about $0.80) |
+| `JOB_BUDGET_USD` | `10` | Meta spend for one video (a 45 s video used about $0.80) |
 | `BUDGET_USD` | `120` | Meta spend in all |
-| `LIVE_BUDGET_USD` | `2.0` | Meta spend for the live coach on one guide |
-| `LIVE_MAX_CALLS` | `300` | coach calls on one guide |
+| `LIVE_BUDGET_USD` | `10` | Meta spend for the live coach on one guide |
+| `LIVE_MAX_CALLS` | `3000` | coach calls on one guide |
 
 Raise any of them in `.env` and start it again. If the coach says it **reached its spend limit**
-while it follows a whole guide, raise `LIVE_BUDGET_USD` (for example to `7`).
+raise `LIVE_BUDGET_USD`. On a guide made from your own video the coach stops at $10 and 3000 calls.
 
 ### B6. Without a Meta key
 

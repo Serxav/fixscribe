@@ -16,7 +16,7 @@ services:
       - key: BUDGET_USD
         value: "30"
       - key: JOB_BUDGET_USD
-        value: "2.5"
+        value: "10"
       - key: DAILY_JOB_LIMIT
         value: "30"
       - key: MAX_RUNNING_JOBS
