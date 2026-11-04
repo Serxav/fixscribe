@@ -42,9 +42,9 @@ open. One video is processed at a time: if another judge's video is running, you
 10 minutes, work when FixScribe runs on your own computer ([Run it locally](#run-it-locally)).
 
 **Another way to try it: on your own computer.** With Python 3.12 and ffmpeg (or Docker) and a Meta
-Model API key it takes about 5 minutes to set up ([Run it locally](#run-it-locally)), takes videos up
+Model API key it takes about 5 minutes to set up ([step by step](docs/TRY_IT.md#b-on-your-own-computer)), takes videos up
 to 10 minutes and never waits for anyone else's. All three ways to try it, side by side:
-[docs/TRY_IT.md](docs/TRY_IT.md#three-ways-to-try-it).
+[docs/TRY_IT.md](docs/TRY_IT.md), each one step by step.
 
 ### Four finished guides, open in the app
 

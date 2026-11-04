@@ -631,3 +631,10 @@ mark.cut { background: var(--accent); color: #fff; padding: 0 5px; border-radius
 .sample-guides a { color: inherit; }
 .sample-guides .muted { color: var(--ink-3); }
 .sample-guides .muted a { text-decoration: underline; }
+
+.try-head { margin: 18px 0 4px; font-size: 15px; color: var(--ink-3); }
+.try-order { margin: 0 0 6px; padding-left: 20px; font-size: 15px; line-height: 1.45; max-width: 640px; }
+.try-order li { margin: 0 0 6px; }
+.try-order .muted { color: var(--ink-3); }
+.try-more { margin: 0 0 6px; font-size: 15px; }
+.try-more a { color: inherit; text-decoration: underline; }

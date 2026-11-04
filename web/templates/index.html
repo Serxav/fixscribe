@@ -11,6 +11,14 @@
     <a class="btn btn-primary btn-lg" href="/guides/{{ sample }}/live">Try the live coach</a>
     <a class="btn btn-soft btn-lg" href="/guides/{{ sample }}">See a finished guide</a>
   </p>
+  <p class="note try-head" data-reveal style="--d:.09s">Try it in this order:</p>
+  <ol class="try-order" aria-label="Try it in this order" data-reveal style="--d:.09s">
+    <li><b>See a finished guide.</b> Scroll its steps: each part outlined, the screws numbered, a clip of every step. <span class="muted">1 min</span></li>
+    <li><b>Try the live coach</b>, then tap <b>Use this guide's video</b>: it follows the repair step by step and marks the parts. Ask it a question. <span class="muted">Answers take 10–20 s</span></li>
+    <li>On the same page, <b>Start the camera</b> and point it at a laptop, or tap 🎙️ and talk to it.</li>
+    {% if uploads %}<li><b>Record a video</b> or <b>Upload a video</b> of your own repair, up to {{ max_minutes }} minutes: it becomes a guide in about 20 minutes for a 45-second video. Leave the progress page open.</li>{% endif %}
+  </ol>
+  <p class="note try-more" data-reveal style="--d:.1s"><a href="https://github.com/Serxav/fixscribe/blob/main/docs/TRY_IT.md">Every step, the waiting times, and how to run it on your own computer</a></p>
   {% if samples|length > 1 %}
   <nav class="sample-guides" id="guides" aria-label="Finished guides" data-reveal style="--d:.1s">
     <p class="note">Finished guides FixScribe wrote from repair videos:</p>
@@ -178,7 +186,7 @@
       <p class="ready-num mono">01</p>
       <h3>Film it like this</h3>
       <ul>
-        <li>One take of the whole job, from start to finish, up to 10 minutes.</li>
+        <li>One take of the whole job, from start to finish, up to {{ max_minutes }} minutes.</li>
         <li>Film in 1080p or 4K. Hold the phone steady, in good light, close enough to see each screw.</li>
         <li>Show each part and each screw for a second before it comes out or after it goes in.</li>
         <li>Talk through it if you like — say “step” when a new one starts. Silent works too.</li>
