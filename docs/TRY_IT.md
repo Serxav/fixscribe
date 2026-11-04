@@ -131,7 +131,21 @@ with Meta's MMS-TTS voice.
    the coach follows you through your own guide. The camera works on this computer at
    `http://127.0.0.1:8000`.
 
-The sections below give the same steps in more detail, and the way without Docker.
+### Quick start without Docker
+
+Needs Python 3.12 and ffmpeg (`brew install python@3.12 ffmpeg` on a Mac, `sudo apt install
+python3.12 python3.12-venv ffmpeg` on Ubuntu/Debian; on Windows, Docker above is the easier way).
+
+```bash
+git clone https://github.com/Serxav/fixscribe.git && cd fixscribe
+cp .env.example .env                 # then paste your Meta key after MODEL_API_KEY= in .env
+python3.12 -m venv .venv && .venv/bin/pip install -e .
+.venv/bin/uvicorn app.main:app
+```
+
+Then steps 5 and 6 above: open **http://127.0.0.1:8000** and upload a video.
+
+The sections below give the same steps in more detail.
 
 ### B1. What you need
 
