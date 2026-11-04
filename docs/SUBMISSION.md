@@ -34,7 +34,7 @@ plays that moment of the video.
 - MMS-TTS, Meta's open weights, runs locally for the voice.
 
 **Technical depth:** Stages that resume after a failure, atomic job files, retries and 429 backoff,
-a per-job and global spend counter, 964 tests with Meta mocked (strange model answers and odd videos
+a per-job and global spend counter, 965 tests with Meta mocked (strange model answers and odd videos
 included: a job ends with a guide or a clear sentence, never a crash), and exams against answer keys.
 
 **Results (2026-11-01, two videos):** the coach is on the right step 88 % and 95 % of the time within
@@ -46,8 +46,9 @@ marks right 89 %, the step's own part 10 of 11, median 20 s.
 Four sample guides made from openly licensed internet videos (a laptop, a game console, a harp, a
 seat cushion) are in `demo/`, 7 to 15 steps each.
 
-**Limits:** The coach reads a camera frame in about 8 s and marks take about 20 s; a typed question
-is answered in 2 to 4 s. Small screws need 1080p or
+**Limits:** On a computer of its own the coach reads a camera frame in about 8 s, marks take about
+20 s and a typed question 2 to 4 s; on the shared live app it is 10 to 20 s, up to a minute and 5 to
+10 s. Small screws need 1080p or
 better. Tried on few videos so far, and no repair technician has tried it yet.
 
 **Built with:** All code written from Oct 26, 2026. Muse Code wrote the first version of several
@@ -57,11 +58,15 @@ states.
 **Links:** Live app: https://fixscribe-wpf3.onrender.com · Repository: https://github.com/Serxav/fixscribe · Sample guides, no install:
 https://github.com/Serxav/fixscribe/tree/main/demo · Demo film: https://www.youtube.com/watch?v=bpZMs6h1uUo
 
-**How to try it** (step by step in `docs/TRY_IT.md`): open the live app on a phone or computer. The
-landing lists four finished guides (laptop, game console, harp, seat cushion), each with its live coach,
-and turns your own repair video (up to 2 minutes on the live app) into a guide in about 20 minutes.
-It also runs on your own computer in about 5 minutes (README, "Run it locally"), with videos up to
-10 minutes.
+**How to try it** (three ways, each step by step in `docs/TRY_IT.md`):
+A. The live app, nothing to install: the landing says what to try in order. Open a finished guide
+(laptop, game console, harp, seat cushion), try its live coach with the guide's video or your own
+camera and voice, then record or upload your own repair video, up to 2 minutes: it becomes a guide
+in about 20 minutes.
+B. On your own computer, with Docker or Python and a Meta key, in about 5 to 10 minutes: videos up to
+10 minutes and nobody else's video ahead of yours.
+C. Without running anything: the 3-minute film and `demo/`, with every photo, cut-out and clip of the
+four guides and recorded clips of the live coach.
 
 **Waiting times on the live app (slow, not stuck):** the app opens at once, 10 to 20 s per coach answer, up to about 1 minute for part marks, 5 to 10 s per question. A new guide from a 45 s video takes about 20
 minutes. The server is shared: several coaches at once take turns, so they can be a little slower; one coach per judge at a time works best.
