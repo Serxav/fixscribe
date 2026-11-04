@@ -30,7 +30,8 @@ This sample guide is read-only: buttons that would change it answer "The sample 
 3. Watch the panel: the coach says which step it sees (**Step 1 of 11**), its state (**On track**,
    **Step done**, **Check this**), and what comes next. The video **waits for the coach** at every frame: each answer takes 10 to 20 s.
 4. When a new step starts, the parts get marked on the picture: dashed while SAM 3.1 cuts them out,
-   solid once Spark has checked them.
+   solid once Spark has checked them. On this free server the marks take up to about a minute, and
+   a mark Spark does not confirm is taken away rather than shown.
 5. Type a question in **Ask about this repair…**, for example `How many screws hold the battery?`.
    The answer names its step and has a button that plays that moment of the video.
 6. Buttons at the bottom: ⏸ hold the video, ‹ › previous / next step, ↻ repeat, 🔊 voice on or off,
