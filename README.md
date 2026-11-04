@@ -57,9 +57,16 @@ Every wait ends by itself. All timings and every button: [docs/TRY_IT.md](docs/T
 
 ## The problem
 
-Most instructions are written by someone who already knows how, so they skip the step where you
-get stuck. The person who just did the repair knows it best, but turning a video into a guide takes
-hours. FixScribe does that part.
+**Where it started: "Which screw went where?"** While building FixScribe I took my own Xiaomi
+phone apart, the battery and the camera module, to try it on a real repair. Taking it apart was the
+easy half. Putting it back means remembering which screw came out of which hole, in what order, and
+which connector goes first, and there was no stand to hold the phone and film at the same time.
+That is the gap FixScribe fills: the video you already have becomes the order of work, with every
+fastener counted back in.
+
+More generally, most instructions are written by someone who already knows how, so they skip the
+step where you get stuck. The person who just did the repair knows it best, but turning a video into
+a guide takes hours. FixScribe does that part.
 
 ## What it does
 
