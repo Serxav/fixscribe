@@ -89,7 +89,6 @@ def fuse(analysis: Analysis, scenes: Scenes | None, signals: Signals | None) -> 
         spark_end = float(step.end_s)
         spark_conf = float(step.confidence)
 
-        # --- start -------------------------------------------------------------
         start_t = spark_start
         start_source = "spark"
         # A candidate already used by the previous step's end may be shared when
@@ -138,7 +137,6 @@ def fuse(analysis: Analysis, scenes: Scenes | None, signals: Signals | None) -> 
                     # If this start came from the shared end candidate, keep the
                     # original used mark; otherwise it is a normal use.
 
-        # --- end ---------------------------------------------------------------
         end_t = spark_end
         end_source = "spark"
         best_end: tuple[_Candidate, float, float] | None = None

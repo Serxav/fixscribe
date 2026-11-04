@@ -68,9 +68,6 @@ def card(y, h, rows: str) -> str:
     return f'<rect x="48" y="{y}" width="704" height="{h}" rx="26" fill="{WHITE}"/>{rows}'
 
 
-# --- the real marks ---------------------------------------------------------------------------
-
-
 def marks_of(name: str) -> list[dict]:
     """The marks make_photos kept for photo ``name``, top to bottom then left to right."""
     data = json.loads((PHOTOS / f"{name}.json").read_text(encoding="utf-8"))

@@ -262,7 +262,6 @@ class Analysis(BaseModel):
 
 
 ACTIONS = [
-    # taking apart
     "remove",
     "disconnect",
     "unscrew",
@@ -270,14 +269,12 @@ ACTIONS = [
     "pry",
     "open",
     "peel",
-    # building / putting together
     "place",
     "insert",
     "attach",
     "screw in",
     "connect",
     "flip",
-    # either
     "inspect",
     "clean",
     "other",
@@ -768,9 +765,6 @@ class Proof(Strict):
 
     steps: list[StepProof] = Field(default_factory=list)
     score: float = Field(default=0.0, ge=0, le=1)  # mean of the step scores
-
-
-# --- Self-growing domain profiles ---------------------------------------------------------------
 
 
 class ProfileSuggestion(Strict):

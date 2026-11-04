@@ -36,7 +36,6 @@
     return escapeHtml(text).replace(CUT, '<mark class="cut">$&</mark>');
   }
 
-  // ---- the video being scanned
   function showVideo(info) {
     if (shown.video || !info) return;
     shown.video = true;
@@ -69,7 +68,6 @@
     tag.classList.remove("hidden");
   }
 
-  // ---- what it heard
   function showHeard(heard) {
     if (!heard) return;
     var list = $("heard");

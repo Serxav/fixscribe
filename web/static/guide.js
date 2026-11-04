@@ -31,7 +31,7 @@
     rows.forEach(function (row) {
       row.querySelector(".back-done").addEventListener("click", function () {
         done[row.dataset.back] = !done[row.dataset.back];
-        try { localStorage.setItem(key, JSON.stringify(done)); } catch (e) { /* private mode: count for this visit only */ }
+        try { localStorage.setItem(key, JSON.stringify(done)); } catch (e) {}
         drawTally();
       });
     });

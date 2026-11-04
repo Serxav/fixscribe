@@ -115,9 +115,6 @@ def draw_boxes(image: Any, boxes: list[Box]) -> Any:
     return result
 
 
-# --- the tools --------------------------------------------------------------------------------
-
-
 def look(case: Case, t_s: float) -> Result:
     """Save the frame at second ``t_s`` and show it to the model."""
     if not 0 <= t_s <= case.duration_s:

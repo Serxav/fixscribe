@@ -152,9 +152,6 @@ def _settings(tmp_path):
     return Settings(model_api_key="", data_dir=tmp_path)
 
 
-# --- 1. select_steps ----------------------------------------------------------
-
-
 def test_select_steps_picks_low_confidence_and_screw_steps_lowest_first():
     analysis = Analysis(
         steps=[
@@ -197,9 +194,6 @@ def test_select_steps_caps_at_max_steps():
     assert select_steps(analysis, None) == [1, 2, 3, 4]
 
 
-# --- 2. clip_window -----------------------------------------------------------
-
-
 def test_clip_window_pads_and_clamps():
     assert clip_window(10, 20, 60) == (8.0, 22.0)
     assert clip_window(0, 5, 60) == (0.0, 7.0)
@@ -212,9 +206,6 @@ def test_clip_window_centres_a_long_step():
     a, b = clip_window(30, 70, 80)
     assert (a, b) == (35.0, 65.0)
     assert b - a == refine.MAX_CLIP_S
-
-
-# --- 3. timecoded clip --------------------------------------------------------
 
 
 @needs_ffmpeg

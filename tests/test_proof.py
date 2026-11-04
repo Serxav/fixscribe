@@ -79,9 +79,6 @@ def plan_of(*steps):
     return Plan(title="Guide", device="Phone", mode="narrated", duration_s=60.0, steps=list(steps))
 
 
-# --- boundaries ---
-
-
 def test_boundaries_verified_with_signal_and_recheck():
     claim = boundaries_claim(step(), fusion_step(), refined())
     assert claim.field == "boundaries"
@@ -110,9 +107,6 @@ def test_boundaries_unverified_without_signal_or_recheck():
     claim = boundaries_claim(step(), spark, weak)
     assert claim.status == "unverified"
     assert claim.sources == []
-
-
-# --- instruction ---
 
 
 def test_instruction_verified_with_video_and_voice():
@@ -158,9 +152,6 @@ def test_instruction_unverified_without_evidence_or_transcript():
     assert claim.sources == []
 
 
-# --- fasteners ---
-
-
 def test_fastener_none_without_screws():
     assert fastener_claim(step(), None, None) is None
     assert fastener_claim(step(screws=ScrewMap(count=0)), None, None) is None
@@ -199,9 +190,6 @@ def test_fastener_uses_the_step_kind():
     assert "SAM: 1 bolts removed (before/after stills)" in claim.sources
 
 
-# --- part ---
-
-
 def test_part_none_without_target():
     assert part_claim(step(), perception_step(concept="cover", confidence=0.9)) is None
 
@@ -226,9 +214,6 @@ def test_part_unverified_when_nothing_found_or_not_run():
     assert part_claim(found, perception_step()).status == "unverified"
     assert part_claim(found, None).status == "unverified"
     assert part_claim(found, None).sources == []
-
-
-# --- scores and assembly ---
 
 
 def test_step_score_means_claims_and_zero_without_claims():

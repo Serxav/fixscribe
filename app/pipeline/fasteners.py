@@ -169,9 +169,6 @@ def step_fasteners(step: Step, default: str) -> list[str]:
     return kinds[:2] or [default]
 
 
-# 1. PROPOSE ---------------------------------------------------------------------------------
-
-
 def regions(width: int, height: int) -> list[tuple[int, int, int, int]]:
     """The whole frame, then four overlapping quarters (each 60 % of a side)."""
     w, h = int(width * 0.6), int(height * 0.6)
@@ -252,9 +249,6 @@ def propose(
 def _inside(box: Box, area: Box) -> bool:
     cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
     return area[0] <= cx <= area[2] and area[1] <= cy <= area[3]
-
-
-# 2. FOLLOW ----------------------------------------------------------------------------------
 
 
 def clip_fps(length_s: float) -> float:
@@ -387,9 +381,6 @@ def follow(
             if 0 < box[2] - box[0] <= limit and 0 < box[3] - box[1] <= limit:
                 frames.setdefault(frame.frame, {})[obj.object_id] = box
     return frames
-
-
-# 3. DECIDE ----------------------------------------------------------------------------------
 
 
 def decide(
@@ -529,9 +520,6 @@ def find_in_step(
     found.kept = reading_order(at_seed, height)
     found.confidence = {oid: round(proposed[oid - 1][0], 2) for oid in found.kept}
     return found, frames[found.seed]
-
-
-# 4. CHOOSE ----------------------------------------------------------------------------------
 
 
 def choose_tracks(

@@ -126,9 +126,6 @@ def screen(i: int, label: str, body: str, bg=SURFACE) -> str:
     )
 
 
-# --- the screens ------------------------------------------------------------------------------
-
-
 def record() -> str:
     b = '<rect x="0" y="0" width="360" height="616" fill="#2f5d50"/>'
     b += "".join(

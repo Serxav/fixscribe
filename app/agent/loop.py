@@ -42,9 +42,6 @@ class AgentAlreadyRunning(Exception):
     pass
 
 
-# --- the case file ---------------------------------------------------------------------------
-
-
 def objective(identity: Identity | None, analysis: Analysis | None) -> str:
     name = identity.object_name if identity else (analysis.device if analysis else "the object")
     task = identity.task if identity else "repair"
@@ -117,9 +114,6 @@ def load_state(job_dir: Path) -> dict:
 
 def save_state(job_dir: Path, state: dict) -> None:
     artifacts.write_json_atomic(_state_path(job_dir), state)
-
-
-# --- one model turn --------------------------------------------------------------------------
 
 
 def image_message(case: Case, result: Result) -> dict:
@@ -266,9 +260,6 @@ def _run_calls(
     return stopped
 
 
-# --- run and resume --------------------------------------------------------------------------
-
-
 def opening_input(case: Case, info: IngestInfo) -> list:
     playbook = PROMPT.read_text(encoding="utf-8")
     return [
@@ -400,9 +391,6 @@ def _forget_video(client: Any, state: dict) -> None:
     if state.get("file_id"):
         client.delete_file(state["file_id"])
         state["file_id"] = None
-
-
-# --- background process ----------------------------------------------------------------------
 
 
 def _lock(job_dir: Path) -> Path:
