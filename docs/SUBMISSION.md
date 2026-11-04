@@ -12,9 +12,6 @@ screws and the second of video behind each step.
 **Problem — "Which screw went where?":** I took my own Xiaomi phone apart, the battery and the
 camera module, to try FixScribe on a real repair. Taking it apart was the easy half; putting it back
 means remembering which screw came out of which hole, in what order, and which connector goes first.
-More generally, most instructions are written by someone who already knows how, so they skip the step
-where you get stuck. The person who just did the job knows it best, but turning a video into a guide
-takes hours.
 
 **What it does:** Upload one video of a repair or assembly, narrated or silent. FixScribe identifies
 the object and the hazards, refuses professional-only jobs with fixed rules, and writes the steps.

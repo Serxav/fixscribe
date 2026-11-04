@@ -64,10 +64,6 @@ which connector goes first, and there was no stand to hold the phone and film at
 That is the gap FixScribe fills: the video you already have becomes the order of work, with every
 fastener counted back in.
 
-More generally, most instructions are written by someone who already knows how, so they skip the
-step where you get stuck. The person who just did the repair knows it best, but turning a video into
-a guide takes hours. FixScribe does that part.
-
 ## What it does
 
 | | |
