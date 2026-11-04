@@ -59,6 +59,10 @@ Phillips-head screws…" with a button that plays that second of the video. The 
 7-minute take in which the video was moved ahead by hand; each answer took about 17 s that day, so
 the waits are cut out and the rest plays at double speed.
 
+[Watch the coach alone (35 s, 20× speed)](coach/coach_dell_alone.mp4): the same mode left to run on
+its own for 12 minutes, nobody touching anything. The coach follows the video from step 1 to step 6
+of 11 by itself (it then reached the $2 spend cap set for one guide's coach).
+
 ## Fix Sticking and Squeaking Power and Open Buttons on Sony PlayStation One
 
 <table><tr>
