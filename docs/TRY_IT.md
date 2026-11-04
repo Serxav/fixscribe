@@ -15,7 +15,8 @@ There are three ways to try it. Each one is explained step by step below.
 **Address: https://fixscribe-wpf3.onrender.com**
 
 It works on a phone (Safari on iPhone, Chrome on Android) or a computer. Nothing to install, no
-account. It runs on a server with 2 GB of memory that is always on, so it opens at once.
+account. The first button on the landing is **Upload a video**: start your own video first
+([A4](#a4-your-own-repair-video)), since it takes about 20 minutes, and try A1 to A3 meanwhile in another tab. It runs on a server with 2 GB of memory that is always on, so it opens at once.
 
 **Meta credit for your tests: about €55 is left (2026-11-04).** It is shared by all the judges and
 pays for every AI call on the live app: guides from your videos, the live coach and questions. To
@@ -51,7 +52,7 @@ Close the coach tab when you are done, so the next person does not wait for it.
 
 ### A1. A finished guide (1 minute)
 
-1. Open the address. Under the buttons, the landing lists **four finished guides** (a laptop, a
+1. Open the address. Under the upload buttons, the landing lists **four finished guides** (a laptop, a
    game console, a harp, a seat cushion); each opens in the app with its own live coach. Tap
    **See a finished guide** for the first one. It is the guide FixScribe wrote from a
    Dell Latitude 7455 disassembly video ([source and licence](../demo/README.md)).

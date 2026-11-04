@@ -6,21 +6,36 @@
     <span class="lead">FixScribe turns one video of a person building or repairing something into a guide that proves every step.</span>
     <span class="rest">It names every part, points at it on the frame, checks each claim outside the model, and asks you when it is not sure.</span>
   </h1>
+  {% if uploads %}
+  <form class="start" action="/upload" method="post" enctype="multipart/form-data" data-reveal style="--d:.08s">
+    <label class="btn btn-primary btn-lg">
+      Upload a video
+      <input class="visually-hidden" type="file" name="video" accept="video/mp4,video/quicktime,.mov,.m4v,.mp4" data-autosubmit>
+    </label>
+    <label class="btn btn-glass btn-lg">
+      Record a video
+      <input class="visually-hidden" type="file" name="video" accept="video/*" capture="environment" data-autosubmit>
+    </label>
+    <p class="note">Your own repair or assembly, any object: MP4 or MOV, up to {{ max_minutes }} minutes, narrated or silent. A 45-second video becomes a guide in about 20 minutes.</p>
+    <p class="note">Your video is analyzed by Meta's AI models and kept until you delete it. By uploading you accept the <a href="/terms">Terms</a> and the <a href="/privacy">Privacy</a> notice.</p>
+    <p class="note hidden" role="status">Uploading…</p>
+  </form>
+  {% endif %}
   {% if sample %}
-  <p class="sample-links" data-reveal style="--d:.08s">
-    <a class="btn btn-primary btn-lg" href="/guides/{{ sample }}/live">Try the live coach</a>
-    <a class="btn btn-soft btn-lg" href="/guides/{{ sample }}">See a finished guide</a>
+  <p class="sample-links" data-reveal style="--d:.09s">
+    <a class="btn {{ 'btn-soft' if uploads else 'btn-primary' }} btn-lg" href="/guides/{{ sample }}">See a finished guide</a>
+    <a class="btn btn-soft btn-lg" href="/guides/{{ sample }}/live">Try the live coach</a>
   </p>
-  <p class="note try-head" data-reveal style="--d:.09s">Try it in this order:</p>
-  <ol class="try-order" aria-label="Try it in this order" data-reveal style="--d:.09s">
+  <p class="note try-head" data-reveal style="--d:.1s">Try it in this order:</p>
+  <ol class="try-order" aria-label="Try it in this order" data-reveal style="--d:.1s">
+    {% if uploads %}<li><b>Upload a video</b> of a repair or assembly, up to {{ max_minutes }} minutes. The progress page shows every stage; a 45-second video takes about 20 minutes, so open the next steps in another tab meanwhile.</li>{% endif %}
     <li><b>See a finished guide.</b> Scroll its steps: each part outlined, the screws numbered, a clip of every step. <span class="muted">1 min</span></li>
-    <li><b>Try the live coach</b>, then tap <b>Use this guide's video</b>: it follows the repair step by step and marks the parts. Ask it a question. <span class="muted">Answers take 10–20 s</span></li>
-    <li>On the same page, <b>Start the camera</b> and point it at a laptop, or tap 🎙️ and talk to it.</li>
-    {% if uploads %}<li><b>Record a video</b> or <b>Upload a video</b> of your own repair, up to {{ max_minutes }} minutes: it becomes a guide in about 20 minutes for a 45-second video. Leave the progress page open.</li>{% endif %}
+    <li><b>Try the live coach</b>, then tap <b>Use this guide's video</b>. No laptop needed: the guide's own video plays where your camera would be, and the coach follows it step by step and marks the parts. Ask it a question. <span class="muted">Answers take 10–20 s</span></li>
+    {% if uploads %}<li>When your guide is ready, open it and tap <b>Live coach</b>, then <b>Start the camera</b> and point it at your own object: the coach follows your hands through your guide. Tap 🎙️ to talk to it.</li>{% else %}<li>On the coach page, <b>Start the camera</b> and point it at a laptop, or tap 🎙️ and talk to it.</li>{% endif %}
   </ol>
-  <p class="note try-more" data-reveal style="--d:.1s"><a href="https://github.com/Serxav/fixscribe/blob/main/docs/TRY_IT.md">Every step, the waiting times, and how to run it on your own computer</a></p>
+  <p class="note try-more" data-reveal style="--d:.11s"><a href="https://github.com/Serxav/fixscribe/blob/main/docs/TRY_IT.md">Every step, the waiting times, and how to run it on your own computer</a></p>
   {% if samples|length > 1 %}
-  <nav class="sample-guides" id="guides" aria-label="Finished guides" data-reveal style="--d:.1s">
+  <nav class="sample-guides" id="guides" aria-label="Finished guides" data-reveal style="--d:.12s">
     <p class="note">Finished guides FixScribe wrote from repair videos:</p>
     <ul>
       {% for s in samples %}<li><a href="/guides/{{ s.id }}"><b>{{ s.title }}</b></a> <span class="muted">· {{ s.steps }} steps · <a href="/guides/{{ s.id }}/live">live coach</a></span></li>
@@ -29,21 +44,7 @@
   </nav>
   {% endif %}
   {% endif %}
-  {% if uploads %}
-  <form class="start" action="/upload" method="post" enctype="multipart/form-data" data-reveal style="--d:.12s">
-    <label class="btn btn-primary btn-lg">
-      Record a video
-      <input class="visually-hidden" type="file" name="video" accept="video/*" capture="environment" data-autosubmit>
-    </label>
-    <label class="btn btn-glass btn-lg">
-      Upload a video
-      <input class="visually-hidden" type="file" name="video" accept="video/mp4,video/quicktime,.mov,.m4v,.mp4" data-autosubmit>
-    </label>
-    <p class="note">One take from a phone. Talk through it or stay silent. MP4 or MOV, up to {{ max_minutes }} minutes.</p>
-    <p class="note">Your video is analyzed by Meta's AI models and kept until you delete it. By uploading you accept the <a href="/terms">Terms</a> and the <a href="/privacy">Privacy</a> notice.</p>
-    <p class="note hidden" role="status">Uploading…</p>
-  </form>
-  {% else %}
+  {% if not uploads %}
   <div class="start" data-reveal style="--d:.12s">
     <p class="note">This free demo server shows finished guides and their live coach. Turning a new video into a guide needs more memory than it has: run FixScribe on your own computer (see the <a href="https://github.com/Serxav/fixscribe#run-it-locally">README</a>){% if samples|length > 1 %} or open the finished guides above{% endif %}.</p>
   </div>
