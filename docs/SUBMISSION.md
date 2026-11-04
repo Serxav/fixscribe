@@ -61,7 +61,7 @@ https://github.com/Serxav/fixscribe/tree/main/demo · Demo film: https://www.you
 **How to try it** (step by step in `docs/TRY_IT.md`):
 A. The live app, nothing to install: open a finished guide (laptop, game console, harp, seat cushion),
 then its live coach with the guide's own video, or your own camera and voice.
-B. Your own video, on your computer: with Docker it is 4 commands and a Meta key, then upload a video
+B. Your own video, on your computer: a few commands with or without Docker, and a Meta key, then upload a video
 up to 10 minutes; it becomes a guide in about 20 minutes. The free live server is too small to
 process new videos.
 C. Without running anything: the 3-minute film and `demo/`, with every photo, cut-out and clip of the

@@ -5,7 +5,7 @@ There are three ways to try it. Each one is explained step by step below.
 | Way | What you need | What you get | Set-up |
 |---|---|---|---|
 | [**A. The live app**](#a-the-live-app) | a phone or computer | the four finished guides, and the live coach with the guide's video, your camera and your voice | none |
-| [**B. Your own video, on your computer**](#b-your-own-video-on-your-computer) | Docker and a Meta Model API key | a guide from your own video (up to 10 minutes), its live coach, and Meta's MMS-TTS voice | about 10 minutes |
+| [**B. Your own video, on your computer**](#b-your-own-video-on-your-computer) | Docker, or Python 3.12 and ffmpeg; a Meta Model API key | a guide from your own video (up to 10 minutes), its live coach, and Meta's MMS-TTS voice | about 10 minutes |
 | [**C. Without running anything**](#c-without-running-anything) | a browser | the 3-minute film, and every photo, cut-out, clip and proof of the four guides, plus recorded clips of the live coach | none |
 
 The live app runs on a free server with 512 MB of memory: enough for the guides and the live coach,

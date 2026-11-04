@@ -35,7 +35,9 @@ disassembly (LaptopMedia) and a PlayStation One button repair (Kytor Industries)
 | **Turn your own repair video into a guide** | on your computer, 4 commands with Docker ([quick start](docs/TRY_IT.md#b-your-own-video-on-your-computer)) | about 10 min to set up, 20 min a video |
 
 **Your own video, on your computer.** The free live server is too small (512 MB) to turn a new video
-into a guide, so that part runs on your computer: install Docker, then
+into a guide, so that part runs on your computer, with your own Meta key. Two ways:
+
+**With Docker:**
 
 ```bash
 git clone https://github.com/Serxav/fixscribe.git && cd fixscribe
@@ -43,8 +45,18 @@ cp .env.example .env          # open .env and paste your Meta key after MODEL_AP
 docker build -t fixscribe . && docker run --env-file .env -p 8000:8000 fixscribe
 ```
 
-and open http://127.0.0.1:8000 → **Upload a video** (up to 10 minutes). A 45-second video becomes a
-guide in about 20 minutes. Every step, and the way without Docker: [docs/TRY_IT.md](docs/TRY_IT.md#b-your-own-video-on-your-computer).
+**Without Docker** (Python 3.12 and ffmpeg: `brew install python@3.12 ffmpeg` on a Mac,
+`sudo apt install python3.12 python3.12-venv ffmpeg` on Ubuntu/Debian):
+
+```bash
+git clone https://github.com/Serxav/fixscribe.git && cd fixscribe
+cp .env.example .env          # open .env and paste your Meta key after MODEL_API_KEY=
+python3.12 -m venv .venv && .venv/bin/pip install -e .
+.venv/bin/uvicorn app.main:app
+```
+
+Then open http://127.0.0.1:8000 → **Upload a video** (up to 10 minutes). A 45-second video becomes a
+guide in about 20 minutes. Every step: [docs/TRY_IT.md](docs/TRY_IT.md#b-your-own-video-on-your-computer).
 
 ### Four finished guides, open in the app
 
