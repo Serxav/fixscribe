@@ -629,3 +629,28 @@ def test_a_confirmed_part_never_waits_for_the_spare(tmp_path):
 
     assert fake.calls == 1  # one check; the spare's cut-out is never checked
     assert [p.label for p in stages[-1][1]] == ["back cover"]
+
+
+def test_coaches_take_turns_when_the_server_is_full(tmp_path, monkeypatch):
+    """A full server answers "busy" and shows no marks rather than running out of memory."""
+    from app.pipeline import live
+
+    settings = Settings(model_api_key="", data_dir=tmp_path)
+    artifacts.save(tmp_path, _guide())
+    monkeypatch.setattr(live, "SLOT_WAIT_S", 0.01)
+    monkeypatch.setattr(live, "_TURN_SLOTS", live.threading.BoundedSemaphore(1))
+    monkeypatch.setattr(live, "_MARKS_SLOTS", live.threading.BoundedSemaphore(1))
+    live._TURN_SLOTS.acquire()
+    live._MARKS_SLOTS.acquire()
+    fake = FakeLiveClient(_answer())
+
+    with pytest.raises(LiveError, match="busy"):
+        live_turn(tmp_path, settings, _frame_bytes(), client=fake)
+    assert list(marks_stages(tmp_path, settings, _frame_bytes(), 1, [], fake)) == [(True, [])]
+    assert fake.calls == 0
+
+    live._TURN_SLOTS.release()
+    live._MARKS_SLOTS.release()
+    live_turn(tmp_path, settings, _frame_bytes(), client=fake)
+    assert fake.calls == 1
+    assert live._TURN_SLOTS.acquire(blocking=False)  # the slot was given back

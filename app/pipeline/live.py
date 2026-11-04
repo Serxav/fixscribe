@@ -13,6 +13,7 @@ still gets a coach and a forgotten camera page cannot eat the budget.
 import io
 import logging
 import shutil
+import threading
 import time
 import uuid
 from collections.abc import Iterator
@@ -62,6 +63,26 @@ PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "live_v2.md"
 PROFESSIONAL_LINE = "A qualified professional must do this repair."
 
 logger = logging.getLogger(__name__)
+
+# A free 512 MB server ran out of memory with several coaches marking parts at once: each marking
+# holds a frame, its close-up and the cut-outs. Visitors take turns instead; they already wait.
+MARKS_AT_ONCE = 1
+TURNS_AT_ONCE = 3
+SLOT_WAIT_S = 120.0
+_MARKS_SLOTS = threading.BoundedSemaphore(MARKS_AT_ONCE)
+_TURN_SLOTS = threading.BoundedSemaphore(TURNS_AT_ONCE)
+BUSY_LINE = "The coach is busy with other visitors. Try again in a moment."
+
+
+@contextmanager
+def _slot(slots: threading.BoundedSemaphore) -> Iterator[bool]:
+    """Wait for a free slot; yields False when none came free in SLOT_WAIT_S."""
+    got = slots.acquire(timeout=SLOT_WAIT_S)
+    try:
+        yield got
+    finally:
+        if got:
+            slots.release()
 
 
 def _lap(stage: str, started: float, last: float) -> float:
@@ -389,9 +410,13 @@ def marks_stages(
     region: list[int] | None = None,
     client: Any = None,
 ) -> Iterator[tuple[bool, list[LivePart]]]:
-    """``_marks_stages`` with its camera files in a folder of their own."""
-    with scratch_folder(job_dir) as folder:
-        yield from _marks_stages(job_dir, folder, settings, frame, step_index, region, client)
+    """``_marks_stages`` with its camera files in a folder of their own, one visitor at a time."""
+    with _slot(_MARKS_SLOTS) as free:
+        if not free:  # the coach goes on without marks rather than waiting longer
+            yield True, []
+            return
+        with scratch_folder(job_dir) as folder:
+            yield from _marks_stages(job_dir, folder, settings, frame, step_index, region, client)
 
 
 def _marks_stages(
@@ -545,6 +570,21 @@ def live_turn(
     stood: int = SETTLED,
 ) -> LiveAnswer:
     """Answer one camera frame: step, status, what to say, what to do next, where the object is."""
+    with _slot(_TURN_SLOTS) as free:
+        if not free:
+            raise LiveError(BUSY_LINE)
+        return _live_turn(job_dir, settings, frame, last_step, client, pending_step, stood)
+
+
+def _live_turn(
+    job_dir: Path,
+    settings: Settings,
+    frame: bytes,
+    last_step: int,
+    client: Any,
+    pending_step: int,
+    stood: int,
+) -> LiveAnswer:
     try:
         guide = artifacts.load(job_dir, Guide)
     except ArtifactError as exc:
