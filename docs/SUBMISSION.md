@@ -9,10 +9,11 @@ Every number here comes from the README's evaluation.
 **One line:** Record a repair on your phone and get a step-by-step guide that shows the part, the
 screws and the second of video behind each step.
 
-**Problem — "Which step am I on, and what is this part?":** I took my own Xiaomi phone apart, the
-battery and the camera module, to try FixScribe on a real repair. With both hands busy, I could not
-scroll a video or a manual to find which step I was on, what the part in front of me was called and
-what came next.
+**Problem — "Which step am I on, and what is this part?":** Repair videos and manuals assume you
+can watch and work at the same time. With both hands inside a device you cannot scroll back to find
+which step you are on, what the part in front of you is called or what comes next. And the person who
+already did the repair, whose video shows all of it, has no quick way to turn it into a guide someone
+else can follow.
 
 **What it does:** Upload one video of a repair or assembly, narrated or silent. FixScribe identifies
 the object and the hazards, refuses professional-only jobs with fixed rules, and writes the steps.

@@ -57,12 +57,15 @@ Every wait ends by itself. All timings and every button: [docs/TRY_IT.md](docs/T
 
 ## The problem
 
-**Where it started: "Which step am I on, and what is this part?"** While building FixScribe I took
-my own Xiaomi phone apart, the battery and the camera module, to try it on a real repair. With both
-hands busy, I could not scroll a video or a manual to find which step I was on, what the part in
-front of me was called and what came next. FixScribe answers exactly that: the guide names and cuts
-out the part of every step, and the live coach looks through the camera, says which step you are on,
-marks the parts and tells you what comes next, hands-free.
+**"Which step am I on, and what is this part?"** Repair videos and manuals assume you can watch and
+work at the same time. With both hands inside a device you cannot scroll back to find which step you
+are on, what the part in front of you is called or what comes next. And the person who already did
+the repair, whose video shows all of it, has no quick way to turn it into a guide someone else can
+follow.
+
+FixScribe answers both: it turns that video into a guide that names and cuts out the part of every
+step, and its live coach looks through the camera, says which step you are on, marks the parts and
+tells you what comes next, hands-free.
 
 ## What it does
 
