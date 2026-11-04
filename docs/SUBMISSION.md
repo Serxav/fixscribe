@@ -55,7 +55,7 @@ stages, with its tasks in `tasks/`; the rest was written with other AI coding as
 states.
 
 **Links:** Live app: https://fixscribe-wpf3.onrender.com · Repository: https://github.com/Serxav/fixscribe · Sample guides, no install:
-https://github.com/Serxav/fixscribe/tree/main/demo · Demo film: https://www.youtube.com/watch?v=bpZMs6h1uUo
+https://github.com/Serxav/fixscribe/tree/main/demo · Demo film: https://www.youtube.com/watch?v=S4tFjHwojes
 
 **How to try it** (step by step in `docs/TRY_IT.md`):
 A. The live app, nothing to install: open a finished guide (laptop, game console, harp, seat cushion),

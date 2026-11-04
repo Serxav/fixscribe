@@ -222,7 +222,7 @@ a key too: `.venv/bin/pytest -q`.
 
 ## C. Without running anything
 
-1. Watch the **[3-minute film](https://www.youtube.com/watch?v=bpZMs6h1uUo)**: a video becoming a
+1. Watch the **[3-minute film](https://www.youtube.com/watch?v=S4tFjHwojes)**: a video becoming a
    guide, then the live coach following it.
 2. Open **[demo/](../demo/README.md)**: the four guides FixScribe wrote, with three photos of each
    and links to open each one in the live app.

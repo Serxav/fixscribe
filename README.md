@@ -7,7 +7,7 @@ Meta Global AI Developer Hackathon · Indie track · theme: Build for Your World
 SAM 3.1, Muse Voice and Muse Wonder through the Meta Model API.
 
 <p>
-<a href="https://www.youtube.com/watch?v=bpZMs6h1uUo"><b>▶ Watch the 3-minute film</b></a> ·
+<a href="https://www.youtube.com/watch?v=S4tFjHwojes"><b>▶ Watch the 3-minute film</b></a> ·
 <a href="https://fixscribe-wpf3.onrender.com"><b>Open the live app</b></a> ·
 <a href="#four-finished-guides-open-in-the-app"><b>Open four finished guides</b></a> ·
 <a href="docs/TRY_IT.md"><b>Step-by-step for judges</b></a>
@@ -27,7 +27,7 @@ disassembly (LaptopMedia) and a PlayStation One button repair (Kytor Industries)
 
 | What | Where | Time |
 |---|---|---|
-| Watch what it does | [3-minute film](https://www.youtube.com/watch?v=bpZMs6h1uUo) | 3 min |
+| Watch what it does | [3-minute film](https://www.youtube.com/watch?v=S4tFjHwojes) | 3 min |
 | Read a finished guide: steps, cut-out parts, numbered screws, clips, the way back | [live app](https://fixscribe-wpf3.onrender.com) → **See a finished guide** | 1 min |
 | Let the live coach follow a finished guide's own video, then ask it a question | [live app](https://fixscribe-wpf3.onrender.com) → **Try the live coach** → **Use this guide's video** | 3 min |
 | Point your own phone camera at a laptop and talk to the coach | same page → **Start the camera** | 2 min |
