@@ -12,6 +12,7 @@
     <a class="btn btn-soft btn-lg" href="/guides/{{ sample }}">See a finished guide</a>
   </p>
   {% endif %}
+  {% if uploads %}
   <form class="start" action="/upload" method="post" enctype="multipart/form-data" data-reveal style="--d:.12s">
     <label class="btn btn-primary btn-lg">
       Record a video
@@ -21,10 +22,15 @@
       Upload a video
       <input class="visually-hidden" type="file" name="video" accept="video/mp4,video/quicktime,.mov,.m4v,.mp4" data-autosubmit>
     </label>
-    <p class="note">One take from a phone. Talk through it or stay silent. MP4 or MOV, up to 10 minutes.</p>
+    <p class="note">One take from a phone. Talk through it or stay silent. MP4 or MOV, up to {{ max_minutes }} minutes.</p>
     <p class="note">Your video is analyzed by Meta's AI models and kept until you delete it. By uploading you accept the <a href="/terms">Terms</a> and the <a href="/privacy">Privacy</a> notice.</p>
     <p class="note hidden" role="status">Uploading…</p>
   </form>
+  {% else %}
+  <div class="start" data-reveal style="--d:.12s">
+    <p class="note">This free demo server shows a finished guide and its live coach. Turning a new video into a guide needs more memory than it has: run FixScribe on your own computer (see the <a href="https://github.com/Serxav/fixscribe#run-it-locally">README</a>) or browse <a href="https://github.com/Serxav/fixscribe/tree/main/demo">four more guides</a>.</p>
+  </div>
+  {% endif %}
 </section>
 
 <section class="mosaic" data-mosaic-stage aria-label="Objects FixScribe can analyze">
@@ -192,6 +198,7 @@
       </ul>
     </article>
   </div>
+  {% if uploads %}
   <div class="ready-start" data-reveal>
     <form class="start" action="/upload" method="post" enctype="multipart/form-data">
       <label class="btn btn-primary btn-lg">
@@ -206,6 +213,7 @@
       <p class="note hidden" role="status">Uploading…</p>
     </form>
   </div>
+  {% endif %}
 </section>
 {% endblock %}
 {% block scripts %}

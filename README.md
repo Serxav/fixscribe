@@ -3,16 +3,45 @@
 **Film a repair once on your phone. FixScribe turns the video into a step-by-step guide anyone can
 follow, then coaches the next person live through their camera.**
 
-Built on the Meta Model API (Muse Spark, SAM 3.1, Muse Voice, Muse Wonder) for the Meta Global AI
-Developer Hackathon, Indie track · theme: Build for Your World.
+Meta Global AI Developer Hackathon · Indie track · theme: Build for Your World · built on Muse Spark,
+SAM 3.1, Muse Voice and Muse Wonder through the Meta Model API.
 
-**Try it live: https://fixscribe-wpf3.onrender.com** (free server: the first visit can take about a
-minute while it wakes up; the camera and microphone work over its https). Open the sample guide and
-its live coach, or upload a repair video of up to 2 minutes. **Step by step: [docs/TRY_IT.md](docs/TRY_IT.md).**
+<p>
+<a href="https://www.youtube.com/watch?v=bpZMs6h1uUo"><b>▶ Watch the 3-minute film</b></a> ·
+<a href="https://fixscribe-wpf3.onrender.com"><b>Open the live app</b></a> ·
+<a href="demo/README.md"><b>See four finished guides</b></a> ·
+<a href="docs/TRY_IT.md"><b>Step-by-step for judges</b></a>
+</p>
 
-**For judges, nothing to install:** [four sample guides](demo/README.md) FixScribe wrote from
-openly licensed repair videos, and [the live coach following one of them](demo/README.md#the-live-coach-on-the-dell-guide).
-To run it yourself, see [Run it](#run-it): a sample guide opens with no key.
+<table><tr>
+<td width="25%"><img src="demo/137c1ed0730d/steps/01_overlay.jpg" alt="Bottom cover with four numbered screws"><br><sub><b>Step 1</b> · the four cover screws, numbered in the order they come out</sub></td>
+<td width="25%"><img src="demo/137c1ed0730d/steps/04_overlay.jpg" alt="Five battery screws numbered"><br><sub><b>Step 4</b> · the five battery screws</sub></td>
+<td width="25%"><img src="demo/137c1ed0730d/steps/05_overlay.jpg" alt="The battery cut out by SAM 3.1"><br><sub><b>Step 5</b> · the battery, cut out by SAM 3.1 where Muse Spark pointed</sub></td>
+<td width="25%"><img src="docs/media/coach_follows.gif" alt="The live coach moving through the steps on a phone"><br><sub><b>Live coach</b> · follows the repair step by step on its own (sped up)</sub></td>
+</tr></table>
+
+<sub>All four pictures are FixScribe's own output on a Dell Latitude 7455 disassembly video
+(LaptopMedia, CC BY 3.0). Nothing was drawn by hand.</sub>
+
+## Try it
+
+| What | Where | Time |
+|---|---|---|
+| Watch what it does | [3-minute film](https://www.youtube.com/watch?v=bpZMs6h1uUo) | 3 min |
+| Read a finished guide: steps, cut-out parts, numbered screws, clips, the way back | [live app](https://fixscribe-wpf3.onrender.com) → **See a finished guide** | 1 min |
+| Let the live coach follow a repair video, then ask it a question | [live app](https://fixscribe-wpf3.onrender.com) → **Try the live coach** → **Use this guide's video** | 3 min |
+| Point your own phone camera at a laptop and talk to the coach | same page → **Start the camera** | 2 min |
+| Browse four guides it wrote: a laptop, a game console, a harp, a seat cushion | [demo/](demo/README.md), no install | 2 min |
+
+The app runs on a free server: the first visit can take a minute to wake up. Every button is
+explained in [docs/TRY_IT.md](docs/TRY_IT.md).
+
+## See it move
+
+<table><tr>
+<td width="62%"><img src="docs/media/sam_follows_battery.gif" alt="SAM 3.1 follows the battery as it is lifted out"><br><sub><b>SAM 3.1 video</b> follows the battery through its step, so the guide knows the part really comes out here.</sub></td>
+<td width="38%"><img src="docs/media/coach_follows.gif" alt="The live coach on a phone"><br><sub><b>The live coach</b> on the Dell guide, left alone for 17 minutes: steps 1 to 10 of 11, shown 75× faster. <a href="demo/coach/coach_dell.mp4">A real-speed clip with a question</a>.</sub></td>
+</tr></table>
 
 ## The problem
 
@@ -119,7 +148,7 @@ dropped from working copies; every path to Meta has a budget; at most two videos
 once while the rest wait in line; per-visitor limits can be turned on from the host's panel. See
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#limits-on-a-public-server).
 
-## Run it
+## Run it locally
 
 ```bash
 python3.12 -m venv .venv
@@ -128,7 +157,8 @@ cp .env.example .env            # then add your Meta key
 .venv/bin/uvicorn app.main:app --reload
 ```
 
-Open http://127.0.0.1:8000 on a computer or phone and upload a video. No key? `python scripts/demo_job.py`
+Then open `http://127.0.0.1:8000` on that computer (or the computer's address from a phone on the
+same wifi) and upload a video. No key? `python scripts/demo_job.py`
 builds a guide with the real pipeline and a fake Meta client.
 
 **Open a sample guide in the app, no key needed:** start the server with
@@ -142,11 +172,7 @@ coach (button "Use this guide's video") needs a Meta key; the camera needs https
 docker build -t fixscribe . && docker run --env-file .env -p 8000:8000 fixscribe
 ```
 
-Hosting for judges: [docs/DEPLOY.md](docs/DEPLOY.md).
-
-**No need to run anything to see results:** [demo/](demo/README.md) has four guides FixScribe wrote
-from openly licensed internet videos (a laptop, a game console, a harp, a seat cushion), with
-every step photo, cut-out, clip and proof file.
+Hosting it yourself (Render, free): [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Repository map
 
@@ -170,6 +196,8 @@ coding agent, running `muse-spark-1.3`) wrote the first version of several stage
 tasks: 16 of the commits say "Written by Muse Code". From Oct 27 the code was written with
 other AI coding assistants. Every Muse Code task, review and report is kept in [`tasks/`](tasks/).
 
-## License
+## License and credits
 
 MIT. See [LICENSE](LICENSE). The MMS-TTS voice model is CC-BY-NC 4.0 and is downloaded separately.
+The repair videos in `demo/` and in the film are from Wikimedia Commons under CC BY 3.0; each one is
+credited in [demo/README.md](demo/README.md).

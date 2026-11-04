@@ -3,7 +3,8 @@
 **Address: https://fixscribe-wpf3.onrender.com**
 
 It works on a phone (Safari on iPhone, Chrome on Android) or a computer. Nothing to install, no
-account. It runs on a free server: the **first visit can take about a minute** while it wakes up.
+account. It shows a finished guide and its live coach; making a guide from your own video runs on
+your computer (section 4). It runs on a free server: the **first visit can take about a minute** while it wakes up.
 
 ## 1. A finished guide (1 minute)
 
@@ -45,12 +46,16 @@ A clip of this, recorded on 2026-11-04, is in [demo/](../demo/README.md#the-live
 
 ## 4. Your own repair video
 
-1. On the landing, upload a repair or assembly video. **On this free server: up to 2 minutes.**
-   Good light, the part filling the frame, 1080p if screws matter. Narrated or silent; saying
-   "step" (or "paso") before each step cuts the steps exactly there.
-2. The progress page shows every stage as it runs. A 1-minute video takes about 5 to 15 minutes.
+The free server behind the live app is too small to turn a new video into a guide (the pipeline
+needs more than its 512 MB), so the upload buttons are off there. To try it on your own video, run
+FixScribe on a computer with a Meta key ([Run it locally](../README.md#run-it-locally), about
+5 minutes to set up), or see [four guides it made](../demo/README.md) from real repair videos:
+
+1. Upload a repair or assembly video, up to 10 minutes. Good light, the part filling the frame,
+   1080p if screws matter. Narrated or silent; saying "step" (or "paso") before each step cuts the
+   steps exactly there.
+2. The progress page shows every stage as it runs.
 3. Then **Open the guide**. **Agent console** shows Muse Wonder checking the guide with SAM as a tool.
-4. You can delete the guide and its video from the guide page.
 
 ## If something does not work
 
@@ -60,6 +65,5 @@ A clip of this, recorded on 2026-11-04, is in [demo/](../demo/README.md#the-live
 | The page takes long to open | The free server is waking up. Wait a minute and reload. |
 | The camera or microphone does not start | Allow them when asked. iPhone: tap **aA** in Safari's address bar → Website Settings → Camera / Microphone → Allow. |
 | "reached its spend limit" | The Meta credit shared by all judges for this coach is used up. The [recorded clips](../demo/README.md) show the same thing. |
-| "video too long" | This server takes videos up to 2 minutes. Locally ([Run it](../README.md#run-it)) the limit is 10. |
 
 Every AI call goes to Meta models through the Meta Model API, with a spending cap on the server.

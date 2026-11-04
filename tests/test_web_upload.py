@@ -190,3 +190,35 @@ def test_a_server_without_a_key_refuses_videos_at_once(jobs_tmp, no_start, tmp_p
     assert response.status_code == 503
     assert "not set up" in response.text
     assert no_start == []
+
+
+def test_uploads_off_hides_the_form_and_refuses(tmp_path, no_start):
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    app.dependency_overrides[settings_dep] = lambda: Settings(
+        model_api_key="test-key", data_dir=data_dir, uploads=False
+    )
+    try:
+        client = TestClient(app)
+        page = client.get("/")
+        assert page.status_code == 200
+        assert 'name="video"' not in page.text
+        assert "free demo server" in page.text
+        sent = client.post("/upload", files={"video": ("a.mp4", b"x" * 10, "video/mp4")})
+        assert sent.status_code == 503
+        assert "does not make new guides" in sent.text
+        assert no_start == []
+    finally:
+        app.dependency_overrides.pop(settings_dep, None)
+
+
+def test_landing_states_the_server_video_cap(tmp_path, no_start):
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    app.dependency_overrides[settings_dep] = lambda: Settings(
+        model_api_key="test-key", data_dir=data_dir, max_video_seconds=120
+    )
+    try:
+        assert "up to 2 minutes" in TestClient(app).get("/").text
+    finally:
+        app.dependency_overrides.pop(settings_dep, None)

@@ -31,7 +31,13 @@ router = APIRouter()
 @router.get("/", response_class=HTMLResponse)
 def index(request: Request, settings: Settings = Depends(settings_dep)):  # noqa: B008
     return templates.TemplateResponse(
-        request, "index.html", {"sample": demo.ready_sample(settings)}
+        request,
+        "index.html",
+        {
+            "sample": demo.ready_sample(settings),
+            "uploads": settings.uploads,
+            "max_minutes": max(1, settings.max_video_seconds // 60),
+        },
     )
 
 
@@ -50,6 +56,13 @@ async def upload_video(
     video: UploadFile,
     settings: Settings = Depends(settings_dep),  # noqa: B008
 ):
+    if not settings.uploads:
+        return HTMLResponse(
+            "<h1>This demo server does not make new guides</h1><p>It is too small to process "
+            "video. Open the sample guide and its live coach from the home page, or run "
+            "FixScribe on your own computer.</p>",
+            status_code=503,
+        )
     jobs_dir = settings.jobs_dir
     filename = video.filename or ""
     ext = Path(filename).suffix.lower()

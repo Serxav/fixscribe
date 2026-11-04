@@ -34,6 +34,7 @@ class Settings:
     trust_proxy: bool = (
         False  # [TRUST_PROXY] true behind the host's proxy: visitors by X-Forwarded-For
     )
+    uploads: bool = True  # [UPLOADS] false on a server too small to turn videos into guides
     demo_job: str = ""  # [DEMO_JOB] folder under demo/: a read-only sample guide for visitors
     data_dir: Path = Path("data")  # [DATA_DIR]
     voice_model_dir: Path = Path("models/vits-mms-eng")  # [VOICE_MODEL_DIR]
@@ -84,6 +85,7 @@ def get_settings() -> Settings:
         visitor_actions_per_hour=int(env.get("VISITOR_ACTIONS_PER_HOUR", "0")),
         trust_proxy=_parse_bool(env.get("TRUST_PROXY", "false")),
         demo_job=env.get("DEMO_JOB", "").strip(),
+        uploads=_parse_bool(env.get("UPLOADS", "true")),
         data_dir=data_dir,
         voice_model_dir=Path(env.get("VOICE_MODEL_DIR", "models/vits-mms-eng")),
     )

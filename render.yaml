@@ -1,6 +1,6 @@
 # Render Blueprint: the free web service the judges open (https, built from the Dockerfile).
-# The free instance has 512 MB, so one video at a time, one step at a time, videos up to 2 minutes,
-# and the browser's own voice instead of the local MMS-TTS model.
+# The free instance has 512 MB: it shows the sample guide and its live coach, with the browser's
+# own voice; processing a new video needs more memory, so uploads are off (UPLOADS=false).
 services:
   - type: web
     name: fixscribe
@@ -32,5 +32,7 @@ services:
         value: "10000"
       - key: ENABLE_INSPECTOR
         value: "true"
+      - key: UPLOADS
+        value: "false" # 512 MB is not enough to turn a video into a guide
       - key: VOICE_MODEL_DIR
         value: models/off
