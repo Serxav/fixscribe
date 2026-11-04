@@ -1,10 +1,14 @@
 # Sample guides
 
-Four repair and assembly videos from the internet, each run once through the whole FixScribe
+**See what FixScribe makes without installing anything.** Four repair and assembly videos from the internet, each run once through the whole FixScribe
 pipeline with no editing by hand. Every file in a folder is the pipeline's own output: the guide
 (`guide.json`), a photo per step with the part SAM 3.1 cut out and the numbered fasteners
 (`steps/NN_overlay.jpg`), a loop clip per step (`steps/NN.mp4`), the proof for each claim
 (`proof.json`) and every stage's intermediate file.
+
+What to look at in each step photo: the **part outlined** is SAM 3.1's cut-out of what Muse Spark
+pointed at, and the **numbered yellow circles** are the fastener map (screws, clips, staples) in the
+order they come out.
 
 To open one in the app: set `DEMO_JOB=<folder>` and start the server; the guide is at
 `/guides/<folder>`, read-only.
@@ -21,7 +25,13 @@ agent, which checked each guide after it was written.
 
 ## Disassemble Dell Latitude 7455 - Cover, Battery, SSD and Wi-Fi
 
-![Step 1: Display the bottom cover](137c1ed0730d/steps/01_overlay.jpg)
+<table><tr>
+<td width="33%"><a href="137c1ed0730d/steps/01.mp4"><img src="137c1ed0730d/steps/01_overlay.jpg" alt="Step 1: Display the bottom cover"></a><br><sub><b>Step 1</b> · Display the bottom cover</sub></td>
+<td width="33%"><a href="137c1ed0730d/steps/04.mp4"><img src="137c1ed0730d/steps/04_overlay.jpg" alt="Step 4: Unscrew battery"></a><br><sub><b>Step 4</b> · Unscrew battery</sub></td>
+<td width="33%"><a href="137c1ed0730d/steps/05.mp4"><img src="137c1ed0730d/steps/05_overlay.jpg" alt="Step 5: Remove battery"></a><br><sub><b>Step 5</b> · Remove battery</sub></td>
+</tr></table>
+
+<sub>Tap a photo to play that step's loop clip.</sub>
 
 1. Display the bottom cover without unscrewing.
 2. Pry the sides and front with a thin plastic tool, release the back last, then lift the bottom cover off.
@@ -37,9 +47,27 @@ agent, which checked each guide after it was written.
 
 Source: [How to open Dell Latitude 7455 - disassembly and upgrade options.webm](https://commons.wikimedia.org/wiki/File:How_to_open_Dell_Latitude_7455_-_disassembly_and_upgrade_options.webm) by LaptopMedia, CC BY 3.0 (https://creativecommons.org/licenses/by/3.0). Changes: re-encoded to 1080p, 30 fps.
 
+## The live coach on the Dell guide
+
+[![The live coach following the Dell video](coach/coach_dell.jpg)](coach/coach_dell.mp4)
+
+[Watch the clip (29 s)](coach/coach_dell.mp4). The coach's "Use this guide's video" mode, recorded
+on 2026-11-04 in a phone-sized browser: the guide's own video plays in place of the camera and waits
+for the coach at each frame. The coach says which step it sees (1, then 2, then 6 of 11) and what
+comes next, and a typed question ("How many screws hold the battery?") gets "Step 4: Five
+Phillips-head screws…" with a button that plays that second of the video. The clip is cut from a
+7-minute take in which the video was moved ahead by hand; each answer took about 17 s that day, so
+the waits are cut out and the rest plays at double speed.
+
 ## Fix Sticking and Squeaking Power and Open Buttons on Sony PlayStation One
 
-![Step 1: Separate the upper shell](7628d7064780/steps/01_overlay.jpg)
+<table><tr>
+<td width="33%"><a href="7628d7064780/steps/02.mp4"><img src="7628d7064780/steps/02_overlay.jpg" alt="Step 2: Unclip"></a><br><sub><b>Step 2</b> · Unclip</sub></td>
+<td width="33%"><a href="7628d7064780/steps/08.mp4"><img src="7628d7064780/steps/08_overlay.jpg" alt="Step 8: Remove slider assembly"></a><br><sub><b>Step 8</b> · Remove slider assembly</sub></td>
+<td width="33%"><a href="7628d7064780/steps/11.mp4"><img src="7628d7064780/steps/11_overlay.jpg" alt="Step 11: Lubricate open button"></a><br><sub><b>Step 11</b> · Lubricate open button</sub></td>
+</tr></table>
+
+<sub>Tap a photo to play that step's loop clip.</sub>
 
 1. Lift off the upper shell and set aside the lower half.
 2. Unclip and remove the open button.
@@ -61,7 +89,9 @@ Source: [How to Fix Sticking or Squeaking Buttons on the PlayStation 1.webm](htt
 
 ## Replace a Broken Brass Harp String
 
-![Step 1: Leave the harp resting on the](0e2b78efccb9/steps/01_overlay.jpg)
+<img src="0e2b78efccb9/steps/04_overlay.jpg" alt="Step 4" width="60%">
+
+<sub>A harp has no screws, so its steps carry no fastener map.</sub>
 
 1. Leave the harp resting on the ground.
 2. Pull the old broken string off the harp and save it for reuse.
@@ -78,7 +108,13 @@ Source: [Replacing a wire string on an Irish harp 2022.webm](https://commons.wik
 
 ## Make a Bench Seat Cushion
 
-![Step 1: Cut foam to board size](359ba5a7fa66/steps/01_overlay.jpg)
+<table><tr>
+<td width="33%"><a href="359ba5a7fa66/steps/01.mp4"><img src="359ba5a7fa66/steps/01_overlay.jpg" alt="Step 1: Cut foam to board size"></a><br><sub><b>Step 1</b> · Cut foam to board size</sub></td>
+<td width="33%"><a href="359ba5a7fa66/steps/03.mp4"><img src="359ba5a7fa66/steps/03_overlay.jpg" alt="Step 3: Staple center of cover"></a><br><sub><b>Step 3</b> · Staple center of cover</sub></td>
+<td width="33%"><a href="359ba5a7fa66/steps/06.mp4"><img src="359ba5a7fa66/steps/06_overlay.jpg" alt="Step 6: Staple corner fold"></a><br><sub><b>Step 6</b> · Staple corner fold</sub></td>
+</tr></table>
+
+<sub>Tap a photo to play that step's loop clip.</sub>
 
 1. Place the wooden board on the foam and cut the foam to size with a cake knife, staying square.
 2. Stack wood board on foam pad over batting and faux leather with overhang on all sides.
@@ -88,7 +124,7 @@ Source: [Replacing a wire string on an Irish harp 2022.webm](https://commons.wik
 6. Hold the folded corner tight and drive two staples to fix it.
 7. Re-tension the cover all around, staple evenly, and trim overlapping bulges with a carpet knife.
 
-Source: [Polster beziehen, polstern DIY Tutorial Anleitung.webm](https://commons.wikimedia.org/wiki/File:Polster_beziehen,_polstern_DIY_Tutorial_Anleitung.webm) by made by myself, CC BY 3.0 (https://creativecommons.org/licenses/by/3.0). Changes: re-encoded to 1080p, 30 fps.
+Source: [Polster beziehen, polstern DIY Tutorial Anleitung.webm](https://commons.wikimedia.org/wiki/File:Polster_beziehen,_polstern_DIY_Tutorial_Anleitung.webm) by Sebastian Wallroth, CC BY 3.0 (https://creativecommons.org/licenses/by/3.0). Changes: re-encoded to 1080p, 30 fps.
 
 ## Licences
 
