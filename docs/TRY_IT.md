@@ -19,13 +19,8 @@ computer (B).
 **Address: https://fixscribe-wpf3.onrender.com**
 
 It works on a phone (Safari on iPhone, Chrome on Android) or a computer. Nothing to install, no
-account. **If nobody opened it in the last 15 minutes, the first visit takes about 1 minute** while
-the free server wakes up; after that pages open at once.
-
-**Meta credit for your tests: about €55 is left (2026-11-04).** It is shared by all the judges and
-pays for every AI call on the live app: the live coach and questions. To protect it, the live app
-stops every Meta call once it has spent **$50 in all**; after that it answers that it reached its
-spend limit. If it does stop, ways B and C still work.
+account. It runs on a free server kept awake by an uptime monitor, so it normally opens at once; if
+it ever falls asleep, the first visit takes about 1 minute.
 
 ### How long things take (it is slow, not stuck)
 
@@ -33,8 +28,7 @@ Measured on the live app on 2026-11-04. Every wait ends by itself: nothing needs
 
 | What | How long | What you see meanwhile |
 |---|---|---|
-| Opening the app after 15 quiet minutes | **about 1 minute** | a loading page while the free server wakes up |
-| Opening the app otherwise | **at once** | |
+| Opening the app | **at once**; about 1 minute if the free server fell asleep | a loading page while it wakes up |
 | Opening a guide, its photos and clips | under 1 s | |
 | The coach's first answer, and each new one | **10 to 20 s** | **Looking…**; with the guide's video, the video pauses until the answer comes |
 | The part marks on a new step | **up to about 1 minute** | the step and its instruction are already shown; the marks appear dashed, then solid (or go away if Spark does not confirm them) |
@@ -252,8 +246,7 @@ a key too: `.venv/bin/pytest -q`.
 | The camera or microphone does not start | Allow them when asked. iPhone: tap **aA** in Safari's address bar → Website Settings → Camera / Microphone → Allow. On your own computer, use `http://127.0.0.1:8000`, not the computer's network address. |
 | "The coach is busy with other visitors" | Others are using the coach at the same moment. Wait a few seconds: it asks again by itself on the next frame. |
 | A step shows no part marks | Several coaches were marking parts at once and that step's turn came too late. The next step gets its marks. |
-| "reached its spend limit" or "spend already at budget" | On the live app, the $50 set aside for the judges' tests is used up: the [recorded clips](../demo/README.md) show the same thing. On your own computer, raise the limit in `.env` (B5). |
+| "reached its spend limit" or "spend already at budget" | On the live app, the credit set aside for the judges' tests is used up: the [recorded clips](../demo/README.md) show the same thing. On your own computer, raise the limit in `.env` (B5). |
 | `ffmpeg` not found (B3b) | Install it (B1), or use Docker (B3a). |
 
-Every AI call goes to Meta models through the Meta Model API. The live app stops all of them at $50
-in all, so the judges' tests never run past the credit.
+Every AI call goes to Meta models through the Meta Model API, with a spending cap on the server.

@@ -16,7 +16,7 @@ Turning a 45-second video into a guide peaks at about 690 MB, so uploads need th
 | Variable | Value | Why |
 |---|---|---|
 | `MODEL_API_KEY` | your key | Meta calls |
-| `BUDGET_USD` | what is left of the credit, minus a margin (`50` for the hackathon, with about €55 left) | the one hard ceiling: past it no call is sent. It is kept in `data/spend.json`, which a host without a persistent disk loses on a restart |
+| `BUDGET_USD` | what is left of the credit, minus a margin | the one hard ceiling: past it no call is sent. It is kept in `data/spend.json`, which a host without a persistent disk loses on a restart |
 | `JOB_BUDGET_USD` | `10` | one 8.5-minute video cost $1.47, a 45-second one $0.78; room for retries and the agent |
 | `DAILY_JOB_LIMIT` | `50` | judges may film as many repairs as they like |
 | `MAX_RUNNING_JOBS` | `2` | videos processed at once; more wait in line, so 4 GB is never run out |

@@ -69,11 +69,8 @@ guide in about 20 minutes. Every step: [docs/TRY_IT.md](docs/TRY_IT.md#b-your-ow
 
 Every file behind them (step photos, cut-outs, clips, proof) is also in [demo/](demo/README.md).
 
-**Meta credit for your tests:** about €55 is left (2026-11-04), shared by all the judges. The live
-app stops every Meta call at $50 in all, so it never runs past the credit.
-
-**It is slow, not stuck.** The live app runs on a free server: if nobody opened it for 15 minutes,
-the first visit takes about 1 minute while it wakes up, then pages open at once. The coach answers
+**It is slow, not stuck.** The live app runs on a free server kept awake by an uptime monitor, so
+pages open at once (if it ever falls asleep, the first visit takes about 1 minute). The coach answers
 in 10 to 20 s, part marks take up to about 1 minute and a question 5 to 10 s. When several people use the coach at once they take turns, so it can
 be a little slower: one coach per judge at a time works best. Every wait ends by itself. All timings and every button: [docs/TRY_IT.md](docs/TRY_IT.md#how-long-things-take-it-is-slow-not-stuck).
 
