@@ -34,6 +34,16 @@
   var micOn = false;
   var hearing = false;
   var voice = window.FixVoice.player(jobId, lang, root.dataset.metaVoice === "yes");
+  // The guide's own video standing in for a camera runs much faster than a person works, so it waits
+  // for the coach: still while a frame is read, and on each new step until its parts are marked.
+  var tour = false;
+  var tourHeld = false; // paused by the coach, not by the person
+  var tourHeldAt = 0;
+  var tourPlayedAt = 0;
+  var marksDoneAt = 0;
+  var TOUR_PLAY_MS = 3000; // video played between two frames
+  var TOUR_SHOW_MS = 2500; // marks stay on screen this long before the video goes on
+  var TOUR_MAX_HOLD_MS = 30000;
 
   function say(text, first) {
     if (!voiceOn || !text) return;
@@ -146,6 +156,7 @@
     var step = answer.step || current;
     if (!answer.object_box || !answer.object_box.length) return;
     if (step === askedStep && apart(sample, askedSample) <= MOVED) return;
+    if (tour && step === askedStep) return; // the video: once per step, or it would never move on
     marksBusy = true;
     askedSample = sample;
     askedStep = step;
@@ -161,7 +172,7 @@
         });
       })
       .catch(function () {})
-      .finally(function () { marksBusy = false; });
+      .finally(function () { marksBusy = false; marksDoneAt = Date.now(); });
   }
 
   function show(answer, sample, blob) {
@@ -205,7 +216,22 @@
     canvas.toBlob(done, "image/jpeg", 0.85);
   }
 
+  function tourHold() {
+    var video = $("live-camera");
+    if (video.paused) return;
+    video.pause();
+    tourHeld = true;
+    tourHeldAt = Date.now();
+  }
+
+  function tourGo() {
+    tourHeld = false;
+    tourPlayedAt = Date.now();
+    $("live-camera").play().catch(function () {});
+  }
+
   function send(video, sample) {
+    if (tour) tourHold();
     busy = true;
     sentAt = Date.now();
     sentSample = sample;
@@ -350,6 +376,12 @@
       askMarks(waiting.answer, waiting.sample, waiting.blob);
       waiting = null;
     }
+    if (tour && tourHeld) {
+      var settled = !busy && !marksBusy && !waiting && now - marksDoneAt >= TOUR_SHOW_MS;
+      if (settled || now - tourHeldAt > TOUR_MAX_HOLD_MS) tourGo();
+      return;
+    }
+    if (tour && now - tourPlayedAt < TOUR_PLAY_MS) return;
     if (limited || busy || now - sentAt < MIN_GAP_MS) return;
     var isNew = apart(sample, sentSample) > MOVED;
     var refresh = now - sentAt >= STILL_REFRESH_MS && now - stillSince < STILL_PAUSE_MS;
@@ -446,15 +478,16 @@
     var video = $("live-camera");
     video.src = root.dataset.video;
     video.loop = true;
-    video.play().catch(function () {});
+    tour = true;
+    tourGo();
     $("live-hold").classList.remove("hidden");
-    $("live-hint").textContent = "This is the guide's own video, not your camera. Hold it to see the parts marked.";
+    $("live-hint").textContent = "This is the guide's own video, not your camera. It waits for the coach at every step.";
     begin();
   });
 
   $("live-hold").addEventListener("click", function () {
     var video = $("live-camera");
-    if (video.paused) { video.play().catch(function () {}); } else { video.pause(); }
+    if (video.paused) { tourGo(); } else { video.pause(); tourHeld = false; }
     $("live-hold").textContent = video.paused ? "▶" : "⏸";
   });
 })();
