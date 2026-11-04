@@ -14,14 +14,14 @@ SAM 3.1, Muse Voice and Muse Wonder through the Meta Model API.
 </p>
 
 <table><tr>
-<td width="25%"><img src="demo/137c1ed0730d/steps/01_overlay.jpg" alt="Bottom cover with four numbered screws"><br><sub><b>Step 1</b> · the four cover screws, numbered in the order they come out</sub></td>
-<td width="25%"><img src="demo/137c1ed0730d/steps/04_overlay.jpg" alt="Five battery screws numbered"><br><sub><b>Step 4</b> · the five battery screws</sub></td>
-<td width="25%"><img src="demo/137c1ed0730d/steps/05_overlay.jpg" alt="The battery cut out by SAM 3.1"><br><sub><b>Step 5</b> · the battery, cut out by SAM 3.1 where Muse Spark pointed</sub></td>
-<td width="25%"><img src="docs/media/coach_follows.gif" alt="The live coach moving through the steps on a phone"><br><sub><b>Live coach</b> · follows the repair step by step on its own (sped up)</sub></td>
+<td width="25%"><img src="demo/137c1ed0730d/steps/01_overlay.jpg" alt="Laptop bottom cover with four numbered screws"><br><sub><b>Laptop · step 1</b> · the four cover screws, numbered in the order they come out</sub></td>
+<td width="25%"><img src="demo/137c1ed0730d/steps/05_overlay.jpg" alt="The laptop battery cut out by SAM 3.1"><br><sub><b>Laptop · step 5</b> · the battery, cut out by SAM 3.1 where Muse Spark pointed</sub></td>
+<td width="25%"><img src="demo/7628d7064780/steps/08_overlay.jpg" alt="Game console slider assembly cut out"><br><sub><b>Game console · step 8</b> · the open-button slider assembly, cut out</sub></td>
+<td width="25%"><img src="demo/7628d7064780/steps/11_overlay.jpg" alt="Game console open button cut out"><br><sub><b>Game console · step 11</b> · the open button, cut out before it is greased</sub></td>
 </tr></table>
 
-<sub>All four pictures are FixScribe's own output on a Dell Latitude 7455 disassembly video
-(LaptopMedia, CC BY 3.0). Nothing was drawn by hand.</sub>
+<sub>All four pictures are FixScribe's own output, nothing drawn by hand: a Dell Latitude 7455
+disassembly (LaptopMedia) and a PlayStation One button repair (Kytor Industries), both CC BY 3.0.</sub>
 
 ## Try it
 
